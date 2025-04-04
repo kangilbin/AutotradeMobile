@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, TouchableWithoutFeedback} from 'react-native';
+import { Dimensions } from 'react-native';
+
+const windowHeight = Dimensions.get('window').height;
 
 // 타입 정의
 interface FormState {
@@ -26,24 +29,33 @@ const LoginScreen: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <TextInput
-                style={styles.input}
-                placeholder="아이디"
-                value={login.id}
-                onChangeText={(text) => handleInputChange('id', text)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
-                value={login.password}
-                onChangeText={(text) => handleInputChange('password', text)}
-            />
-            {/* 로그인 버튼 */}
-            <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>로그인</Text>
-            </TouchableOpacity>
-        </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.container}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="아이디"
+                    value={login.id}
+                    onChangeText={(text) => handleInputChange('id', text)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="비밀번호"
+                    value={login.password}
+                    secureTextEntry={true}
+                    onChangeText={(text) => handleInputChange('password', text)}
+                />
+                <TouchableOpacity
+                    style={[styles.button, (login.id && login.password) ? styles.buttonActive : styles.buttonInactive]}
+                    onPress={handleSubmit}
+                    disabled={!(login.id && login.password)}
+                >
+                    <Text style={styles.buttonText}>로그인</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                    <Text style={styles.buttonText}>회원 가입</Text>
+                </TouchableOpacity>
+            </View>
+        </TouchableWithoutFeedback>
     );
 };
 
@@ -76,6 +88,7 @@ const styles = StyleSheet.create({
         padding: 10,
         fontSize: 16,
         marginBottom: 10,
+        height: windowHeight * 0.07,
     },
     inputSmall: {
         borderWidth: 1,
@@ -113,11 +126,19 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         marginTop: 20,
+        justifyContent: 'center',
+        height: windowHeight * 0.07,
     },
     buttonText: {
         fontSize: 16,
         color: '#fff',
         fontWeight: 'bold',
+    },
+    buttonInactive: {
+        backgroundColor: '#d3d3d3', // 비활성화된 버튼 색상
+    },
+    buttonActive: {
+        backgroundColor: '#87CEEB', // 활성화 된 버튼 색상
     },
 });
 

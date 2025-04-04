@@ -30,9 +30,9 @@ function RootStack() {
             <Stack.Screen
                 name="Home"
                 component={HomeScreen}
-                options={{ title: 'Home' }}
+                options={{ title: '' }}
             />
-            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ title: '' }}/>
         </Stack.Navigator>
     );
 }
