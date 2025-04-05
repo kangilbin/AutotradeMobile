@@ -1,61 +1,105 @@
 import React, { useState } from 'react';
-import {View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, TouchableWithoutFeedback} from 'react-native';
-import { Dimensions } from 'react-native';
-
-const windowHeight = Dimensions.get('window').height;
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // 아이콘 사용
 
 // 타입 정의
 interface FormState {
-    id: string;
+    username: string;
     password: string;
+    autoLogin: boolean;
 }
 
 const LoginScreen: React.FC = () => {
-    const [login, setLogin] = useState<FormState>({
-        id: '',
+    const [form, setForm] = useState<FormState>({
+        username: '',
         password: '',
+        autoLogin: false,
     });
 
-    const handleInputChange = (field: keyof FormState, value: string) => {
-        setLogin((prev) => ({
+    const handleInputChange = (field: keyof FormState, value: string | boolean) => {
+        setForm((prev) => ({
             ...prev,
             [field]: value,
         }));
     };
 
-    const handleSubmit = () => {
-        // 수정하기 버튼 클릭 시 동작 (예: API 호출)
-        console.log('Form submitted:', login);
+    const handleLogin = () => {
+        // 로그인 버튼 클릭 시 동작 (예: API 호출)
+        console.log('Login attempted:', form);
     };
 
+
+    const handleKakaoLogin = () => {
+        // Kakao 로그인 버튼 클릭 시 동작
+        console.log('Kakao login initiated');
+    };
+
+    const handleSubmit = () => {
+        console.log('회원 가입 버튼 클릭');
+    };
+
+    // 로그인 버튼 활성화 여부 (아이디와 비밀번호가 모두 입력되었을 때 활성화)
+    const isLoginEnabled = form.username.length > 0 && form.password.length > 0;
+
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <View style={styles.container}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="아이디"
-                    value={login.id}
-                    onChangeText={(text) => handleInputChange('id', text)}
+        <View style={styles.container}>
+            {/* 아이디 입력 */}
+            <TextInput
+                style={styles.input}
+                placeholder="아이디"
+                value={form.username}
+                onChangeText={(text) => handleInputChange('username', text)}
+            />
+
+            {/* 비밀번호 입력 */}
+            <TextInput
+                style={styles.input}
+                placeholder="비밀번호"
+                value={form.password}
+                onChangeText={(text) => handleInputChange('password', text)}
+                secureTextEntry // 비밀번호 입력 시 마스킹 처리
+            />
+
+            {/* 로그인 버튼 */}
+            <TouchableOpacity
+                style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={!isLoginEnabled}
+            >
+                <Text style={styles.buttonText}>로그인</Text>
+            </TouchableOpacity>
+
+            {/* 자동 로그인 체크박스 */}
+            <TouchableOpacity
+                style={styles.checkboxContainer}
+                onPress={() => handleInputChange('autoLogin', !form.autoLogin)}
+            >
+                <Icon
+                    name={form.autoLogin ? 'check-circle' : 'check-circle-outline'}
+                    size={20}
+                    color={form.autoLogin ? '#B5EAD7' : '#d3d3d3'}
                 />
-                <TextInput
-                    style={styles.input}
-                    placeholder="비밀번호"
-                    value={login.password}
-                    secureTextEntry={true}
-                    onChangeText={(text) => handleInputChange('password', text)}
-                />
-                <TouchableOpacity
-                    style={[styles.button, (login.id && login.password) ? styles.buttonActive : styles.buttonInactive]}
-                    onPress={handleSubmit}
-                    disabled={!(login.id && login.password)}
-                >
-                    <Text style={styles.buttonText}>로그인</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                    <Text style={styles.buttonText}>회원 가입</Text>
-                </TouchableOpacity>
+                <Text style={styles.checkboxText}>자동 로그인</Text>
+            </TouchableOpacity>
+
+            {/* 구분선 */}
+            <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>또는</Text>
+                <View style={styles.dividerLine} />
             </View>
-        </TouchableWithoutFeedback>
+            {/* Kakao 로그인 버튼 */}
+            <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
+                <Icon name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
+                <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.button, styles.buttonEnabled]}
+                onPress={handleSubmit}
+            >
+                <Text style={styles.buttonText}>회원 가입</Text>
+            </TouchableOpacity>
+        </View>
     );
 };
 
@@ -65,80 +109,74 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 20,
         backgroundColor: '#fff',
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 5,
-    },
-    subHeader: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 5,
+        justifyContent: 'center',
     },
     input: {
         borderWidth: 1,
         borderColor: '#ddd',
-        borderRadius: 5,
-        padding: 10,
+        borderRadius: 10,
+        padding: 15,
         fontSize: 16,
-        marginBottom: 10,
-        height: windowHeight * 0.07,
-    },
-    inputSmall: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 5,
-        padding: 5,
-        fontSize: 16,
-        width: 100,
-        textAlign: 'right',
-    },
-    subText: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 20,
-    },
-    sectionHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 20,
-        marginBottom: 10,
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         marginBottom: 15,
     },
-    value: {
-        fontSize: 16,
-        color: '#666',
-    },
     button: {
-        backgroundColor: '#87CEEB',
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 20,
-        justifyContent: 'center',
-        height: windowHeight * 0.07,
+        marginBottom: 15,
+    },
+    buttonDisabled: {
+        backgroundColor: '#d3d3d3', // 비활성화 상태 (회색)
+    },
+    buttonEnabled: {
+        backgroundColor: '#B5EAD7', // 활성화 상태 (보라색)
     },
     buttonText: {
         fontSize: 16,
         color: '#fff',
         fontWeight: 'bold',
     },
-    buttonInactive: {
-        backgroundColor: '#d3d3d3', // 비활성화된 버튼 색상
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
     },
-    buttonActive: {
-        backgroundColor: '#87CEEB', // 활성화 된 버튼 색상
+    checkboxText: {
+        fontSize: 14,
+        color: '#666',
+        marginLeft: 5,
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#ddd',
+    },
+    dividerText: {
+        marginHorizontal: 10,
+        fontSize: 14,
+        color: '#666',
+    },
+    socialButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 10,
+    },
+    socialIcon: {
+        marginRight: 10,
+    },
+    socialButtonText: {
+        fontSize: 16,
+        justifyContent: 'center',
     },
 });
 
