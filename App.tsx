@@ -5,7 +5,7 @@ import {View, Text, Pressable} from 'react-native';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from "./pages/Login";
-import {useCallback} from "react";
+import SignupScreen from "./pages/Signup";
 
 
 function HomeScreen() {
@@ -33,6 +33,7 @@ function RootStack() {
                 options={{ title: '' }}
             />
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: '' }}/>
+            <Stack.Screen name="Signup" component={SignupScreen} options={{ title: '회원 가입' }}/>
         </Stack.Navigator>
     );
 }

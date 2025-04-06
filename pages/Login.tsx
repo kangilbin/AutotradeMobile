@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // 아이콘 사용
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
+import {useNavigation} from '@react-navigation/native';
 
-// 타입 정의
+
 interface FormState {
     username: string;
     password: string;
@@ -16,6 +19,77 @@ const LoginScreen: React.FC = () => {
         autoLogin: false,
     });
 
+    useEffect(() => {
+        checkBiometricSupport();
+    }, []);
+    const navigation = useNavigation();
+
+    const checkBiometricSupport = async () => {
+        try {
+            const hasHardware = await LocalAuthentication.hasHardwareAsync();
+            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+            if (hasHardware && isEnrolled) {
+                const savedAccessToken = await SecureStore.getItemAsync('access_token');
+                if (savedAccessToken) {
+                    // ✅ Access Token이 유효한지 확인
+                    const isValid = await validateAccessToken(savedAccessToken);
+                    if (isValid) {
+                        handleBiometricLogin(savedAccessToken);
+                    } else {
+                        // ✅ Access Token 만료 시 Refresh Token 사용
+                        const newAccessToken = await refreshAccessToken();
+                        if (newAccessToken) {
+                            await SecureStore.setItemAsync('access_token', newAccessToken);
+                            handleBiometricLogin(newAccessToken);
+                        } else {
+                            Alert.alert('세션 만료', '다시 로그인해주세요.');
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Biometric support check failed', error);
+        }
+    };
+    // Access Token 유효성 검사 (서버 API 호출)
+    const validateAccessToken = async (token: string) => {
+        try {
+            // 여기에 실제 API 요청을 추가하여 Access Token 유효성 검사
+            return true; // 유효하면 true 반환
+        } catch {
+            return false;
+        }
+    };
+    // Refresh Token을 이용한 Access Token 갱신
+    const refreshAccessToken = async () => {
+        try {
+            const refreshToken = await SecureStore.getItemAsync('refresh_token');
+            if (!refreshToken) return null;
+
+            // 서버에 Refresh Token을 보내서 새 Access Token을 받음
+            const newAccessToken = 'new-dummy-access-token'; // 실제 API 호출 후 받은 값
+            return newAccessToken;
+        } catch {
+            return null;
+        }
+    };
+    const handleBiometricLogin = async (token: string) => {
+        try {
+            const result = await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Face ID로 로그인',
+                fallbackLabel: '비밀번호 입력',
+            });
+            if (result.success) {
+                Alert.alert('로그인 성공', '자동 로그인 완료!');
+                // 해당 토큰을 서버로 보내 인증
+            } else {
+                Alert.alert('로그인 실패', '다시 시도하세요.');
+                }
+        } catch (error) {
+            console.error('생체 인식 로그인 실패', error);
+        }
+    };
+
     const handleInputChange = (field: keyof FormState, value: string | boolean) => {
         setForm((prev) => ({
             ...prev,
@@ -23,44 +97,41 @@ const LoginScreen: React.FC = () => {
         }));
     };
 
-    const handleLogin = () => {
-        // 로그인 버튼 클릭 시 동작 (예: API 호출)
+    const handleLogin = async () => {
         console.log('Login attempted:', form);
+        const access_token = 'dummy-jwt-token'; // 실제 로그인 API 호출 후 반환받은 토큰
+        const refresh_token = 'dummy-jwt-token'; // 실제 로그인 API 호출 후 반환받은 토큰
+        await SecureStore.setItemAsync('access_token', access_token);
+        await SecureStore.setItemAsync('refresh_token', refresh_token);
+
+        Alert.alert('로그인 성공', '생체인식을 통한 자동 로그인이 활성화됩니다.');
     };
 
-
     const handleKakaoLogin = () => {
-        // Kakao 로그인 버튼 클릭 시 동작
         console.log('Kakao login initiated');
     };
 
-    const handleSubmit = () => {
-        console.log('회원 가입 버튼 클릭');
+    const handleSignup = () => {
+        navigation.navigate('Signup');
     };
 
-    // 로그인 버튼 활성화 여부 (아이디와 비밀번호가 모두 입력되었을 때 활성화)
     const isLoginEnabled = form.username.length > 0 && form.password.length > 0;
 
     return (
         <View style={styles.container}>
-            {/* 아이디 입력 */}
             <TextInput
                 style={styles.input}
                 placeholder="아이디"
                 value={form.username}
                 onChangeText={(text) => handleInputChange('username', text)}
             />
-
-            {/* 비밀번호 입력 */}
             <TextInput
                 style={styles.input}
                 placeholder="비밀번호"
                 value={form.password}
                 onChangeText={(text) => handleInputChange('password', text)}
-                secureTextEntry // 비밀번호 입력 시 마스킹 처리
+                secureTextEntry
             />
-
-            {/* 로그인 버튼 */}
             <TouchableOpacity
                 style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
                 onPress={handleLogin}
@@ -68,8 +139,6 @@ const LoginScreen: React.FC = () => {
             >
                 <Text style={styles.buttonText}>로그인</Text>
             </TouchableOpacity>
-
-            {/* 자동 로그인 체크박스 */}
             <TouchableOpacity
                 style={styles.checkboxContainer}
                 onPress={() => handleInputChange('autoLogin', !form.autoLogin)}
@@ -81,21 +150,18 @@ const LoginScreen: React.FC = () => {
                 />
                 <Text style={styles.checkboxText}>자동 로그인</Text>
             </TouchableOpacity>
-
-            {/* 구분선 */}
             <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>또는</Text>
                 <View style={styles.dividerLine} />
             </View>
-            {/* Kakao 로그인 버튼 */}
             <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
                 <Icon name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
                 <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
             </TouchableOpacity>
             <TouchableOpacity
                 style={[styles.button, styles.buttonEnabled]}
-                onPress={handleSubmit}
+                onPress={handleSignup}
             >
                 <Text style={styles.buttonText}>회원 가입</Text>
             </TouchableOpacity>
@@ -103,7 +169,6 @@ const LoginScreen: React.FC = () => {
     );
 };
 
-// 스타일 정의
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -126,10 +191,10 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     buttonDisabled: {
-        backgroundColor: '#d3d3d3', // 비활성화 상태 (회색)
+        backgroundColor: '#d3d3d3',
     },
     buttonEnabled: {
-        backgroundColor: '#B5EAD7', // 활성화 상태 (보라색)
+        backgroundColor: '#B5EAD7',
     },
     buttonText: {
         fontSize: 16,
