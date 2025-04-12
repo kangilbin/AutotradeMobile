@@ -4,18 +4,19 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import {useNavigation} from '@react-navigation/native';
+import { login } from '../contexts/backEndApi'; // 로그인 API 호출 함수
 
 
 interface FormState {
-    username: string;
-    password: string;
+    USER_ID: string;
+    PASSWORD: string;
     autoLogin: boolean;
 }
 
 const LoginScreen: React.FC = () => {
     const [form, setForm] = useState<FormState>({
-        username: '',
-        password: '',
+        USER_ID: '',
+        PASSWORD: '',
         autoLogin: false,
     });
 
@@ -31,12 +32,12 @@ const LoginScreen: React.FC = () => {
             if (hasHardware && isEnrolled) {
                 const savedAccessToken = await SecureStore.getItemAsync('access_token');
                 if (savedAccessToken) {
-                    // ✅ Access Token이 유효한지 확인
+                    // Access Token이 유효한지 확인
                     const isValid = await validateAccessToken(savedAccessToken);
                     if (isValid) {
                         await handleBiometricLogin(savedAccessToken);
                     } else {
-                        // ✅ Access Token 만료 시 Refresh Token 사용
+                        // Access Token 만료 시 Refresh Token 사용
                         const newAccessToken = await refreshAccessToken();
                         if (newAccessToken) {
                             await SecureStore.setItemAsync('access_token', newAccessToken);
@@ -99,6 +100,16 @@ const LoginScreen: React.FC = () => {
 
     const handleLogin = async () => {
         console.log('Login attempted:', form);
+        try {
+            const response = await login(form);
+            if (response) {
+                Alert.alert('Signup Successful', '회원 가입 완료.');
+                navigation.navigate('Login');
+            }
+        } catch (error) {
+            Alert.alert('Signup Failed', 'An error occurred during signup.');
+        }
+
         const access_token = 'dummy-jwt-token'; // 실제 로그인 API 호출 후 반환받은 토큰
         const refresh_token = 'dummy-jwt-token'; // 실제 로그인 API 호출 후 반환받은 토큰
         await SecureStore.setItemAsync('access_token', access_token);
@@ -115,7 +126,7 @@ const LoginScreen: React.FC = () => {
         navigation.navigate('Signup');
     };
 
-    const isLoginEnabled = form.username.length > 0 && form.password.length > 0;
+    const isLoginEnabled = form.USER_ID.length > 0 && form.PASSWORD.length > 0;
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -123,14 +134,14 @@ const LoginScreen: React.FC = () => {
                 <TextInput
                     style={styles.input}
                     placeholder="아이디"
-                    value={form.username}
-                    onChangeText={(text) => handleInputChange('username', text)}
+                    value={form.USER_ID}
+                    onChangeText={(text) => handleInputChange('USER_ID', text)}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="비밀번호"
-                    value={form.password}
-                    onChangeText={(text) => handleInputChange('password', text)}
+                    value={form.PASSWORD}
+                    onChangeText={(text) => handleInputChange('PASSWORD', text)}
                     secureTextEntry
                 />
                 <TouchableOpacity

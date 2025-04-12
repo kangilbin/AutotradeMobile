@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View,
     Text,
     TextInput,
     TouchableOpacity,
@@ -14,11 +13,11 @@ import {
     Easing,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-
+import { signup } from '../contexts/backEndApi'; // 로그인 API 호출 함수
 interface FormState {
-    id: string;
-    name: string;
-    password: string;
+    USER_ID: string;
+    USER_NAME: string;
+    PASSWORD: string;
     confirmPassword: string;
 }
 
@@ -29,9 +28,9 @@ const SignupScreen: React.FC = () => {
     const confirmPasswordInputRef = useRef<TextInput | null>(null);
 
     const [form, setForm] = useState<FormState>({
-        id: '',
-        name: '',
-        password: '',
+        USER_ID: '',
+        USER_NAME: '',
+        PASSWORD: '',
         confirmPassword: '',
     });
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -80,36 +79,43 @@ const SignupScreen: React.FC = () => {
         }));
     };
 
-    const handleSignup = () => {
-        if (!form.id) {
-            idInputRef.current?.focus();
+    const handleSignup = async () => {
+        if (!form.USER_ID) {
+            (idInputRef.current as TextInput)?.focus();
             return;
         }
-        if (!form.name) {
-            nameInputRef.current?.focus();
+        if (!form.USER_NAME) {
+            (nameInputRef.current as TextInput)?.focus();
             return;
         }
-        if (!form.password) {
-            passwordInputRef.current?.focus();
+        if (!form.PASSWORD) {
+            (passwordInputRef.current as TextInput)?.focus();
             return;
         }
         if (!form.confirmPassword) {
-            confirmPasswordInputRef.current?.focus();
+            (confirmPasswordInputRef.current as TextInput)?.focus();
             return;
         }
-        if (form.password !== form.confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match.');
+        if (form.PASSWORD !== form.confirmPassword) {
+            Alert.alert('Error', '비밀 번호가 불일치 합니다.');
             return;
         }
 
-        Alert.alert('Signup Successful', 'Your account has been created.');
-        navigation.navigate('Login');
+        try {
+            const response = await signup(form);
+            if (response) {
+                Alert.alert('Signup Successful', '회원 가입 완료.');
+                navigation.navigate('Login');
+            }
+        } catch (error) {
+            Alert.alert('Signup Failed', 'An error occurred during signup.');
+        }
     };
 
     const isSignupEnabled =
-        form.id.length > 0 &&
-        form.name.length > 0 &&
-        form.password.length > 0 &&
+        form.USER_ID.length > 0 &&
+        form.USER_NAME.length > 0 &&
+        form.PASSWORD.length > 0 &&
         form.confirmPassword.length > 0;
 
     return (
@@ -118,30 +124,30 @@ const SignupScreen: React.FC = () => {
                 <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
                     <TextInput
                         ref={idInputRef}
-                        style={[styles.input, focusedInput === 'id' && styles.inputFocused]}
+                        style={[styles.input, focusedInput === 'USER_ID' && styles.inputFocused]}
                         placeholder="아이디"
-                        value={form.id}
-                        onChangeText={(text) => handleInputChange('id', text)}
+                        value={form.USER_ID}
+                        onChangeText={(text) => handleInputChange('USER_ID', text)}
                         onFocus={() => setFocusedInput('id')}
                         onBlur={() => setFocusedInput(null)}
                     />
                     <TextInput
                         ref={nameInputRef}
-                        style={[styles.input, focusedInput === 'name' && styles.inputFocused]}
+                        style={[styles.input, focusedInput === 'USER_NAME' && styles.inputFocused]}
                         placeholder="이름"
-                        value={form.name}
-                        onChangeText={(text) => handleInputChange('name', text)}
+                        value={form.USER_NAME}
+                        onChangeText={(text) => handleInputChange('USER_NAME', text)}
                         onFocus={() => setFocusedInput('name')}
                         onBlur={() => setFocusedInput(null)}
                     />
                     <TextInput
                         ref={passwordInputRef}
-                        style={[styles.input, focusedInput === 'password' && styles.inputFocused]}
+                        style={[styles.input, focusedInput === 'PASSWORD' && styles.inputFocused]}
                         placeholder="비밀번호"
-                        value={form.password}
-                        onChangeText={(text) => handleInputChange('password', text)}
+                        value={form.PASSWORD}
+                        onChangeText={(text) => handleInputChange('PASSWORD', text)}
                         secureTextEntry
-                        onFocus={() => setFocusedInput('password')}
+                        onFocus={() => setFocusedInput('PASSWORD')}
                         onBlur={() => setFocusedInput(null)}
                     />
                     <TextInput
