@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableWithoutFeedback, TouchableOpacity, Keyboard, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
@@ -34,13 +34,13 @@ const LoginScreen: React.FC = () => {
                     // ✅ Access Token이 유효한지 확인
                     const isValid = await validateAccessToken(savedAccessToken);
                     if (isValid) {
-                        handleBiometricLogin(savedAccessToken);
+                        await handleBiometricLogin(savedAccessToken);
                     } else {
                         // ✅ Access Token 만료 시 Refresh Token 사용
                         const newAccessToken = await refreshAccessToken();
                         if (newAccessToken) {
                             await SecureStore.setItemAsync('access_token', newAccessToken);
-                            handleBiometricLogin(newAccessToken);
+                            await handleBiometricLogin(newAccessToken);
                         } else {
                             Alert.alert('세션 만료', '다시 로그인해주세요.');
                         }
@@ -118,54 +118,56 @@ const LoginScreen: React.FC = () => {
     const isLoginEnabled = form.username.length > 0 && form.password.length > 0;
 
     return (
-        <View style={styles.container}>
-            <TextInput
-                style={styles.input}
-                placeholder="아이디"
-                value={form.username}
-                onChangeText={(text) => handleInputChange('username', text)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
-                value={form.password}
-                onChangeText={(text) => handleInputChange('password', text)}
-                secureTextEntry
-            />
-            <TouchableOpacity
-                style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
-                onPress={handleLogin}
-                disabled={!isLoginEnabled}
-            >
-                <Text style={styles.buttonText}>로그인</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={styles.checkboxContainer}
-                onPress={() => handleInputChange('autoLogin', !form.autoLogin)}
-            >
-                <Icon
-                    name={form.autoLogin ? 'check-circle' : 'check-circle-outline'}
-                    size={20}
-                    color={form.autoLogin ? '#B5EAD7' : '#d3d3d3'}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.container}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="아이디"
+                    value={form.username}
+                    onChangeText={(text) => handleInputChange('username', text)}
                 />
-                <Text style={styles.checkboxText}>자동 로그인</Text>
-            </TouchableOpacity>
-            <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>또는</Text>
-                <View style={styles.dividerLine} />
+                <TextInput
+                    style={styles.input}
+                    placeholder="비밀번호"
+                    value={form.password}
+                    onChangeText={(text) => handleInputChange('password', text)}
+                    secureTextEntry
+                />
+                <TouchableOpacity
+                    style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
+                    onPress={handleLogin}
+                    disabled={!isLoginEnabled}
+                >
+                    <Text style={styles.buttonText}>로그인</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.checkboxContainer}
+                    onPress={() => handleInputChange('autoLogin', !form.autoLogin)}
+                >
+                    <Icon
+                        name={form.autoLogin ? 'check-circle' : 'check-circle-outline'}
+                        size={20}
+                        color={form.autoLogin ? '#B5EAD7' : '#d3d3d3'}
+                    />
+                    <Text style={styles.checkboxText}>자동 로그인</Text>
+                </TouchableOpacity>
+                <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>또는</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+                <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
+                    <Icon name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
+                    <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonEnabled]}
+                    onPress={handleSignup}
+                >
+                    <Text style={styles.buttonText}>회원 가입</Text>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
-                <Icon name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
-                <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={[styles.button, styles.buttonEnabled]}
-                onPress={handleSignup}
-            >
-                <Text style={styles.buttonText}>회원 가입</Text>
-            </TouchableOpacity>
-        </View>
+        </TouchableWithoutFeedback>
     );
 };
 

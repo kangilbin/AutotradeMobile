@@ -3,13 +3,22 @@
 import * as React from 'react';
 import {View, Text, Pressable} from 'react-native';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+    createNativeStackNavigator,
+    NativeStackNavigationProp,
+    NativeStackScreenProps
+} from '@react-navigation/native-stack';
 import LoginScreen from "./pages/Login";
 import SignupScreen from "./pages/Signup";
 
+type RootStackParamList = {
+    Home: undefined;
+    Login: undefined;
+    Signup: undefined;
+};
+type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-function HomeScreen() {
-    const navigation = useNavigation();
+function HomeScreen({navigation}: HomeScreenProps) {
     const onClick = () => {
         navigation.navigate('Login');
     }
@@ -26,7 +35,7 @@ const Stack = createNativeStackNavigator();
 
 function RootStack() {
     return (
-        <Stack.Navigator initialRouteName="Home">
+        <Stack.Navigator id="main" initialRouteName="Home">
             <Stack.Screen
                 name="Home"
                 component={HomeScreen}
