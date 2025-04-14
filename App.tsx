@@ -5,16 +5,17 @@ import {View, Text, Pressable} from 'react-native';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {
     createNativeStackNavigator,
-    NativeStackNavigationProp,
     NativeStackScreenProps
 } from '@react-navigation/native-stack';
 import LoginScreen from "./pages/Login";
 import SignupScreen from "./pages/Signup";
+import AccountScreen from "./pages/Account";
 
 type RootStackParamList = {
     Home: undefined;
     Login: undefined;
     Signup: undefined;
+    Account: undefined;
 };
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -43,6 +44,7 @@ function RootStack() {
             />
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: '' }}/>
             <Stack.Screen name="Signup" component={SignupScreen} options={{ title: '회원 가입' }}/>
+            <Stack.Screen name="Account" component={AccountScreen} options={{ title: '계좌 추가' }}/>
         </Stack.Navigator>
     );
 }

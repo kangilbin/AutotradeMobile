@@ -101,11 +101,11 @@ const LoginScreen: React.FC = () => {
     const handleLogin = async () => {
         console.log('Login attempted:', form);
         try {
-            const response = await login(form);
-            if (response) {
-                Alert.alert('Signup Successful', '회원 가입 완료.');
-                navigation.navigate('Login');
-            }
+            navigation.navigate('Account');
+            //const response = await login(form);
+            // if (response) {
+            //     Alert.alert('Signup Successful', '회원 가입 완료.');
+            // }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
         }
