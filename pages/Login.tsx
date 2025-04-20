@@ -6,23 +6,21 @@ import * as SecureStore from 'expo-secure-store';
 import {useNavigation} from '@react-navigation/native';
 import { login } from '../contexts/backEndApi'; // 로그인 API 호출 함수
 
-
 interface FormState {
     USER_ID: string;
     PASSWORD: string;
-    autoLogin: boolean;
 }
 
 const LoginScreen: React.FC = () => {
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         PASSWORD: '',
-        autoLogin: false,
+        DEVICE_ID: '',
     });
 
-    useEffect(() => {
-        checkBiometricSupport();
-    }, []);
+    // useEffect(() => {
+    //     checkBiometricSupport();
+    // }, []);
     const navigation = useNavigation();
 
     const checkBiometricSupport = async () => {
@@ -101,11 +99,11 @@ const LoginScreen: React.FC = () => {
     const handleLogin = async () => {
         console.log('Login attempted:', form);
         try {
-            navigation.navigate('Account');
-            //const response = await login(form);
-            // if (response) {
-            //     Alert.alert('Signup Successful', '회원 가입 완료.');
-            // }
+            form.DEVICE_ID = 'dummy-device-id'; // 실제 디바이스 ID로 변경 필요
+            const response = await login(form);
+            if (response) {
+                navigation.navigate('Account');
+            }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
         }

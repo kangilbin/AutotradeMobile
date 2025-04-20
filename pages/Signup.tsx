@@ -13,7 +13,7 @@ import {
     Easing,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { signup } from '../contexts/backEndApi'; // 로그인 API 호출 함수
+import {checkDuplicateId, checkId, signup} from '../contexts/backEndApi'; // 로그인 API 호출 함수
 interface FormState {
     USER_ID: string;
     USER_NAME: string;
@@ -26,7 +26,7 @@ const SignupScreen: React.FC = () => {
     const nameInputRef = useRef<TextInput | null>(null);
     const passwordInputRef = useRef<TextInput | null>(null);
     const confirmPasswordInputRef = useRef<TextInput | null>(null);
-
+    const [isDuplicate, setIsDuplicate] = useState(false);
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         USER_NAME: '',
@@ -71,6 +71,16 @@ const SignupScreen: React.FC = () => {
             useNativeDriver: true,
         }).start();
     };
+    const checkDuplicateId = async () => {
+        if (!form.USER_ID) return;
+
+        try {
+            const response: { isDuplicate: boolean } = await checkId(form.USER_ID);
+            setIsDuplicate(response.isDuplicate); // Assume API returns { isDuplicate: boolean }
+        } catch (error) {
+            console.error('Error checking duplicate ID:', error);
+        }
+    };
 
     const handleInputChange = (field: keyof FormState, value: string) => {
         setForm((prev) => ({
@@ -101,9 +111,14 @@ const SignupScreen: React.FC = () => {
             return;
         }
 
+
         try {
             const response = await signup(form);
             if (response) {
+                if (response.code === 1062) {
+                    Alert.alert('Error', '중복된 아이디입니다.');
+                    return;
+                }
                 Alert.alert('Signup Successful', '회원 가입 완료.');
                 navigation.navigate('Login');
             }
@@ -116,20 +131,29 @@ const SignupScreen: React.FC = () => {
         form.USER_ID.length > 0 &&
         form.USER_NAME.length > 0 &&
         form.PASSWORD.length > 0 &&
-        form.confirmPassword.length > 0;
+        form.confirmPassword.length > 0 &&
+        !isDuplicate;
 
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
+                    {isDuplicate && <Text style={styles.errorText}>중복된 아이디입니다.</Text>}
                     <TextInput
                         ref={idInputRef}
-                        style={[styles.input, focusedInput === 'USER_ID' && styles.inputFocused]}
+                        style={[
+                            styles.input,
+                            focusedInput === 'USER_ID' && styles.inputFocused,
+                            isDuplicate && styles.inputError,
+                        ]}
                         placeholder="아이디"
                         value={form.USER_ID}
-                        onChangeText={(text) => handleInputChange('USER_ID', text)}
-                        onFocus={() => setFocusedInput('id')}
-                        onBlur={() => setFocusedInput(null)}
+                        onChangeText={(text) => {
+                            handleInputChange('USER_ID', text);
+                            setIsDuplicate(false); // Reset duplicate state on text change
+                        }}
+                        onFocus={() => setFocusedInput('USER_ID')}
+                        onBlur={checkDuplicateId}
                     />
                     <TextInput
                         ref={nameInputRef}
@@ -208,6 +232,14 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#fff',
         fontWeight: 'bold',
+    },
+    errorText: {
+        color: 'red',
+        marginBottom: 5,
+    },
+    inputError: {
+        borderColor: 'red',
+        borderWidth: 2,
     },
 });
 
