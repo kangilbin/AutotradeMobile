@@ -4,7 +4,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import {useNavigation} from '@react-navigation/native';
-import { login } from '../contexts/backEndApi'; // 로그인 API 호출 함수
+import {login, useApiLoading} from '../contexts/backEndApi';
+import LoadingIndicator from "../contexts/LoadingIndicator"; // 로그인 API 호출 함수
 
 interface FormState {
     USER_ID: string;
@@ -12,6 +13,7 @@ interface FormState {
 }
 
 const LoginScreen: React.FC = () => {
+    const loading = useApiLoading();
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         PASSWORD: '',
@@ -129,6 +131,7 @@ const LoginScreen: React.FC = () => {
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.container}>
+                {loading && <LoadingIndicator />}
                 <TextInput
                     style={styles.input}
                     placeholder="아이디"
