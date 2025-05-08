@@ -6,7 +6,7 @@ import {
     StyleSheet,
     FlatList,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const AccountScreen: React.FC = () => {
     const [mockAccounts, setMockAccounts] = useState<string[]>(['Mock Account 1']);
@@ -40,7 +40,7 @@ const AccountScreen: React.FC = () => {
                     contentContainerStyle={styles.listContainer}
                 />
                 <TouchableOpacity style={styles.addButton} onPress={handleAddMockAccount}>
-                    <Icon name="plus" size={24} color="#fff" />
+                    <MaterialCommunityIcons name="plus" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
 
@@ -54,7 +54,7 @@ const AccountScreen: React.FC = () => {
                     contentContainerStyle={styles.listContainer}
                 />
                 <TouchableOpacity style={styles.addButton} onPress={handleAddRealAccount}>
-                    <Icon name="plus" size={24} color="#fff" />
+                    <MaterialCommunityIcons name="plus" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
         </View>

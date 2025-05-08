@@ -12,8 +12,8 @@ import {
     Animated,
     Easing,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import {checkDuplicateId, checkId, signup} from '../contexts/backEndApi'; // 로그인 API 호출 함수
+import { useRouter } from 'expo-router';
+import {checkId, signup} from '../../contexts/backEndApi'; // 로그인 API 호출 함수
 interface FormState {
     USER_ID: string;
     USER_NAME: string;
@@ -35,7 +35,7 @@ const SignupScreen: React.FC = () => {
     });
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-    const navigation = useNavigation();
+    const router = useRouter();
     const translateY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -120,7 +120,7 @@ const SignupScreen: React.FC = () => {
                     return;
                 }
                 Alert.alert('Signup Successful', '회원 가입 완료.');
-                navigation.navigate('Login');
+                router.dismiss();
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');

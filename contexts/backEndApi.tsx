@@ -68,3 +68,13 @@ export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean }
         Alert.alert('중복 체크 에러 발생:', error.response?.data || error.message);
     }
 };
+
+// access 토큰 재발급
+export const refreshAccessToken = async (refresh_token: string) => {
+    try {
+        const response = await api.post('/refresh', { refresh_token });
+        return response.data; // 재발급된 refresh_token 반환
+    } catch (error) {
+        Alert.alert('중복 체크 에러 발생:', error.response?.data || error.message);
+    }
+};

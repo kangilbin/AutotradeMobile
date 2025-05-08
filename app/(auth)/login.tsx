@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableWithoutFeedback, TouchableOpacity, Keyboard, StyleSheet, Alert } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import {useNavigation} from '@react-navigation/native';
-import {login, useApiLoading} from '../contexts/backEndApi';
-import LoadingIndicator from "../contexts/LoadingIndicator"; // 로그인 API 호출 함수
+import {login, useApiLoading} from '../../contexts/backEndApi';
+import LoadingIndicator from "../../contexts/loadingIndicator"; // 로그인 API 호출 함수
+import { useRouter } from 'expo-router';
+
 
 interface FormState {
     USER_ID: string;
@@ -17,63 +18,9 @@ const LoginScreen: React.FC = () => {
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         PASSWORD: '',
-        DEVICE_ID: '',
     });
+    const router = useRouter();
 
-    // useEffect(() => {
-    //     checkBiometricSupport();
-    // }, []);
-    const navigation = useNavigation();
-
-    const checkBiometricSupport = async () => {
-        try {
-            const hasHardware = await LocalAuthentication.hasHardwareAsync();
-            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-            if (hasHardware && isEnrolled) {
-                const savedAccessToken = await SecureStore.getItemAsync('access_token');
-                if (savedAccessToken) {
-                    // Access Token이 유효한지 확인
-                    const isValid = await validateAccessToken(savedAccessToken);
-                    if (isValid) {
-                        await handleBiometricLogin(savedAccessToken);
-                    } else {
-                        // Access Token 만료 시 Refresh Token 사용
-                        const newAccessToken = await refreshAccessToken();
-                        if (newAccessToken) {
-                            await SecureStore.setItemAsync('access_token', newAccessToken);
-                            await handleBiometricLogin(newAccessToken);
-                        } else {
-                            Alert.alert('세션 만료', '다시 로그인해주세요.');
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Biometric support check failed', error);
-        }
-    };
-    // Access Token 유효성 검사 (서버 API 호출)
-    const validateAccessToken = async (token: string) => {
-        try {
-            // 여기에 실제 API 요청을 추가하여 Access Token 유효성 검사
-            return true; // 유효하면 true 반환
-        } catch {
-            return false;
-        }
-    };
-    // Refresh Token을 이용한 Access Token 갱신
-    const refreshAccessToken = async () => {
-        try {
-            const refreshToken = await SecureStore.getItemAsync('refresh_token');
-            if (!refreshToken) return null;
-
-            // 서버에 Refresh Token을 보내서 새 Access Token을 받음
-            const newAccessToken = 'new-dummy-access-token'; // 실제 API 호출 후 받은 값
-            return newAccessToken;
-        } catch {
-            return null;
-        }
-    };
     const handleBiometricLogin = async (token: string) => {
         try {
             const result = await LocalAuthentication.authenticateAsync({
@@ -99,12 +46,10 @@ const LoginScreen: React.FC = () => {
     };
 
     const handleLogin = async () => {
-        console.log('Login attempted:', form);
         try {
-            form.DEVICE_ID = 'dummy-device-id'; // 실제 디바이스 ID로 변경 필요
             const response = await login(form);
             if (response) {
-                navigation.navigate('Account');
+                router.push('Account');
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
@@ -123,7 +68,7 @@ const LoginScreen: React.FC = () => {
     };
 
     const handleSignup = () => {
-        navigation.navigate('Signup');
+        router.push('Signup');
     };
 
     const isLoginEnabled = form.USER_ID.length > 0 && form.PASSWORD.length > 0;
@@ -152,24 +97,13 @@ const LoginScreen: React.FC = () => {
                 >
                     <Text style={styles.buttonText}>로그인</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.checkboxContainer}
-                    onPress={() => handleInputChange('autoLogin', !form.autoLogin)}
-                >
-                    <Icon
-                        name={form.autoLogin ? 'check-circle' : 'check-circle-outline'}
-                        size={20}
-                        color={form.autoLogin ? '#B5EAD7' : '#d3d3d3'}
-                    />
-                    <Text style={styles.checkboxText}>자동 로그인</Text>
-                </TouchableOpacity>
                 <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>또는</Text>
                     <View style={styles.dividerLine} />
                 </View>
                 <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
-                    <Icon name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
+                    <MaterialCommunityIcons name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
                     <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
                 </TouchableOpacity>
                 <TouchableOpacity

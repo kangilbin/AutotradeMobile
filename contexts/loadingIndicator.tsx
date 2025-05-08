@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Animated, StyleSheet, Dimensions } from 'react-native';
 
 const LoadingIndicator = () => {
     const spinValue = useRef(new Animated.Value(0)).current;
@@ -22,7 +22,7 @@ const LoadingIndicator = () => {
     return (
         <View style={styles.container}>
             <Animated.Image
-                source={require('../assets/indicator.png.png')}
+                source={require('../assets/indicator.png')}
                 style={[styles.image, { transform: [{ rotate: spin }] }]}
                 resizeMode="contain"
             />
