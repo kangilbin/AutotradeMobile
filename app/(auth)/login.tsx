@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableWithoutFeedback, TouchableOpacity, Keyboard, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableWithoutFeedback, TouchableOpacity, Keyboard, StyleSheet, Alert, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
@@ -49,7 +49,7 @@ const LoginScreen: React.FC = () => {
         try {
             const response = await login(form);
             if (response) {
-                router.push('Account');
+                router.replace('account');
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
@@ -68,7 +68,7 @@ const LoginScreen: React.FC = () => {
     };
 
     const handleSignup = () => {
-        router.push('Signup');
+        router.push('signup');
     };
 
     const isLoginEnabled = form.USER_ID.length > 0 && form.PASSWORD.length > 0;
@@ -77,6 +77,11 @@ const LoginScreen: React.FC = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.container}>
                 {loading && <LoadingIndicator />}
+                <Image
+                    style={styles.logo}
+                    source={require('../../assets/main.png')}
+                    resizeMode="contain"
+                />
                 <TextInput
                     style={styles.input}
                     placeholder="아이디"
@@ -190,6 +195,12 @@ const styles = StyleSheet.create({
     socialButtonText: {
         fontSize: 16,
         justifyContent: 'center',
+    },
+    logo: {
+        width: 300,
+        height: 300,
+        alignSelf: 'center',
+        marginBottom: 20,
     },
 });
 

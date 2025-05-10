@@ -13,20 +13,19 @@ export default function StackLayout() {
             if (token) {
                 try {
                     const response = await refreshAccessToken(token);
-                    return router.replace(response ? '/account' : '/login');
+                    return router.replace(response ? 'account' : 'login');
                 } catch {
                     console.error('Error refreshing token');
                 }
             }
-            Alert.alert('로그인 필요', '로그인 화면으로 이동합니다.');
-            router.replace('/login');
+            router.replace('login');
         })();
     }, []);
 
     return (
         <Stack>
-            <Stack.Screen name="/login" options={{ headerShown: false }} />
-            <Stack.Screen name="/account" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="account" options={{ headerShown: false }} />
         </Stack>
     );
 }
