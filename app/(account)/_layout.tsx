@@ -3,7 +3,7 @@ export default function TabLayout() {
     return (
         <Tabs>
             <Tabs.Screen
-                name="index"
+                name="account"
                 options={{
                     title: '계좌',
                 }}
