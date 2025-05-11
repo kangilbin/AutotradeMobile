@@ -17,6 +17,7 @@ import {checkId, signup} from '../../contexts/backEndApi'; // 로그인 API 호�
 interface FormState {
     USER_ID: string;
     USER_NAME: string;
+    PHONE: string;
     PASSWORD: string;
     confirmPassword: string;
 }
@@ -30,6 +31,7 @@ const SignupScreen: React.FC = () => {
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         USER_NAME: '',
+        PHONE: '',
         PASSWORD: '',
         confirmPassword: '',
     });
@@ -150,7 +152,7 @@ const SignupScreen: React.FC = () => {
                         value={form.USER_ID}
                         onChangeText={(text) => {
                             handleInputChange('USER_ID', text);
-                            setIsDuplicate(false); // Reset duplicate state on text change
+                            setIsDuplicate(false);
                         }}
                         onFocus={() => setFocusedInput('USER_ID')}
                         onBlur={checkDuplicateId}
@@ -161,7 +163,17 @@ const SignupScreen: React.FC = () => {
                         placeholder="이름"
                         value={form.USER_NAME}
                         onChangeText={(text) => handleInputChange('USER_NAME', text)}
-                        onFocus={() => setFocusedInput('name')}
+                        onFocus={() => setFocusedInput('USER_NAME')}
+                        onBlur={() => setFocusedInput(null)}
+                    />
+                    <TextInput
+                        ref={nameInputRef}
+                        style={[styles.input, focusedInput === 'PHONE' && styles.inputFocused]}
+                        placeholder="휴대폰번호"
+                        value={form.PHONE}
+                        onChangeText={(text) => handleInputChange('PHONE', text.replace(/[^0-9]/g, ''))} // 숫자만 필터링
+                        keyboardType="phone-pad" // 전화번호 키패드
+                        onFocus={() => setFocusedInput('PHONE')}
                         onBlur={() => setFocusedInput(null)}
                     />
                     <TextInput
