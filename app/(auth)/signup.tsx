@@ -4,16 +4,15 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    Alert,
-    Keyboard,
-    TouchableWithoutFeedback,
-    Platform,
-    KeyboardAvoidingView,
-    Animated,
-    Easing,
+    Alert, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {checkId, signup} from '../../contexts/backEndApi'; // 로그인 API 호출 함수
+import {checkId, signup} from '../../contexts/backEndApi';
+import KeyboardScrollable from "../../components/DismissKeyboardView";
+import mainLogo from '../../assets/main.png';
+import loadingIndicator from "../../contexts/loadingIndicator";
+import LoadingIndicator from "../../contexts/loadingIndicator";
+
 interface FormState {
     USER_ID: string;
     USER_NAME: string;
@@ -28,6 +27,7 @@ const SignupScreen: React.FC = () => {
     const passwordInputRef = useRef<TextInput | null>(null);
     const confirmPasswordInputRef = useRef<TextInput | null>(null);
     const [isDuplicate, setIsDuplicate] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         USER_NAME: '',
@@ -38,41 +38,7 @@ const SignupScreen: React.FC = () => {
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
     const router = useRouter();
-    const translateY = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        const keyboardShowListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            handleKeyboardShow
-        );
-        const keyboardHideListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            handleKeyboardHide
-        );
-
-        return () => {
-            keyboardShowListener.remove();
-            keyboardHideListener.remove();
-        };
-    }, []);
-
-    const handleKeyboardShow = (event: any) => {
-        Animated.timing(translateY, {
-            toValue: -event.endCoordinates.height / 2,
-            duration: 300,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-        }).start();
-    };
-
-    const handleKeyboardHide = () => {
-        Animated.timing(translateY, {
-            toValue: 0,
-            duration: 300,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-        }).start();
-    };
     const checkDuplicateId = async () => {
         if (!form.USER_ID) return;
 
@@ -137,85 +103,87 @@ const SignupScreen: React.FC = () => {
         !isDuplicate;
 
     return (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
-                    {isDuplicate && <Text style={styles.errorText}>중복된 아이디입니다.</Text>}
-                    <TextInput
-                        ref={idInputRef}
-                        style={[
-                            styles.input,
-                            focusedInput === 'USER_ID' && styles.inputFocused,
-                            isDuplicate && styles.inputError,
-                        ]}
-                        placeholder="아이디"
-                        value={form.USER_ID}
-                        onChangeText={(text) => {
-                            handleInputChange('USER_ID', text);
-                            setIsDuplicate(false);
-                        }}
-                        onFocus={() => setFocusedInput('USER_ID')}
-                        onBlur={checkDuplicateId}
-                    />
-                    <TextInput
-                        ref={nameInputRef}
-                        style={[styles.input, focusedInput === 'USER_NAME' && styles.inputFocused]}
-                        placeholder="이름"
-                        value={form.USER_NAME}
-                        onChangeText={(text) => handleInputChange('USER_NAME', text)}
-                        onFocus={() => setFocusedInput('USER_NAME')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <TextInput
-                        ref={nameInputRef}
-                        style={[styles.input, focusedInput === 'PHONE' && styles.inputFocused]}
-                        placeholder="휴대폰번호"
-                        value={form.PHONE}
-                        onChangeText={(text) => handleInputChange('PHONE', text.replace(/[^0-9]/g, ''))} // 숫자만 필터링
-                        keyboardType="phone-pad" // 전화번호 키패드
-                        onFocus={() => setFocusedInput('PHONE')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <TextInput
-                        ref={passwordInputRef}
-                        style={[styles.input, focusedInput === 'PASSWORD' && styles.inputFocused]}
-                        placeholder="비밀번호"
-                        value={form.PASSWORD}
-                        onChangeText={(text) => handleInputChange('PASSWORD', text)}
-                        secureTextEntry
-                        onFocus={() => setFocusedInput('PASSWORD')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <TextInput
-                        ref={confirmPasswordInputRef}
-                        style={[styles.input, focusedInput === 'confirmPassword' && styles.inputFocused]}
-                        placeholder="비밀번호 확인"
-                        value={form.confirmPassword}
-                        onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                        secureTextEntry
-                        onFocus={() => setFocusedInput('confirmPassword')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <TouchableOpacity
-                        style={[styles.button, isSignupEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
-                        onPress={handleSignup}
-                        disabled={!isSignupEnabled}
-                    >
-                        <Text style={styles.buttonText}>가입 완료</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+        <KeyboardScrollable>
+            {!imageLoaded ? (
+                <LoadingIndicator /> // Show a loading indicator
+            ) : (
+                <>
+                <Image
+                    style={styles.logo}
+                    source={mainLogo}
+                    resizeMode="contain"
+                    onLoad={() => setImageLoaded(true)}
+                />
+                {isDuplicate && <Text style={styles.errorText}>중복된 아이디입니다.</Text>}
+                <TextInput
+                    ref={idInputRef}
+                    style={[
+                        styles.input,
+                        focusedInput === 'USER_ID' && styles.inputFocused,
+                        isDuplicate && styles.inputError,
+                    ]}
+                    placeholder="아이디"
+                    value={form.USER_ID}
+                    onChangeText={(text) => {
+                        handleInputChange('USER_ID', text);
+                        setIsDuplicate(false);
+                    }}
+                    onFocus={() => setFocusedInput('USER_ID')}
+                    onBlur={checkDuplicateId}
+                />
+                <TextInput
+                    ref={nameInputRef}
+                    style={[styles.input, focusedInput === 'USER_NAME' && styles.inputFocused]}
+                    placeholder="이름"
+                    value={form.USER_NAME}
+                    onChangeText={(text) => handleInputChange('USER_NAME', text)}
+                    onFocus={() => setFocusedInput('USER_NAME')}
+                    onBlur={() => setFocusedInput(null)}
+                />
+                <TextInput
+                    ref={nameInputRef}
+                    style={[styles.input, focusedInput === 'PHONE' && styles.inputFocused]}
+                    placeholder="휴대폰번호"
+                    value={form.PHONE}
+                    onChangeText={(text) => handleInputChange('PHONE', text.replace(/[^0-9]/g, ''))} // 숫자만 필터링
+                    keyboardType="phone-pad"
+                    onFocus={() => setFocusedInput('PHONE')}
+                    onBlur={() => setFocusedInput(null)}
+                />
+                <TextInput
+                    ref={passwordInputRef}
+                    style={[styles.input, focusedInput === 'PASSWORD' && styles.inputFocused]}
+                    placeholder="비밀번호"
+                    value={form.PASSWORD}
+                    onChangeText={(text) => handleInputChange('PASSWORD', text)}
+                    secureTextEntry
+                    onFocus={() => setFocusedInput('PASSWORD')}
+                    onBlur={() => setFocusedInput(null)}
+                />
+                <TextInput
+                    ref={confirmPasswordInputRef}
+                    style={[styles.input, focusedInput === 'confirmPassword' && styles.inputFocused]}
+                    placeholder="비밀번호 확인"
+                    value={form.confirmPassword}
+                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                    secureTextEntry
+                    onFocus={() => setFocusedInput('confirmPassword')}
+                    onBlur={() => setFocusedInput(null)}
+                />
+                <TouchableOpacity
+                    style={[styles.button, isSignupEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
+                    onPress={handleSignup}
+                    disabled={!isSignupEnabled}
+                >
+                    <Text style={styles.buttonText}>가입 완료</Text>
+                </TouchableOpacity>
+                </>
+            )}
+        </KeyboardScrollable>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#fff',
-        justifyContent: 'center',
-    },
     input: {
         borderWidth: 1,
         borderColor: '#ddd',
@@ -252,6 +220,12 @@ const styles = StyleSheet.create({
     inputError: {
         borderColor: 'red',
         borderWidth: 2,
+    },
+    logo: {
+        width: 300,
+        height: 300,
+        alignSelf: 'center',
+        marginBottom: 20,
     },
 });
 
