@@ -27,7 +27,6 @@ const SignupScreen: React.FC = () => {
     const passwordInputRef = useRef<TextInput | null>(null);
     const confirmPasswordInputRef = useRef<TextInput | null>(null);
     const [isDuplicate, setIsDuplicate] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(false);
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
         USER_NAME: '',
@@ -104,81 +103,69 @@ const SignupScreen: React.FC = () => {
 
     return (
         <KeyboardScrollable>
-            {!imageLoaded ? (
-                <LoadingIndicator /> // Show a loading indicator
-            ) : (
-                <>
-                <Image
-                    style={styles.logo}
-                    source={mainLogo}
-                    resizeMode="contain"
-                    onLoad={() => setImageLoaded(true)}
-                />
-                {isDuplicate && <Text style={styles.errorText}>중복된 아이디입니다.</Text>}
-                <TextInput
-                    ref={idInputRef}
-                    style={[
-                        styles.input,
-                        focusedInput === 'USER_ID' && styles.inputFocused,
-                        isDuplicate && styles.inputError,
-                    ]}
-                    placeholder="아이디"
-                    value={form.USER_ID}
-                    onChangeText={(text) => {
-                        handleInputChange('USER_ID', text);
-                        setIsDuplicate(false);
-                    }}
-                    onFocus={() => setFocusedInput('USER_ID')}
-                    onBlur={checkDuplicateId}
-                />
-                <TextInput
-                    ref={nameInputRef}
-                    style={[styles.input, focusedInput === 'USER_NAME' && styles.inputFocused]}
-                    placeholder="이름"
-                    value={form.USER_NAME}
-                    onChangeText={(text) => handleInputChange('USER_NAME', text)}
-                    onFocus={() => setFocusedInput('USER_NAME')}
-                    onBlur={() => setFocusedInput(null)}
-                />
-                <TextInput
-                    ref={nameInputRef}
-                    style={[styles.input, focusedInput === 'PHONE' && styles.inputFocused]}
-                    placeholder="휴대폰번호"
-                    value={form.PHONE}
-                    onChangeText={(text) => handleInputChange('PHONE', text.replace(/[^0-9]/g, ''))} // 숫자만 필터링
-                    keyboardType="phone-pad"
-                    onFocus={() => setFocusedInput('PHONE')}
-                    onBlur={() => setFocusedInput(null)}
-                />
-                <TextInput
-                    ref={passwordInputRef}
-                    style={[styles.input, focusedInput === 'PASSWORD' && styles.inputFocused]}
-                    placeholder="비밀번호"
-                    value={form.PASSWORD}
-                    onChangeText={(text) => handleInputChange('PASSWORD', text)}
-                    secureTextEntry
-                    onFocus={() => setFocusedInput('PASSWORD')}
-                    onBlur={() => setFocusedInput(null)}
-                />
-                <TextInput
-                    ref={confirmPasswordInputRef}
-                    style={[styles.input, focusedInput === 'confirmPassword' && styles.inputFocused]}
-                    placeholder="비밀번호 확인"
-                    value={form.confirmPassword}
-                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                    secureTextEntry
-                    onFocus={() => setFocusedInput('confirmPassword')}
-                    onBlur={() => setFocusedInput(null)}
-                />
-                <TouchableOpacity
-                    style={[styles.button, isSignupEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
-                    onPress={handleSignup}
-                    disabled={!isSignupEnabled}
-                >
-                    <Text style={styles.buttonText}>가입 완료</Text>
-                </TouchableOpacity>
-                </>
-            )}
+            {isDuplicate && <Text style={styles.errorText}>중복된 아이디입니다.</Text>}
+            <TextInput
+                ref={idInputRef}
+                style={[
+                    styles.input,
+                    focusedInput === 'USER_ID' && styles.inputFocused,
+                    isDuplicate && styles.inputError,
+                ]}
+                placeholder="아이디"
+                value={form.USER_ID}
+                onChangeText={(text) => {
+                    handleInputChange('USER_ID', text);
+                    setIsDuplicate(false);
+                }}
+                onFocus={() => setFocusedInput('USER_ID')}
+                onBlur={checkDuplicateId}
+            />
+            <TextInput
+                ref={nameInputRef}
+                style={[styles.input, focusedInput === 'USER_NAME' && styles.inputFocused]}
+                placeholder="이름"
+                value={form.USER_NAME}
+                onChangeText={(text) => handleInputChange('USER_NAME', text)}
+                onFocus={() => setFocusedInput('USER_NAME')}
+                onBlur={() => setFocusedInput(null)}
+            />
+            <TextInput
+                ref={nameInputRef}
+                style={[styles.input, focusedInput === 'PHONE' && styles.inputFocused]}
+                placeholder="휴대폰번호"
+                value={form.PHONE}
+                onChangeText={(text) => handleInputChange('PHONE', text.replace(/[^0-9]/g, ''))} // 숫자만 필터링
+                keyboardType="phone-pad"
+                onFocus={() => setFocusedInput('PHONE')}
+                onBlur={() => setFocusedInput(null)}
+            />
+            <TextInput
+                ref={passwordInputRef}
+                style={[styles.input, focusedInput === 'PASSWORD' && styles.inputFocused]}
+                placeholder="비밀번호"
+                value={form.PASSWORD}
+                onChangeText={(text) => handleInputChange('PASSWORD', text)}
+                secureTextEntry
+                onFocus={() => setFocusedInput('PASSWORD')}
+                onBlur={() => setFocusedInput(null)}
+            />
+            <TextInput
+                ref={confirmPasswordInputRef}
+                style={[styles.input, focusedInput === 'confirmPassword' && styles.inputFocused]}
+                placeholder="비밀번호 확인"
+                value={form.confirmPassword}
+                onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                secureTextEntry
+                onFocus={() => setFocusedInput('confirmPassword')}
+                onBlur={() => setFocusedInput(null)}
+            />
+            <TouchableOpacity
+                style={[styles.button, isSignupEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
+                onPress={handleSignup}
+                disabled={!isSignupEnabled}
+            >
+                <Text style={styles.buttonText}>가입 완료</Text>
+            </TouchableOpacity>
         </KeyboardScrollable>
     );
 };

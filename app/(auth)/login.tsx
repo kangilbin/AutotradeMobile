@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {login, useApiLoading} from '../../contexts/backEndApi';
 import LoadingIndicator from "../../contexts/loadingIndicator"; // 로그인 API 호출 함수
 import { useRouter } from 'expo-router';
+import KeyboardScrollable from "../../components/DismissKeyboardView";
 
 
 interface FormState {
@@ -74,61 +75,53 @@ const LoginScreen: React.FC = () => {
     const isLoginEnabled = form.USER_ID.length > 0 && form.PASSWORD.length > 0;
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
-                {loading && <LoadingIndicator />}
-                <Image
-                    style={styles.logo}
-                    source={require('../../assets/main.png')}
-                    resizeMode="contain"
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="아이디"
-                    value={form.USER_ID}
-                    onChangeText={(text) => handleInputChange('USER_ID', text)}
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="비밀번호"
-                    value={form.PASSWORD}
-                    onChangeText={(text) => handleInputChange('PASSWORD', text)}
-                    secureTextEntry
-                />
-                <TouchableOpacity
-                    style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
-                    onPress={handleLogin}
-                    disabled={!isLoginEnabled}
-                >
-                    <Text style={styles.buttonText}>로그인</Text>
-                </TouchableOpacity>
-                <View style={styles.dividerContainer}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>또는</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-                <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
-                    <MaterialCommunityIcons name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
-                    <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button, styles.buttonEnabled]}
-                    onPress={handleSignup}
-                >
-                    <Text style={styles.buttonText}>회원 가입</Text>
-                </TouchableOpacity>
+        <KeyboardScrollable>
+            {loading && <LoadingIndicator />}
+            <Image
+                style={styles.logo}
+                source={require('../../assets/main.png')}
+                resizeMode="contain"
+            />
+            <TextInput
+                style={styles.input}
+                placeholder="아이디"
+                value={form.USER_ID}
+                onChangeText={(text) => handleInputChange('USER_ID', text)}
+            />
+            <TextInput
+                style={styles.input}
+                placeholder="비밀번호"
+                value={form.PASSWORD}
+                onChangeText={(text) => handleInputChange('PASSWORD', text)}
+                secureTextEntry
+            />
+            <TouchableOpacity
+                style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={!isLoginEnabled}
+            >
+                <Text style={styles.buttonText}>로그인</Text>
+            </TouchableOpacity>
+            <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>또는</Text>
+                <View style={styles.dividerLine} />
             </View>
-        </TouchableWithoutFeedback>
+            <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
+                <MaterialCommunityIcons name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
+                <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.button, styles.buttonEnabled]}
+                onPress={handleSignup}
+            >
+                <Text style={styles.buttonText}>회원 가입</Text>
+            </TouchableOpacity>
+        </KeyboardScrollable>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#fff',
-        justifyContent: 'center',
-    },
     input: {
         borderWidth: 1,
         borderColor: '#ddd',
