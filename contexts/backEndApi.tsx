@@ -1,8 +1,29 @@
 import axios from 'axios';
 import {useState} from "react";
 import {Alert} from "react-native";
+import {useRecoilValue, useSetRecoilState} from "recoil";
+import {accessTokenState} from "../atoms/auth";
+import { AxiosError, AxiosResponse } from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 let setLoadingState: (loading: boolean) => void;
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+function processQueue(error: any, token: string | null) {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+}
+const useAccessToken = () => {
+    return useRecoilValue(accessTokenState);
+};
+
 export const useApiLoading = () => {
     const [loading, setLoading] = useState(false);
     setLoadingState = setLoading;
@@ -17,8 +38,15 @@ const api = axios.create({
 });
 // Add request interceptor
 api.interceptors.request.use(
-    (config) => {
+    async (config) => {
         if (setLoadingState) setLoadingState(true); // Show loading
+
+        // Retrieve the access token (assuming you have a function to get it)
+        const accessToken = useAccessToken(); // Replace with your token retrieval logic
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`; // Add Authorization header
+        }
+
         return config;
     },
     (error) => {
@@ -29,12 +57,56 @@ api.interceptors.request.use(
 
 // Add response interceptor
 api.interceptors.response.use(
-    (response) => {
-        if (setLoadingState) setLoadingState(false); // Hide loading
+    (response: AxiosResponse) => {
+        if (setLoadingState) setLoadingState(false);
         return response;
     },
-    (error) => {
-        if (setLoadingState) setLoadingState(false); // Hide loading on error
+    async (error: AxiosError) => {
+        if (setLoadingState) setLoadingState(false);
+
+        const originalRequest: any = error.config;
+        const setAccessToken = useSetRecoilState(accessTokenState);
+
+        // 액세스 토큰 만료 (401) → 리프레시 시도
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            if (isRefreshing) {
+                // 이미 리프레시 중이면 대기
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then((token: string) => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                    return api(originalRequest);
+                }).catch(err => Promise.reject(err));
+            }
+
+            isRefreshing = true;
+
+            try {
+                const refreshToken = await SecureStore.getItemAsync('refresh_token');
+                if (!refreshToken) {
+                    throw new Error('No refresh token');
+                }
+
+                const res = await refreshAccessToken(refreshToken);
+
+                const newAccessToken = res.data.access_token;
+                await SecureStore.setItemAsync('access_token', newAccessToken);
+                setAccessToken(newAccessToken); // 새로운 access Token 저장
+
+                processQueue(null, newAccessToken);
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                return api(originalRequest); // 재요청
+            } catch (err) {
+                processQueue(err, null);
+                // 로그아웃 처리 필요 시 여기에 추가
+                return Promise.reject(err);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
         return Promise.reject(error);
     }
 );
@@ -49,8 +121,13 @@ export const signup = async (param) => {
     }
 };
 
+type LoginResponse = {
+    access_token: string;
+    refresh_token: string;
+};
+
 // 로그인
-export const login = async (param) => {
+export const login = async (param: any): Promise<LoginResponse | undefined> => {
     try {
         const response = await api.post('/login', param);
         return response.data;

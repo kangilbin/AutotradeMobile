@@ -7,6 +7,8 @@ import {login, useApiLoading} from '../../contexts/backEndApi';
 import LoadingIndicator from "../../contexts/loadingIndicator"; // 로그인 API 호출 함수
 import { useRouter } from 'expo-router';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
+import {accessTokenState} from "../../atoms/auth";
+import {useSetRecoilState} from "recoil";
 
 
 interface FormState {
@@ -21,6 +23,7 @@ const LoginScreen: React.FC = () => {
         PASSWORD: '',
     });
     const router = useRouter();
+    const setAccessToken = useSetRecoilState(accessTokenState);
 
     const handleBiometricLogin = async (token: string) => {
         try {
@@ -49,23 +52,18 @@ const LoginScreen: React.FC = () => {
     const handleLogin = async () => {
         try {
             const response = await login(form);
-            if (response) {
+            if (response?.access_token) {
+                setAccessToken(response.access_token);
+                await SecureStore.setItemAsync('refresh_token', response.refresh_token);
                 router.replace('account');
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
         }
-
-        const access_token = 'dummy-jwt-token'; // 실제 로그인 API 호출 후 반환받은 토큰
-        const refresh_token = 'dummy-jwt-token'; // 실제 로그인 API 호출 후 반환받은 토큰
-        await SecureStore.setItemAsync('access_token', access_token);
-        await SecureStore.setItemAsync('refresh_token', refresh_token);
-
-        Alert.alert('로그인 성공', '생체인식을 통한 자동 로그인이 활성화됩니다.');
     };
 
     const handleKakaoLogin = () => {
-        console.log('Kakao login initiated');
+        Alert.alert('Kakao login initiated');
     };
 
     const handleSignup = () => {

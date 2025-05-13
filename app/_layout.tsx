@@ -3,6 +3,7 @@ import {useEffect, useState} from "react";
 import * as SecureStore from "expo-secure-store";
 import {refreshAccessToken} from "../contexts/backEndApi";
 import { StatusBar } from 'expo-status-bar';
+import {RecoilRoot} from "recoil";
 
 export default function RootLayout() {
     const router = useRouter();
@@ -27,12 +28,12 @@ export default function RootLayout() {
     }, [isRedirecting, router]);
 
     return (
-        <>
+        <RecoilRoot>
             <StatusBar style="auto" />
             <Stack>
                 <Stack.Screen name="(auth)" options={{ headerShown: false }}/>
                 <Stack.Screen name="(account)" options={{ headerShown: false }}/>
             </Stack>
-        </>
+        </RecoilRoot>
     );
 }
