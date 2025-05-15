@@ -18,7 +18,7 @@ export default function RootLayout() {
             if (token) {
                 try {
                     const response = await refreshAccessToken(token);
-                    return router.replace(response ? '/(account)/account' : '/(auth)/login');
+                    return router.replace(response ? '/(tabs)/account' : '/(auth)/login');
                 } catch {
                     console.error('Error refreshing token');
                 }

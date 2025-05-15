@@ -5,6 +5,7 @@ import {useRecoilValue, useSetRecoilState} from "recoil";
 import {accessTokenState} from "../atoms/auth";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import {router} from "expo-router";
 
 let setLoadingState: (loading: boolean) => void;
 let isRefreshing = false;
@@ -91,7 +92,7 @@ api.interceptors.response.use(
 
                 const res = await refreshAccessToken(refreshToken);
 
-                const newAccessToken = res.data.access_token;
+                const newAccessToken = res!.access_token;
                 await SecureStore.setItemAsync('access_token', newAccessToken);
                 setAccessToken(newAccessToken); // 새로운 access Token 저장
 
@@ -101,6 +102,9 @@ api.interceptors.response.use(
             } catch (err) {
                 processQueue(err, null);
                 // 로그아웃 처리 필요 시 여기에 추가
+                await SecureStore.deleteItemAsync('access_token');
+                await SecureStore.deleteItemAsync('refresh_token');
+                router.replace('/(auth)/login');
                 return Promise.reject(err);
             } finally {
                 isRefreshing = false;
@@ -123,7 +127,7 @@ export const signup = async (param) => {
 
 type LoginResponse = {
     access_token: string;
-    refresh_token: string;
+    refresh_token?: string;
 };
 
 // 로그인
@@ -147,11 +151,11 @@ export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean }
 };
 
 // access 토큰 재발급
-export const refreshAccessToken = async (refresh_token: string) => {
+export const refreshAccessToken = async (refresh_token: string): Promise<LoginResponse | undefined> => {
     try {
         const response = await api.post('/refresh', { refresh_token });
-        return response.data; // 재발급된 refresh_token 반환
+        return response.data;
     } catch (error) {
-        Alert.alert('중복 체크 에러 발생:', error.response?.data || error.message);
+        Alert.alert('토큰 재발급 실패 :', error.response?.data || error.message);
     }
 };

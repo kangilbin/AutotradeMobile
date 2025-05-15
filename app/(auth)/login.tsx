@@ -7,8 +7,6 @@ import {login, useApiLoading} from '../../contexts/backEndApi';
 import LoadingIndicator from "../../contexts/loadingIndicator"; // 로그인 API 호출 함수
 import { useRouter } from 'expo-router';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
-import {accessTokenState} from "../../atoms/auth";
-import {useSetRecoilState} from "recoil";
 
 
 interface FormState {
@@ -23,7 +21,6 @@ const LoginScreen: React.FC = () => {
         PASSWORD: '',
     });
     const router = useRouter();
-    const setAccessToken = useSetRecoilState(accessTokenState);
 
     const handleBiometricLogin = async (token: string) => {
         try {
@@ -53,9 +50,9 @@ const LoginScreen: React.FC = () => {
         try {
             const response = await login(form);
             if (response?.access_token) {
-                setAccessToken(response.access_token);
-                await SecureStore.setItemAsync('refresh_token', response.refresh_token);
-                router.replace('account');
+                await SecureStore.setItemAsync('access_token', response.access_token);
+                await SecureStore.setItemAsync('refresh_token', response.refresh_token!);
+                router.replace('(tabs)/account');
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
