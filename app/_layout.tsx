@@ -1,38 +1,33 @@
-import {Stack, useRouter} from 'expo-router';
-import {useEffect, useState} from "react";
-import * as SecureStore from "expo-secure-store";
-import {refreshAccessToken} from "../contexts/backEndApi";
+// app/_layout.tsx
+import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { RecoilRoot } from 'recoil';
 import { StatusBar } from 'expo-status-bar';
-import {RecoilRoot} from "recoil";
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font/build/FontHooks';
 
+SplashScreen.preventAutoHideAsync(); // 앱 시작 시 Splash 유지
 export default function RootLayout() {
-    const router = useRouter();
-    const [isRedirecting, setIsRedirecting] = useState(false);
-
+    const [loaded, error] = useFonts({
+        'Nanum-Regular': require('../assets/fonts/NanumBrushScript-Regular.ttf'),
+    });
 
     useEffect(() => {
-        if (isRedirecting) return;
+        if (loaded || error) {
+            SplashScreen.hideAsync();
+        }
+    }, [loaded, error]);
 
-        (async () => {
-            const token = await SecureStore.getItemAsync('refresh_token');
-            if (token) {
-                try {
-                    const response = await refreshAccessToken(token);
-                    return router.replace(response ? '/(tabs)/account' : '/(auth)/login');
-                } catch {
-                    console.error('Error refreshing token');
-                }
-            }
-            router.replace('/(auth)/login');
-        })();
-    }, [isRedirecting, router]);
+    if (!loaded && !error) {
+        return null;
+    }
 
     return (
         <RecoilRoot>
             <StatusBar style="auto" />
             <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }}/>
-                <Stack.Screen name="(account)" options={{ headerShown: false }}/>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
         </RecoilRoot>
     );

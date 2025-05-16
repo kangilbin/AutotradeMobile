@@ -1,62 +1,23 @@
-import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    FlatList,
-} from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
-const AccountScreen: React.FC = () => {
-    const [mockAccounts, setMockAccounts] = useState<string[]>(['Mock Account 1']);
-    const [realAccounts, setRealAccounts] = useState<string[]>(['Real Account 1']);
-
-    const handleAddMockAccount = () => {
-        const newAccount = `Mock Account ${mockAccounts.length + 1}`;
-        setMockAccounts((prev) => [...prev, newAccount]);
-    };
-
-    const handleAddRealAccount = () => {
-        const newAccount = `Real Account ${realAccounts.length + 1}`;
-        setRealAccounts((prev) => [...prev, newAccount]);
-    };
-
-    const renderAccountItem = ({ item }: { item: string }) => (
-        <View style={styles.accountBox}>
-            <Text style={styles.accountText}>{item}</Text>
-        </View>
-    );
-
+export default function AccountScreen() {
     return (
         <View style={styles.container}>
-            {/* Mock Investment Accounts Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Mock Investment Accounts</Text>
-                <FlatList
-                    data={mockAccounts}
-                    keyExtractor={(item, index) => `mock-${index}`}
-                    renderItem={renderAccountItem}
-                    contentContainerStyle={styles.listContainer}
-                />
-                <TouchableOpacity style={styles.addButton} onPress={handleAddMockAccount}>
-                    <MaterialCommunityIcons name="plus" size={24} color="#fff" />
-                </TouchableOpacity>
+            {/* 상단 코드 박스 */}
+            <View style={styles.codeBox}>
+                <Text style={styles.label}>모의</Text>
+                <Text style={styles.code}>1213-123-123</Text>
             </View>
-
-            {/* Real Investment Accounts Section */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Real Investment Accounts</Text>
-                <FlatList
-                    data={realAccounts}
-                    keyExtractor={(item, index) => `real-${index}`}
-                    renderItem={renderAccountItem}
-                    contentContainerStyle={styles.listContainer}
-                />
-                <TouchableOpacity style={styles.addButton} onPress={handleAddRealAccount}>
-                    <MaterialCommunityIcons name="plus" size={24} color="#fff" />
-                </TouchableOpacity>
+            <View style={styles.codeBox}>
+                <Text style={styles.label}>모의</Text>
+                <Text style={styles.code}>1213-123-123</Text>
             </View>
+            {/* 플러스 버튼 */}
+            <TouchableOpacity style={styles.plusBox}>
+                <Feather name="plus" size={32} color="#2B4C59" />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -65,42 +26,54 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        padding: 20,
-    },
-    section: {
-        marginBottom: 30,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    listContainer: {
-        marginBottom: 10,
-    },
-    accountBox: {
-        width: '100%',
-        padding: 15,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 10,
-        marginBottom: 10,
-        backgroundColor: '#f9f9f9',
-    },
-    accountText: {
-        fontSize: 16,
-        color: '#333',
-    },
-    addButton: {
-        alignSelf: 'center',
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: '#B5EAD7',
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 20,
+    },
+    codeBox: {
+        width: '90%',
+        backgroundColor: '#B5EAD7',
+        borderRadius: 16,
+        paddingVertical: 20,
+        paddingHorizontal: 24,
+        marginBottom: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 5,
+    },
+    label: {
+        position: 'absolute',
+        top: -10,
+        left: 16,
+        backgroundColor: '#fff',
+        paddingHorizontal: 6,
+        fontSize: 13,
+        color: '#666',
+        zIndex: 1,
+        fontFamily: 'Nanum-Regular'
+    },
+    code: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#2B4C59',
+    },
+    plusBox: {
+        width: '90%',
+        backgroundColor: '#B5EAD7',
+        borderRadius: 16,
+        paddingVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
         elevation: 5,
     },
 });
 
-export default AccountScreen;

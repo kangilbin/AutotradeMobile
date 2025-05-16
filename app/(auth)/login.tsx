@@ -14,7 +14,7 @@ interface FormState {
     PASSWORD: string;
 }
 
-const LoginScreen: React.FC = () => {
+export default function LoginScreen () {
     const loading = useApiLoading();
     const [form, setForm] = useState<FormState>({
         USER_ID: '',
@@ -192,4 +192,3 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LoginScreen;
