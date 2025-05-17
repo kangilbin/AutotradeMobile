@@ -1,17 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    Alert, Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import React, {useRef, useState} from 'react';
+import {Alert, StyleSheet, Text, TextInput, TouchableOpacity,} from 'react-native';
+import {useRouter} from 'expo-router';
 import {checkId, signup} from '../../contexts/backEndApi';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
-import mainLogo from '../../assets/main.png';
-import loadingIndicator from "../../contexts/loadingIndicator";
-import LoadingIndicator from "../../contexts/loadingIndicator";
 
 interface FormState {
     USER_ID: string;
@@ -21,7 +12,7 @@ interface FormState {
     confirmPassword: string;
 }
 
-const SignupScreen: React.FC = () => {
+export default function SignupScreen() {
     const idInputRef = useRef<TextInput | null>(null);
     const nameInputRef = useRef<TextInput | null>(null);
     const passwordInputRef = useRef<TextInput | null>(null);
@@ -216,4 +207,3 @@ const styles = StyleSheet.create({
     },
 });
 
-export default SignupScreen;

@@ -4,7 +4,7 @@ import { Redirect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { refreshAccessToken } from '../contexts/backEndApi';
 
-export default function Index() {
+export default function StartPageScreen() {
     const [route, setRoute] = useState<string | null>(null);
 
     useEffect(() => {
@@ -14,15 +14,14 @@ export default function Index() {
                 try {
                     const response = await refreshAccessToken(token);
                     await SecureStore.setItemAsync('access_token', response!.access_token);
-                    setRoute('/(tabs)/account');
+                    setRoute('/account');
                 } catch {
-                    console.error('Error refreshing token');
-                    setRoute('/(tabs)/account');
+                    setRoute('/account');
 
-                    // setRoute('/(auth)/login');
+                    // setRoute('/login');
                 }
             } else {
-                setRoute('/(auth)/login');
+                setRoute('/login');
             }
         })();
     }, []);

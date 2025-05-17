@@ -5,6 +5,7 @@ import { RecoilRoot } from 'recoil';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font/build/FontHooks';
+import LoadingIndicator from "../components/LoadingIndicator";
 
 SplashScreen.preventAutoHideAsync(); // 앱 시작 시 Splash 유지
 export default function RootLayout() {
@@ -19,7 +20,7 @@ export default function RootLayout() {
     }, [loaded, error]);
 
     if (!loaded && !error) {
-        return null;
+        return <LoadingIndicator />;
     }
 
     return (

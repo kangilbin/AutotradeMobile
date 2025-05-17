@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import {login, useApiLoading} from '../../contexts/backEndApi';
-import LoadingIndicator from "../../contexts/loadingIndicator"; // 로그인 API 호출 함수
+import LoadingIndicator from "../../components/LoadingIndicator"; // 로그인 API 호출 함수
 import { useRouter } from 'expo-router';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
 

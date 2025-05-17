@@ -48,12 +48,11 @@ const styles = StyleSheet.create({
     },
     label: {
         position: 'absolute',
-        top: -10,
+        top: -7,
         left: 16,
-        backgroundColor: '#fff',
         paddingHorizontal: 6,
-        fontSize: 13,
-        color: '#666',
+        fontSize: 19,
+        color: '#a6b411',
         zIndex: 1,
         fontFamily: 'Nanum-Regular'
     },
