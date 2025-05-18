@@ -52,7 +52,7 @@ export default function LoginScreen () {
             if (response?.access_token) {
                 await SecureStore.setItemAsync('access_token', response.access_token);
                 await SecureStore.setItemAsync('refresh_token', response.refresh_token!);
-                router.replace('(tabs)/account');
+                router.replace('account');
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');

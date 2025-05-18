@@ -16,9 +16,8 @@ export default function StartPageScreen() {
                     await SecureStore.setItemAsync('access_token', response!.access_token);
                     setRoute('/account');
                 } catch {
-                    setRoute('/account');
-
                     // setRoute('/login');
+                    setRoute('/account');
                 }
             } else {
                 setRoute('/login');

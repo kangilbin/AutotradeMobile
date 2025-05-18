@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import {router, useRouter} from "expo-router";
 
-export default function AccountScreen() {
+export default function AccountListScreen() {
+    const router = useRouter();
+
     return (
         <View style={styles.container}>
             {/* 상단 코드 박스 */}
@@ -15,7 +18,7 @@ export default function AccountScreen() {
                 <Text style={styles.code}>1213-123-123</Text>
             </View>
             {/* 플러스 버튼 */}
-            <TouchableOpacity style={styles.plusBox}>
+            <TouchableOpacity style={styles.plusBox} onPress={() => router.push('account/add')}>
                 <Feather name="plus" size={32} color="#2B4C59" />
             </TouchableOpacity>
         </View>

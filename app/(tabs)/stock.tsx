@@ -1,9 +1,9 @@
 import {View} from "react-native";
 
-export default function AccountScreen() {
+export default function StockScreen() {
     return (
         <View>
-            <Text>Account</Text>
+            <Text>Stock</Text>
         </View>
     );
 }

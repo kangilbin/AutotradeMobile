@@ -2,7 +2,7 @@ import React, {useRef, useState} from 'react';
 import {Alert, StyleSheet, Text, TextInput, TouchableOpacity,} from 'react-native';
 import {useRouter} from 'expo-router';
 import {checkId, signup} from '../../contexts/backEndApi';
-import KeyboardScrollable from "../../components/DismissKeyboardView";
+import DismissKeyboardView from "../../components/DismissKeyboardView";
 
 interface FormState {
     USER_ID: string;
@@ -93,7 +93,7 @@ export default function SignupScreen() {
         !isDuplicate;
 
     return (
-        <KeyboardScrollable>
+        <DismissKeyboardView>
             {isDuplicate && <Text style={styles.errorText}>중복된 아이디입니다.</Text>}
             <TextInput
                 ref={idInputRef}
@@ -157,7 +157,7 @@ export default function SignupScreen() {
             >
                 <Text style={styles.buttonText}>가입 완료</Text>
             </TouchableOpacity>
-        </KeyboardScrollable>
+        </DismissKeyboardView>
     );
 };
 

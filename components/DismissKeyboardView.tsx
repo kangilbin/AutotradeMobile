@@ -14,7 +14,7 @@ interface KeyboardScrollableProps {
     style?: ViewStyle;
 }
 
-const KeyboardScrollable: React.FC<KeyboardScrollableProps> = ({ children, style }) => {
+const DismissKeyboardView: React.FC<KeyboardScrollableProps> = ({ children, style }) => {
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <KeyboardAvoidingView
@@ -45,4 +45,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default KeyboardScrollable;
+export default DismissKeyboardView;
