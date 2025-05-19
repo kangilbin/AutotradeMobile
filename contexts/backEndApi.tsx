@@ -159,3 +159,35 @@ export const refreshAccessToken = async (refresh_token: string): Promise<LoginRe
         Alert.alert('토큰 재발급 실패 :', error.response?.data || error.message);
     }
 };
+
+
+export type AddAccountRequest = {
+    ACCOUNT_NO: string
+    AUTH_ID: number
+}
+// 계좌 추가
+export const addAccount = async (param: AddAccountRequest) => {
+    try {
+        const response = await api.post('/account', param);
+        return response.data;
+    } catch (error) {
+        Alert.alert('계좌 추가 에러 발생:', error.response?.data || error.message);
+    }
+};
+
+
+export type AddAuthRequest = {
+    SIMULATION_YN: string
+    AUTH_NAME: string
+    API_KEY: string
+    SECRET_KEY: string
+}
+// 권한 추가
+export const addAuth = async (param: AddAuthRequest) => {
+    try {
+        const response = await api.post('/auth', param);
+        return response.data;
+    } catch (error) {
+        Alert.alert('권한 추가 에러 발생:', error.response?.data || error.message);
+    }
+};
