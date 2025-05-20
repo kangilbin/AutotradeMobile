@@ -23,9 +23,9 @@ export default function AddAccountScreen() {
     const [form, setForm] = useState<AddAccountRequest>({ACCOUNT_NO: '', AUTH_ID: 0});
     const [authList, setAuthList] = useState<{code: string; name: string}[]>([]);
     const [pickerVisible, setPickerVisible] = useState(false);
-    const [isOn, setIsOn] = useState(true);
+    const [isOn, setIsOn] = useState(false);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-    const [newAuth, setNewAuth] = useState<AddAuthRequest>({ SIMULATION_YN: 'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
+    const [newAuth, setNewAuth] = useState<AddAuthRequest>({ SIMULATION_YN: 'N', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
 
     /* ─ 권한 목록 불러오기 ─ */
     useEffect(() => {
@@ -38,7 +38,6 @@ export default function AddAccountScreen() {
             }
         })();
     }, []);
-
     const handleChange = (field: keyof AddAccountRequest, value: string) =>
         setForm(prev => ({...prev, [field]: value}));
 
@@ -58,16 +57,23 @@ export default function AddAccountScreen() {
         }
 
         try {
-            // Example API request to add a new permission
+            setAuthList((prev) => [...prev, {code: newAuth.API_KEY, name: newAuth.AUTH_NAME}]);
+            //
             const response = await addAuth(newAuth);
-            setAuthList((prev) => [...prev, response.data]); // Add new permission to authList
-            setNewAuth({SIMULATION_YN:'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' }); // Reset fields
-            setIsAddModalVisible(false); // Close modal
-            Alert.alert('완료', '보안 키가 추가되었습니다.');
+            setAuthList((prev) => [...prev, response.data]);
+            // handleChange('AUTH_ID', newAuth.API_KEY);
+            handleChange('AUTH_ID', response.data.code);
+            setNewAuth({SIMULATION_YN:'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
+            setIsAddModalVisible(false);
         } catch (error) {
             Alert.alert('오류', error.response?.data || error.message);
         }
     };
+    const isAuthEnabled =
+        newAuth.AUTH_NAME.length > 0 &&
+        newAuth.API_KEY.length > 0 &&
+        newAuth.SECRET_KEY.length > 0 &&
+        newAuth.SIMULATION_YN.length > 0;
     return (
         <DismissKeyboardView style={styles.container}>
             {/* ① 계좌번호 입력 라인 */}
@@ -145,24 +151,30 @@ export default function AddAccountScreen() {
                 onRequestClose={() => setIsAddModalVisible(false)}
             >
                 <View style={styles.popupContainer}>
-                    <Pressable style={styles.backdrop} onPress={() => setIsAddModalVisible(false)} />
+                    <Pressable style={styles.backdrop} onPress={() => { setIsAddModalVisible(false); setNewAuth({ SIMULATION_YN: 'N', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' }); }} />
                     <View style={styles.modalContent}>
-                        <AuthToggle isOn={isOn} onToggle={() => setIsOn(prev => !prev)} />
-                        <Text style={styles.modalTitle}>보안키 추가</Text>
+                        <View style={{margin: 10, flexDirection: 'row', justifyContent: 'flex-end'}}>
+                            <AuthToggle
+                                isOn={isOn}
+                                onToggle={() => {
+                                setIsOn(prev => !prev)
+                                setNewAuth((prev) => ({ ...prev, SIMULATION_YN: isOn ? 'Y' : 'N' }))}}
+                            />
+                        </View>
                         <TextInput
-                            style={styles.input}
+                            style={styles.inputSmall}
                             placeholder="보안키 이름"
                             value={newAuth.AUTH_NAME}
                             onChangeText={(text) => setNewAuth((prev) => ({ ...prev, AUTH_NAME: text }))}
                         />
                         <TextInput
-                            style={styles.input}
+                            style={styles.inputLarge}
                             placeholder="App Key"
                             value={newAuth.API_KEY}
                             onChangeText={(text) => setNewAuth((prev) => ({ ...prev, API_KEY: text }))}
                         />
                         <TextInput
-                            style={styles.input}
+                            style={styles.inputLarge}
                             placeholder="App Secret"
                             value={newAuth.SECRET_KEY}
                             onChangeText={(text) => setNewAuth((prev) => ({ ...prev, SECRET_KEY: text }))}
@@ -171,10 +183,13 @@ export default function AddAccountScreen() {
                             <Text style={styles.saveTxt}>완료</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.saveBtn, styles.cancelBtn]}
-                            onPress={() => setIsAddModalVisible(false)}
+                            style={[
+                                styles.saveBtn,
+                                isAuthEnabled ? styles.saveEnabled : styles.saveDisabled,
+                            ]}
+                            onPress={handleAddAuth}
                         >
-                            <Text style={styles.saveTxt}>취소</Text>
+                            <Text style={styles.saveTxt}>등록</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -233,11 +248,6 @@ const styles = StyleSheet.create({
     picker: {
         width: '100%', // Ensure it spans the container
     },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 15,
-    },
     cancelBtn: {
         backgroundColor: '#ff6b6b',
         marginTop: 10,
@@ -253,7 +263,25 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 20,
         width: '80%', // Adjust width as needed
-        alignItems: 'center',
         zIndex: 1, // Ensure it appears above the backdrop
+    },
+    inputSmall: {
+        borderWidth: 1,
+        borderColor: '#ddd',    // SignupScreen input 테두리와 동일톤
+        borderRadius: 10,
+        padding: 15,
+        fontSize: 16,
+        marginBottom: 15,
+        minHeight: 40,
+    },
+    inputLarge: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 10,
+        padding: 15,
+        fontSize: 16,
+        marginBottom: 15,
+        minHeight: 70,
+        textAlignVertical: 'top',
     },
 });

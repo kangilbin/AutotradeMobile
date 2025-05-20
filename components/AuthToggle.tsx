@@ -33,16 +33,16 @@ export default function AuthToggle({ isOn, onToggle }){
 };
 const styles = StyleSheet.create({
     toggleContainer: {
-        width: 100,
-        height: 50,
+        width: 90,
+        height: 40,
         borderRadius: 30,
         padding: 5,
         justifyContent: 'center',
         position: 'relative',
     },
     circle: {
-        width: 40,
-        height: 40,
+        width: 30,
+        height: 30,
         borderRadius: 20,
         backgroundColor: '#fff',
         position: 'absolute',

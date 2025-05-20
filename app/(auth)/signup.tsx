@@ -4,7 +4,7 @@ import {useRouter} from 'expo-router';
 import {checkId, signup} from '../../contexts/backEndApi';
 import DismissKeyboardView from "../../components/DismissKeyboardView";
 
-interface FormState {
+type FormState = {
     USER_ID: string;
     USER_NAME: string;
     PHONE: string;
