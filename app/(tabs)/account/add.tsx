@@ -13,6 +13,7 @@ import {Picker} from '@react-native-picker/picker';
 import {useRouter} from 'expo-router';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
 import {addAccount, AddAccountRequest, addAuth, AddAuthRequest} from "../../../contexts/backEndApi";
+import AuthToggle from "../../../components/AuthToggle";
 
 
 export default function AddAccountScreen() {
@@ -22,7 +23,7 @@ export default function AddAccountScreen() {
     const [form, setForm] = useState<AddAccountRequest>({ACCOUNT_NO: '', AUTH_ID: 0});
     const [authList, setAuthList] = useState<{code: string; name: string}[]>([]);
     const [pickerVisible, setPickerVisible] = useState(false);
-
+    const [isOn, setIsOn] = useState(true);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [newAuth, setNewAuth] = useState<AddAuthRequest>({ SIMULATION_YN: 'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
 
@@ -146,6 +147,7 @@ export default function AddAccountScreen() {
                 <View style={styles.popupContainer}>
                     <Pressable style={styles.backdrop} onPress={() => setIsAddModalVisible(false)} />
                     <View style={styles.modalContent}>
+                        <AuthToggle isOn={isOn} onToggle={() => setIsOn(prev => !prev)} />
                         <Text style={styles.modalTitle}>보안키 추가</Text>
                         <TextInput
                             style={styles.input}
