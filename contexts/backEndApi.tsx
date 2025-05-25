@@ -37,7 +37,7 @@ api.interceptors.request.use(
     async (config) => {
         if (setLoadingState) setLoadingState(true); // Show loading
 
-        const accessToken = await SecureStore.getItemAsync('accessToken');
+        const accessToken = await SecureStore.getItemAsync('access_token');
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`; // Add Authorization header
         }
@@ -187,7 +187,7 @@ export type AddAuthRequest = {
     SECRET_KEY: string
 }
 // 권한 추가
-export const addAuth = async (param: AddAuthRequest) => {
+export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undefined> => {
     try {
         const response = await api.post('/auth', param);
         return response.data;
@@ -197,16 +197,35 @@ export const addAuth = async (param: AddAuthRequest) => {
     }
 };
 
+export type AuthStatus = {
+    AUTH_ID: number
+    AUTH_NAME: string
+}
+type AuthResponse = {
+    data: AuthStatus[];
+}
+export const getAuthList = async (): Promise<AuthResponse | undefined> => {
+    try {
+        const response = await api.get('/auths');
+        return response.data;
+    } catch (error) {
+        console.log('Error Response:', error.response);
+        Alert.alert('권한 목록 조회 에러 발생', error.response?.data || error.message);
+    }
+}
 
-
-export type AccountResponse = {
+export type AccountStatus = {
     ACCOUNT_ID: number
     ACCOUNT_NO: string
     AUTH_ID: string
     SIMULATION_YN: string
 }
 
-export const getAccountList = async (): Promise<AccountResponse[] | undefined> => {
+type AccountResponse = {
+    data: AccountStatus[];
+}
+
+export const getAccountList = async (): Promise<AccountResponse | undefined> => {
     try {
         const response = await api.get('/accounts');
         return response.data;

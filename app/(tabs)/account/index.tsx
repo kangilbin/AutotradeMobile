@@ -1,24 +1,28 @@
 import React, {useEffect, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Animated} from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import {useRouter} from "expo-router";
-import AccountBox from "../../../components/AccountBox";
-import {AccountResponse, getAccountList} from "../../../contexts/backEndApi";
+import {useRouter} from 'expo-router';
+import AccountBox from '../../../components/AccountBox';
+import {AccountResponse, AccountStatus, getAccountList} from '../../../contexts/backEndApi';
+import {useSetRecoilState} from 'recoil';
+import {accountAtom} from '../../../atoms/account';
 
 export default function AccountListScreen() {
     const router = useRouter();
-    const [accounts, setAccounts] = useState<AccountResponse[]>([]);
+    const [accounts, setAccounts] = useState<AccountStatus[]>([]);
+    const setAccount = useSetRecoilState(accountAtom);
     useEffect(() => {
         const fetchAccountList = async () => {
             const response = await getAccountList();
-            setAccounts(response || []);
+            setAccounts(response?.data || []);
         };
         fetchAccountList();
-    }, [accounts]);
+    }, []);
 
     const handleAccountPress = (account) => {
         // 계정 박스 클릭 시 처리 로직
-        router.push(`account/${account.ACCOUNT_NO}`);
+        setAccount(account);
+        router.push('home');
     }
     return (
         <View style={styles.container}>
@@ -28,7 +32,7 @@ export default function AccountListScreen() {
             ))}
             {/* 플러스 버튼 */}
             <TouchableOpacity style={styles.plusBox} onPress={() => router.push('account/add')}>
-                <Feather name="plus" size={32} color="#2B4C59" />
+                <Feather name='plus' size={32} color='#2B4C59' />
             </TouchableOpacity>
         </View>
     );

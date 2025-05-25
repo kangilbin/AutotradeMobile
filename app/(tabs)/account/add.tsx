@@ -12,7 +12,14 @@ import {
 import {Picker} from '@react-native-picker/picker';
 import {useRouter} from 'expo-router';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
-import {addAccount, AddAccountRequest, addAuth, AddAuthRequest} from "../../../contexts/backEndApi";
+import {
+    addAccount,
+    AddAccountRequest,
+    addAuth,
+    AddAuthRequest, AuthStatus,
+    getAccountList,
+    getAuthList
+} from "../../../contexts/backEndApi";
 import AuthToggle from "../../../components/AuthToggle";
 
 
@@ -21,7 +28,7 @@ export default function AddAccountScreen() {
     const acctRef = useRef<TextInput | null>(null);
 
     const [form, setForm] = useState<AddAccountRequest>({ACCOUNT_NO: '', AUTH_ID: 0});
-    const [authList, setAuthList] = useState<{code: string; name: string}[]>([]);
+    const [authList, setAuthList] = useState<AuthStatus[]>([]);
     const [pickerVisible, setPickerVisible] = useState(false);
     const [isOn, setIsOn] = useState(false);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -29,16 +36,13 @@ export default function AddAccountScreen() {
 
     /* ─ 권한 목록 불러오기 ─ */
     useEffect(() => {
-        (async () => {
-            try {
-                setAuthList([{code: 'ALL', name: '전체'}]);
-                // setAuthList(await fetchAuthList());
-            } catch {
-                Alert.alert('오류', '권한 목록을 가져오지 못했습니다.');
-            }
-        })();
+        const fetchAuthList = async () => {
+            const response = await getAuthList();
+            setAuthList(response?.data || []);
+        };
+        fetchAuthList();
     }, []);
-    const handleChange = (field: keyof AddAccountRequest, value: string) =>
+    const handleChange = (field: keyof AddAccountRequest, value: number) =>
         setForm(prev => ({...prev, [field]: value}));
 
     /* ─ 계좌 저장 ─ */
@@ -57,12 +61,9 @@ export default function AddAccountScreen() {
         }
 
         try {
-            setAuthList((prev) => [...prev, {code: newAuth.API_KEY, name: newAuth.AUTH_NAME}]);
-            //
             const response = await addAuth(newAuth);
-            setAuthList((prev) => [...prev, response.data]);
-            // handleChange('AUTH_ID', newAuth.API_KEY);
-            handleChange('AUTH_ID', response.data.code);
+            setAuthList((prev) => [...prev, response as AuthStatus]);
+            handleChange('AUTH_ID', response?.AUTH_ID);
             setNewAuth({SIMULATION_YN:'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
             setIsAddModalVisible(false);
         } catch (error) {
@@ -92,7 +93,7 @@ export default function AddAccountScreen() {
                 <Pressable style={[styles.input, {flex: 1}]} onPress={() => setPickerVisible(true)}>
                     <Text style={form.AUTH_ID ? styles.text : styles.placeholder}>
                         {form.AUTH_ID
-                            ? authList.find(a => a.code === form.AUTH_ID)?.name
+                            ? authList.find(a => a.AUTH_ID === form.AUTH_ID)?.AUTH_NAME
                             : '보안키 선택'}
                     </Text>
                 </Pressable>
@@ -127,7 +128,7 @@ export default function AddAccountScreen() {
 
                 {/* 하단 시트 */}
                 <View style={styles.pickerBox}>
-                    <Picker
+                    <Picker<number>
                         selectedValue={form.AUTH_ID}
                         onValueChange={v => {
                             handleChange('AUTH_ID', v);
@@ -135,9 +136,9 @@ export default function AddAccountScreen() {
                         }}
                         style={styles.picker}
                     >
-                        <Picker.Item label="보안키 선택" value="" />
+                        <Picker.Item<number> label="보안키 선택" value={0} />
                         {authList.map(a => (
-                            <Picker.Item key={a.code} label={a.name} value={a.code} />
+                            <Picker.Item<number> key={a.AUTH_ID} label={a.AUTH_NAME} value={a.AUTH_ID} />
                         ))}
                     </Picker>
                 </View>
