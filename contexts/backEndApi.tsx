@@ -1,8 +1,6 @@
 import axios from 'axios';
 import {useState} from "react";
 import {Alert} from "react-native";
-import {useRecoilValue, useSetRecoilState} from "recoil";
-import {accessTokenState} from "../atoms/auth";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
@@ -21,9 +19,6 @@ function processQueue(error: any, token: string | null) {
     });
     failedQueue = [];
 }
-const useAccessToken = () => {
-    return useRecoilValue(accessTokenState);
-};
 
 export const useApiLoading = () => {
     const [loading, setLoading] = useState(false);
@@ -32,7 +27,7 @@ export const useApiLoading = () => {
 };
 const api = axios.create({
     baseURL: 'http://localhost:8000', // 공통 주소 설정
-    timeout: 5000, // 타임아웃 설정
+    timeout: 10000, // 타임아웃 설정
     headers: {
         'Content-Type': 'application/json',
     },
@@ -42,8 +37,7 @@ api.interceptors.request.use(
     async (config) => {
         if (setLoadingState) setLoadingState(true); // Show loading
 
-        // Retrieve the access token (assuming you have a function to get it)
-        const accessToken = useAccessToken(); // Replace with your token retrieval logic
+        const accessToken = await SecureStore.getItemAsync('accessToken');
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`; // Add Authorization header
         }
@@ -66,7 +60,13 @@ api.interceptors.response.use(
         if (setLoadingState) setLoadingState(false);
 
         const originalRequest: any = error.config;
-        const setAccessToken = useSetRecoilState(accessTokenState);
+
+        // 제외 url
+        const excludedUrls = ['/login', '/signup', '/check_id', '/refresh'];
+        // 리프레시 토큰을 사용하는 요청이 아니거나, 제외된 URL인 경우
+        if (excludedUrls.includes(originalRequest.url) || !originalRequest.url?.startsWith('/')) {
+            return Promise.reject(error);
+        }
 
         // 액세스 토큰 만료 (401) → 리프레시 시도
         if (error.response?.status === 401 && !originalRequest._retry) {
@@ -94,7 +94,6 @@ api.interceptors.response.use(
 
                 const newAccessToken = res!.access_token;
                 await SecureStore.setItemAsync('access_token', newAccessToken);
-                setAccessToken(newAccessToken); // 새로운 access Token 저장
 
                 processQueue(null, newAccessToken);
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -121,7 +120,8 @@ export const signup = async (param) => {
         const response = await api.post('/signup', param);
         return response.data;
     } catch (error) {
-        Alert.alert('에러 발생:', error.response?.data || error.message);
+        console.log('Error Response:', error.response);
+        Alert.alert('회원가입 에러 발생', error.response?.data || error.message);
     }
 };
 
@@ -136,7 +136,8 @@ export const login = async (param: any): Promise<LoginResponse | undefined> => {
         const response = await api.post('/login', param);
         return response.data;
     } catch (error) {
-        Alert.alert('에러 발생:', error.response?.data || error.message);
+        console.log('Error Response:', error.response);
+        Alert.alert('로그인 실패', error.response?.data?.detail || error.message);
     }
 };
 
@@ -146,7 +147,8 @@ export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean }
         const response = await api.get('/check_id', { params: { user_id } });
         return response.data;
     } catch (error) {
-        Alert.alert('중복 체크 에러 발생:', error.response?.data || error.message);
+        console.log('Error Response:', error.response);
+        Alert.alert('중복 체크 에러 발생', error.response?.data || error.message);
     }
 };
 
@@ -156,7 +158,8 @@ export const refreshAccessToken = async (refresh_token: string): Promise<LoginRe
         const response = await api.post('/refresh', { refresh_token });
         return response.data;
     } catch (error) {
-        Alert.alert('토큰 재발급 실패 :', error.response?.data || error.message);
+        console.log('Error Response:', error.response);
+        Alert.alert('토큰 재발급 실패', error.response?.data?.detail || error.message);
     }
 };
 
@@ -171,7 +174,8 @@ export const addAccount = async (param: AddAccountRequest) => {
         const response = await api.post('/account', param);
         return response.data;
     } catch (error) {
-        Alert.alert('계좌 추가 에러 발생:', error.response?.data || error.message);
+        console.log('Error Response:', error.response);
+        Alert.alert('계좌 추가 에러 발생', error.response?.data || error.message);
     }
 };
 
@@ -188,6 +192,26 @@ export const addAuth = async (param: AddAuthRequest) => {
         const response = await api.post('/auth', param);
         return response.data;
     } catch (error) {
-        Alert.alert('권한 추가 에러 발생:', error.response?.data || error.message);
+        console.log('Error Response:', error.response);
+        Alert.alert('권한 추가 에러 발생', error.response?.data || error.message);
     }
 };
+
+
+
+export type AccountResponse = {
+    ACCOUNT_ID: number
+    ACCOUNT_NO: string
+    AUTH_ID: string
+    SIMULATION_YN: string
+}
+
+export const getAccountList = async (): Promise<AccountResponse[] | undefined> => {
+    try {
+        const response = await api.get('/accounts');
+        return response.data;
+    } catch (error) {
+        console.log('Error Response:', error.response);
+        Alert.alert('계좌 목록 조회 에러 발생', error.response?.data || error.message);
+    }
+}

@@ -65,7 +65,7 @@ export default function SignupScreen() {
             return;
         }
         if (form.PASSWORD !== form.confirmPassword) {
-            Alert.alert('Error', '비밀 번호가 불일치 합니다.');
+            Alert.alert('오류', '비밀 번호가 불일치 합니다.');
             return;
         }
 
@@ -74,7 +74,7 @@ export default function SignupScreen() {
             const response = await signup(form);
             if (response) {
                 if (response.code === 1062) {
-                    Alert.alert('Error', '중복된 아이디입니다.');
+                    Alert.alert('오류', '중복된 아이디입니다.');
                     return;
                 }
                 Alert.alert('Signup Successful', '회원 가입 완료.');
