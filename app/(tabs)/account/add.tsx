@@ -17,7 +17,6 @@ import {
     AddAccountRequest,
     addAuth,
     AddAuthRequest, AuthStatus,
-    getAccountList,
     getAuthList
 } from "../../../contexts/backEndApi";
 import AuthToggle from "../../../components/AuthToggle";
@@ -38,11 +37,11 @@ export default function AddAccountScreen() {
     useEffect(() => {
         const fetchAuthList = async () => {
             const response = await getAuthList();
-            setAuthList(response?.data || []);
+            setAuthList(response || []);
         };
         fetchAuthList();
     }, []);
-    const handleChange = (field: keyof AddAccountRequest, value: number) =>
+    const handleChange = (field: keyof AddAccountRequest, value) =>
         setForm(prev => ({...prev, [field]: value}));
 
     /* ─ 계좌 저장 ─ */
@@ -83,7 +82,7 @@ export default function AddAccountScreen() {
                 style={styles.input}
                 placeholder="계좌번호"
                 value={form.ACCOUNT_NO}
-                onChangeText={t => handleChange('ACCOUNT_NO', t.replace(/[^0-9]/g, ''))}
+                onChangeText={t => handleChange('ACCOUNT_NO', t)}
                 keyboardType="number-pad"
             />
 
@@ -128,7 +127,7 @@ export default function AddAccountScreen() {
 
                 {/* 하단 시트 */}
                 <View style={styles.pickerBox}>
-                    <Picker<number>
+                    <Picker
                         selectedValue={form.AUTH_ID}
                         onValueChange={v => {
                             handleChange('AUTH_ID', v);
