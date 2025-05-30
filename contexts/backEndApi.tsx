@@ -27,7 +27,8 @@ export const useApiLoading = () => {
 };
 const api = axios.create({
     baseURL: 'http://localhost:8000', // 공통 주소 설정
-    timeout: 10000, // 타임아웃 설정
+    // timeout: 5000, // 타임아웃 설정
+    timeout: 50000, // 타임아웃 설정
     headers: {
         'Content-Type': 'application/json',
     },
@@ -153,7 +154,7 @@ export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean }
 };
 
 // access 토큰 재발급
-export const refreshAccessToken = async (refresh_token: string): Promise<LoginResponse | undefined> => {
+export const refreshAccessToken = async (refresh_token: string): Promise<LoginResponse> => {
     try {
         const response = await api.post('/refresh', { refresh_token });
         return response.data;
@@ -168,11 +169,12 @@ export type AddAccountRequest = {
     ACCOUNT_NO: string
     AUTH_ID: number
 }
+
 // 계좌 추가
-export const addAccount = async (param: AddAccountRequest) => {
+export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus> => {
     try {
         const response = await api.post('/account', param);
-        return response.data;
+        return response.data.data;
     } catch (error) {
         console.log('Error Response:', error.response);
         Alert.alert('계좌 추가 에러 발생', error.response?.data || error.message);
@@ -187,10 +189,10 @@ export type AddAuthRequest = {
     SECRET_KEY: string
 }
 // 권한 추가
-export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undefined> => {
+export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus> => {
     try {
         const response = await api.post('/auth', param);
-        return response.data;
+        return response.data.data;
     } catch (error) {
         console.log('Error Response:', error.response);
         Alert.alert('권한 추가 에러 발생', error.response?.data || error.message);
@@ -201,13 +203,10 @@ export type AuthStatus = {
     AUTH_ID: number
     AUTH_NAME: string
 }
-type AuthResponse = {
-    data: AuthStatus[];
-}
-export const getAuthList = async (): Promise<AuthResponse | undefined> => {
+export const getAuthList = async (): Promise<AuthStatus[]> => {
     try {
         const response = await api.get('/auths');
-        return response.data;
+        return response.data.data;
     } catch (error) {
         console.log('Error Response:', error.response);
         Alert.alert('권한 목록 조회 에러 발생', error.response?.data || error.message);
@@ -225,7 +224,7 @@ type AccountResponse = {
     data: AccountStatus[];
 }
 
-export const getAccountList = async (): Promise<AccountResponse | undefined> => {
+export const getAccountList = async (): Promise<AccountResponse> => {
     try {
         const response = await api.get('/accounts');
         return response.data;
