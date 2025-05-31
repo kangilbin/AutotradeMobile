@@ -1,5 +1,5 @@
-import React, {useEffect, useRef} from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import {useEffect, useRef} from 'react';
+import { Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 
 export default function AuthToggle({ isOn, onToggle }){
     const animation = useRef(new Animated.Value(isOn ? 1 : 0)).current;

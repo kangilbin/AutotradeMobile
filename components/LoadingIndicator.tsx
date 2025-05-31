@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Dimensions } from 'react-native';
 
-const LoadingIndicator = () => {
+export default function LoadingIndicator () {
     const spinValue = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -45,4 +45,3 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LoadingIndicator;

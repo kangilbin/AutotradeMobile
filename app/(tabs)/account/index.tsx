@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, TouchableOpacity, Animated} from 'react-native';
+import {useEffect, useState} from 'react';
+import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import {useRouter} from 'expo-router';
 import AccountBox from '../../../components/AccountBox';
-import {AccountResponse, AccountStatus, getAccountList} from '../../../contexts/backEndApi';
+import {AccountStatus, getAccountList} from '../../../contexts/backEndApi';
 import {useSetRecoilState} from 'recoil';
 import {accountAtom} from '../../../atoms/account';
 
