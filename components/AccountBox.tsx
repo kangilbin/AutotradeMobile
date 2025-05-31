@@ -1,12 +1,11 @@
 import {StyleSheet, Text, View} from "react-native";
-import React from 'react';
 
 
 
 export default function AccountBox({account}) {
     return (
         <View style={styles.codeBox}>
-            <Text style={styles.label}>{account.SIMULATION_YN === 'Y' ? '실전' : '모의'}</Text>
+            <Text style={styles.label}>{account.SIMULATION_YN === 'Y' ? '모의' : '실전'}</Text>
             <Text style={styles.accountNo}>{account.ACCOUNT_NO}</Text>
         </View>
     );

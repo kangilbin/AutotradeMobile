@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import {Alert, StyleSheet, Text, TextInput, TouchableOpacity,} from 'react-native';
 import {useRouter} from 'expo-router';
 import {checkId, signup} from '../../contexts/backEndApi';
