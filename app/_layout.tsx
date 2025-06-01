@@ -1,8 +1,6 @@
 // app/_layout.tsx
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { RecoilRoot } from 'recoil';
-import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font/build/FontHooks';
 import LoadingIndicator from "../components/LoadingIndicator";
@@ -24,12 +22,9 @@ export default function RootLayout() {
     }
 
     return (
-        <RecoilRoot>
-            <StatusBar style="auto" />
-            <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
-        </RecoilRoot>
+        <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
     );
 }

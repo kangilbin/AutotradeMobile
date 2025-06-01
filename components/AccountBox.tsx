@@ -1,13 +1,13 @@
-import {StyleSheet, Text, View} from "react-native";
+import {StyleSheet, Text, TouchableOpacity} from "react-native";
 
 
 
-export default function AccountBox({account}) {
+export default function AccountBox({account, onPress}) {
     return (
-        <View style={styles.codeBox}>
+        <TouchableOpacity style={styles.codeBox} onPress={onPress}>
             <Text style={styles.label}>{account.SIMULATION_YN === 'Y' ? '모의' : '실전'}</Text>
             <Text style={styles.accountNo}>{account.ACCOUNT_NO}</Text>
-        </View>
+        </TouchableOpacity>
     );
 }
 

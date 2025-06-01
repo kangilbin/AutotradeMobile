@@ -4,6 +4,8 @@ import {Alert} from "react-native";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
+import {AccountResponse, AccountStatus} from "../types/account";
+import {AddAuthRequest, AuthStatus} from "../types/auth";
 
 let setLoadingState: (loading: boolean) => void;
 let isRefreshing = false;
@@ -182,12 +184,6 @@ export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus
 };
 
 
-export type AddAuthRequest = {
-    SIMULATION_YN: string
-    AUTH_NAME: string
-    API_KEY: string
-    SECRET_KEY: string
-}
 // 권한 추가
 export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus> => {
     try {
@@ -199,10 +195,7 @@ export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus> => {
     }
 };
 
-export type AuthStatus = {
-    AUTH_ID: number
-    AUTH_NAME: string
-}
+
 export const getAuthList = async (): Promise<AuthStatus[]> => {
     try {
         const response = await api.get('/auths');
@@ -213,16 +206,6 @@ export const getAuthList = async (): Promise<AuthStatus[]> => {
     }
 }
 
-export type AccountStatus = {
-    ACCOUNT_ID: number
-    ACCOUNT_NO: string
-    AUTH_ID: string
-    SIMULATION_YN: string
-}
-
-type AccountResponse = {
-    data: AccountStatus[];
-}
 
 export const getAccountList = async (): Promise<AccountResponse> => {
     try {
