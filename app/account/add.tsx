@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
 import {useRouter} from 'expo-router';
-import DismissKeyboardView from '../../../components/DismissKeyboardView';
+import DismissKeyboardView from '../../components/DismissKeyboardView';
 import {
     addAccount,
     AddAccountRequest,
     addAuth,
-    AddAuthRequest, AuthStatus,
     getAuthList
-} from "../../../contexts/backEndApi";
-import AuthToggle from "../../../components/AuthToggle";
+} from "../../contexts/backEndApi";
+import AuthToggle from "../../components/AuthToggle";
+import {AddAuthRequest, AuthStatus} from "../../types/auth";
 
 
 export default function AddAccountScreen() {

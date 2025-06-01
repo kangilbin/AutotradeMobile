@@ -6,7 +6,7 @@ import {StatusBar} from "expo-status-bar";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 export default function TabLayout() {
     return (
-        <SafeAreaProvider style={{ backgroundColor: '#FFFFFF' }}>
+        <SafeAreaProvider>
             <TopHeader />
             <Tabs screenOptions={{ tabBarActiveTintColor: '#B5EAD7', headerShown: false }}>
                 <Tabs.Screen
@@ -14,13 +14,6 @@ export default function TabLayout() {
                     options={{
                         tabBarIcon: ({ color }) => <AntDesign size={28} name="home" color={color} />,
                         tabBarLabel: 'HOME',
-                    }}
-                />
-                <Tabs.Screen
-                    name="account"
-                    options={{
-                        tabBarIcon: ({ color }) => <AntDesign name="creditcard" size={28} color={color} />,
-                        tabBarLabel: 'ACCOUNT',
                     }}
                 />
                 <Tabs.Screen
