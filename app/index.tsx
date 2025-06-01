@@ -1,4 +1,3 @@
-// app/index.tsx
 import { useEffect, useState } from 'react';
 import { Redirect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';

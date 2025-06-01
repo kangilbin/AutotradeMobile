@@ -3,14 +3,15 @@ import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import {useRouter} from 'expo-router';
 import AccountBox from '../../../components/AccountBox';
-import {AccountStatus, getAccountList} from '../../../contexts/backEndApi';
-import {useSetRecoilState} from 'recoil';
-import {accountAtom} from '../../../atoms/account';
+import {getAccountList} from '../../../contexts/backEndApi';
+import {AccountStatus} from "../../../types/account";
+import {useAccountStore} from "../../../stores/useAccountStore";
 
 export default function AccountListScreen() {
     const router = useRouter();
     const [accounts, setAccounts] = useState<AccountStatus[]>([]);
-    const setAccount = useSetRecoilState(accountAtom);
+    const setAccount = useAccountStore((state) => state.setAccount);
+
     useEffect(() => {
         const fetchAccountList = async () => {
             const response = await getAccountList();
@@ -20,9 +21,8 @@ export default function AccountListScreen() {
     }, []);
 
     const handleAccountPress = (account) => {
-        // 계정 박스 클릭 시 처리 로직
         setAccount(account);
-        router.push('home');
+        router.back();
     }
     return (
         <View style={styles.container}>

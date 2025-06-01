@@ -6,7 +6,7 @@ import {StatusBar} from "expo-status-bar";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 export default function TabLayout() {
     return (
-        <SafeAreaProvider>
+        <SafeAreaProvider style={{ backgroundColor: '#FFFFFF' }}>
             <TopHeader />
             <Tabs screenOptions={{ tabBarActiveTintColor: '#B5EAD7', headerShown: false }}>
                 <Tabs.Screen
