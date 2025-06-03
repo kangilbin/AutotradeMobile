@@ -2,10 +2,10 @@ import {useEffect, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import {useRouter} from 'expo-router';
-import AccountBox from '../../../components/AccountBox';
-import {getAccountList} from '../../../contexts/backEndApi';
-import {AccountStatus} from "../../../types/account";
-import {useAccountStore} from "../../../stores/useAccountStore";
+import AccountBox from '../../components/AccountBox';
+import {getAccountList} from '../../contexts/backEndApi';
+import {AccountStatus} from "../../types/account";
+import {useAccountStore} from "../../stores/useAccountStore";
 
 export default function AccountListScreen() {
     const router = useRouter();
@@ -22,7 +22,7 @@ export default function AccountListScreen() {
 
     const handleAccountPress = (account) => {
         setAccount(account);
-        router.back();
+        router.push('home');
     }
     return (
         <View style={styles.container}>

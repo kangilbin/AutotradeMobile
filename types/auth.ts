@@ -9,3 +9,12 @@ export type AddAuthRequest = {
     API_KEY: string
     SECRET_KEY: string
 }
+
+export type JwtPayload = {
+    sub?: string;
+    aud?: string;
+    exp?: number;
+    iat?: number;
+    USER_NAME?: string;
+    PHONE?: string;
+};
