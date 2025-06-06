@@ -216,3 +216,26 @@ export const getAccountList = async (): Promise<AccountResponse> => {
         Alert.alert('계좌 목록 조회 에러 발생', error.response?.data || error.message);
     }
 }
+
+export const kisSoket = (onMessage: (message: any) => void): WebSocket => {
+    const socket = new WebSocket('http://localhost:8000/kis_socket');
+
+    socket.onopen = () => {
+        console.log('WebSocket connection opened');
+    };
+
+    socket.onmessage = (event) => {
+        console.log('Message received:', event.data);
+        onMessage(event.data);
+    };
+
+    socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+        console.log('WebSocket connection closed');
+    };
+
+    return socket;
+}

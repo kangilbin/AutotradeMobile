@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableWithoutFeedback, TouchableOpacity, Keyboard, StyleSheet, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import {login, useApiLoading} from '../../contexts/backEndApi';
 import LoadingIndicator from "../../components/LoadingIndicator"; // 로그인 API 호출 함수
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
 import {useAccountStore} from "../../stores/useAccountStore";
 
@@ -21,7 +21,6 @@ export default function LoginScreen () {
         USER_ID: '',
         PASSWORD: '',
     });
-    const router = useRouter();
     const account = useAccountStore((state) => state.account);
 
     const handleBiometricLogin = async (token: string) => {
@@ -55,8 +54,8 @@ export default function LoginScreen () {
                 await SecureStore.setItemAsync('access_token', response.access_token);
                 await SecureStore.setItemAsync('refresh_token', response.refresh_token!);
 
-                account ? router.replace('home') : router.replace('account');
-
+                // account ? router.replace('home') : router.replace('account');
+                router.replace('home');
             }
         } catch (error) {
             Alert.alert('Signup Failed', 'An error occurred during signup.');
