@@ -53,28 +53,32 @@ export default function StockScreen() {
         <View style={styles.row}>
             {type === 'ask' && (
                 <>
-                    <View style={[styles.quantityContainer, { flex: 1 }]}>
+                    <View style={[styles.quantityContainer]}>
                         <Text style={[styles.quantity, { textAlign: 'right', flex: 1 }]}>{item.quantity.toLocaleString()}</Text>
                         <View
                             style={[
                                 styles.gauge,
                                 { width: `${(item.quantity / maxQuantity) * 100}%` },
-                                { backgroundColor: '#ffcccc', alignSelf: 'flex-end', flex: 1 },
+                                { backgroundColor: '#d8e7fc', alignSelf: 'flex-end', right: 0, position: 'absolute' },
                             ]}
                         />
                     </View>
-                    <Text style={[styles.price, { flex: 1 }]}>{item.price.toLocaleString()}</Text>
+                    <View style={{ flex: 0.5, alignItems: 'center' }}>
+                        <Text style={styles.price}>{item.price.toLocaleString()}</Text>
+                    </View>
                 </>
             )}
             {type === 'bid' && (
                 <>
-                    <Text style={styles.price}>{item.price.toLocaleString()}</Text>
+                    <View style={{ flex: 0.5, alignItems: 'center' }}>
+                        <Text style={styles.price}>{item.price.toLocaleString()}</Text>
+                    </View>
                     <View style={styles.quantityContainer}>
                         <View
                             style={[
                                 styles.gauge,
                                 { width: `${(item.quantity / maxQuantity) * 100}%` },
-                                { backgroundColor: '#ccffcc', alignSelf: 'flex-start' },
+                                { backgroundColor: '#fce1e1', alignSelf: 'flex-start' },
                             ]}
                         />
                         <Text style={styles.quantity}>{item.quantity.toLocaleString()}</Text>
@@ -98,13 +102,13 @@ export default function StockScreen() {
                     <View style={styles.additionalContainer}>
                         <Text style={styles.upperLimit}>상한가: 123</Text>
                         <Text style={styles.lowerLimit}>하한가: 123</Text>
-                        <Text>시작: 123</Text>
-                        <Text>최고: 123</Text>
-                        <Text>최저: 123</Text>
+                        <Text style={styles.additionalText}>시작: 123</Text>
+                        <Text style={styles.additionalText}>최고: 123</Text>
+                        <Text style={styles.additionalText}>최저: 123</Text>
                     </View>
                 </View>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1  }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <View style={{ flex: 1 }}>
                     <View style={styles.additionalContainer}>
                         <Text style={styles.upperLimit}>상한가: 123</Text>
@@ -126,7 +130,7 @@ export default function StockScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#f9f9f9',
         padding: 16,
     },
     section: {
@@ -139,6 +143,14 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderBottomWidth: 1,
         borderBottomColor: '#ddd',
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+        marginBottom: 8,
     },
     price: {
         fontSize: 16,
@@ -148,7 +160,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     quantityContainer: {
-        flex: 1,
+        flex: 0.5,
         flexDirection: 'row',
         alignItems: 'center',
         position: 'relative',
@@ -171,6 +183,11 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: '#f0f0f0',
         borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     additionalText: {
         fontSize: 14,
