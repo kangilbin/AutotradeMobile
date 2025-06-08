@@ -58,7 +58,7 @@ export default function OrderBookRow({ item, type, currentPrice, maxQuantity }:R
     );
 }
 
-const styles = StyleSheet.create({
+const styles= StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         borderWidth: 2,
-        borderColor: '#d8e7fc',
+        borderColor: '#99c0f6',
         backgroundColor: '#ffffff',
         borderRadius: 8,
         marginBottom: 8,
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         borderWidth: 2,
-        borderColor: '#fce1e1',
+        borderColor: '#faacac',
         backgroundColor: '#ffffff',
         borderRadius: 8,
         marginBottom: 8,
@@ -104,6 +104,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         position: 'relative',
+        paddingHorizontal: 2,
     },
     gauge: {
         position: 'absolute',
