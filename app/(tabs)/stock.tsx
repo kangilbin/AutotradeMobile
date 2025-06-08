@@ -1,7 +1,28 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import React from "react";
+import OrderBookRow from "../../components/OrderBookRow";
 
 const mockOutput1 = {
+    askp1: "10100",
+    askp2: "10200",
+    askp3: "10300",
+    askp4: "10400",
+    askp5: "10500",
+    askp6: "10600",
+    askp7: "10700",
+    askp8: "10800",
+    askp9: "10900",
+    askp10: "11000",
+    bidp1: "10050",
+    bidp2: "9900",
+    bidp3: "9800",
+    bidp4: "9700",
+    bidp5: "9600",
+    bidp6: "9500",
+    bidp7: "9400",
+    bidp8: "9300",
+    bidp9: "9200",
+    bidp10: "9100",
     askp_rsqn1: "500",
     askp_rsqn2: "400",
     askp_rsqn3: "300",
@@ -27,10 +48,12 @@ const mockOutput1 = {
 const mockOutput2 = {
     stck_prpr: "10050", // 현재가
     stck_sdpr: "10000", // 기준가
+    stck_hgpr : "10500", // 최고가
+    stck_lwpr : "9500", // 최저가
 };
 
 export default function StockScreen() {
-    const referencePrice = parseFloat(mockOutput2.stck_sdpr);
+    const referencePrice = parseFloat(mockOutput2.stck_prpr);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
         quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),
@@ -44,82 +67,67 @@ export default function StockScreen() {
         rate: (((parseFloat(mockOutput1[`bidp${i + 1}`]) - referencePrice) / referencePrice) * 100).toFixed(2),
     }));
 
-    const maxQuantity = Math.max(
-        ...askData.map((item) => item.quantity),
-        ...bidData.map((item) => item.quantity)
-    );
-
-    const renderRow = (item, type) => (
-        <View style={styles.row}>
-            {type === 'ask' && (
-                <>
-                    <View style={[styles.quantityContainer]}>
-                        <Text style={[styles.quantity, { textAlign: 'right', flex: 1 }]}>{item.quantity.toLocaleString()}</Text>
-                        <View
-                            style={[
-                                styles.gauge,
-                                { width: `${(item.quantity / maxQuantity) * 100}%` },
-                                { backgroundColor: '#d8e7fc', alignSelf: 'flex-end', right: 0, position: 'absolute' },
-                            ]}
-                        />
-                    </View>
-                    <View style={{ flex: 0.5, alignItems: 'center' }}>
-                        <Text style={styles.price}>{item.price.toLocaleString()}</Text>
-                    </View>
-                </>
-            )}
-            {type === 'bid' && (
-                <>
-                    <View style={{ flex: 0.5, alignItems: 'center' }}>
-                        <Text style={styles.price}>{item.price.toLocaleString()}</Text>
-                    </View>
-                    <View style={styles.quantityContainer}>
-                        <View
-                            style={[
-                                styles.gauge,
-                                { width: `${(item.quantity / maxQuantity) * 100}%` },
-                                { backgroundColor: '#fce1e1', alignSelf: 'flex-start' },
-                            ]}
-                        />
-                        <Text style={styles.quantity}>{item.quantity.toLocaleString()}</Text>
-                    </View>
-                </>
-            )}
-        </View>
-    );
+    const maxAsk = Math.max(...askData.map((a) => a.quantity));
+    const maxBid = Math.max(...bidData.map((b) => b.quantity));
 
     return (
         <ScrollView style={styles.container}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <View style={{ flex: 2 }}>
                     {askData.map((item, index) => (
-                        <React.Fragment key={index}>
-                            {renderRow(item, 'ask')}
-                        </React.Fragment>
+                        <OrderBookRow
+                            key={`ask-${index}`}
+                            currentPrice={referencePrice}
+                            item={item}
+                            type="ask"
+                            maxQuantity={maxAsk}
+                        />
                     ))}
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, padding: 8 }}>
                     <View style={styles.additionalContainer}>
-                        <Text style={styles.upperLimit}>상한가: 123</Text>
-                        <Text style={styles.lowerLimit}>하한가: 123</Text>
-                        <Text style={styles.additionalText}>시작: 123</Text>
-                        <Text style={styles.additionalText}>최고: 123</Text>
-                        <Text style={styles.additionalText}>최저: 123</Text>
+                        <Text style={styles.additionalText}>상한가</Text>
+                        <Text style={styles.additionalText}>3,000</Text>
+                    </View>
+                    <View style={styles.additionalContainer}>
+                        <Text style={styles.additionalText}>하한가</Text>
+                        <Text style={styles.additionalText}>2,000</Text>
+                    </View>
+                    <View style={styles.additionalContainer}>
+                        <Text style={styles.additionalText}>시작</Text>
+                        <Text style={styles.additionalText}>1,000</Text>
+                    </View>
+                    <View style={styles.additionalContainer}>
+                        <Text style={styles.additionalText}>고가</Text>
+                        <Text style={styles.additionalText}>2,000</Text>
+                    </View>
+                    <View style={styles.additionalContainer}>
+                        <Text style={styles.additionalText}>저가</Text>
+                        <Text style={styles.additionalText}>21,000</Text>
                     </View>
                 </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <View style={{ flex: 1 }}>
                     <View style={styles.additionalContainer}>
-                        <Text style={styles.upperLimit}>상한가: 123</Text>
-                        <Text style={styles.lowerLimit}>하한가: 123</Text>
+                        <Text style={styles.additionalText}>상한가</Text>
+                        <Text style={styles.additionalText}>3,000</Text>
+                    </View>
+                    <View style={styles.additionalContainer}>
+                        <Text style={styles.additionalText}>하한가</Text>
+                        <Text style={styles.additionalText}>2,000</Text>
                     </View>
                 </View>
                 <View style={{ flex: 2 }}>
-                    {askData.map((item, index) => (
-                        <React.Fragment key={index}>
-                            {renderRow(item, 'bid')}
-                        </React.Fragment>
+                    {bidData.map((item, index) => (
+                        <OrderBookRow
+                            key={`bid-${index}`}
+                            currentPrice={referencePrice}
+                            item={item}
+                            type="bid"
+                            maxQuantity={maxBid}
+                        />
+
                     ))}
                 </View>
             </View>
@@ -177,12 +185,10 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     additionalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 8,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        padding: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -190,18 +196,9 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     additionalText: {
-        fontSize: 14,
-        color: '#666',
-    },
-    upperLimit: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#ff0000',
-        marginBottom: 4,
-    },
-    lowerLimit: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#0000ff',
+        padding:1,
+        fontSize: 12,
+        color: '#939393',
+        textAlign: 'left',
     },
 });
