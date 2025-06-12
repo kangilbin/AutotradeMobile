@@ -22,7 +22,7 @@ export default function AccountListScreen() {
 
     const handleAccountPress = (account) => {
         setAccount(account);
-        router.push('home');
+        router.back();
     }
     return (
         <View style={styles.container}>
