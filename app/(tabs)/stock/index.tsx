@@ -58,7 +58,12 @@ export default function SearchStockScreen() {
                         style={styles.stockItem}
                         onPress={() => handleStockPress(item.NAME, item.ST_CODE)}
                     >
-                        <Text style={styles.stockText}>{item.NAME}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 8 }}>
+                            <View style={[styles.stockCodeText, { marginRight: 12 }]}>
+                                <Text>{item.ST_CODE}</Text>
+                            </View>
+                            <Text style={[styles.stockText, { flex: 1 }]}>{item.NAME}</Text>
+                        </View>
                     </TouchableOpacity>
                 )}
                 ListEmptyComponent={
@@ -99,6 +104,21 @@ const styles = StyleSheet.create({
     stockText: {
         fontSize: 16,
         color: "#333",
+    },
+    stockCodeText: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#333333", // Neutral dark gray for text
+        backgroundColor: "#F5F5F5", // Light gray background
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        textAlign: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 1,
     },
     emptyText: {
         textAlign: "center",
