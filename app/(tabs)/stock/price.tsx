@@ -1,8 +1,9 @@
 import {View, Text, StyleSheet, ScrollView, TextInput, Pressable, TouchableOpacity} from 'react-native';
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import {kisSoket} from "../../../contexts/backEndApi";
 
 const mockOutput1 = {
     askp1: "10100",
@@ -58,6 +59,17 @@ export default function PriceScreen() {
     const { stockName, stCode } = useLocalSearchParams();
     const referencePrice = parseFloat(mockOutput2.stck_prpr);
 
+    useEffect(() => {
+        const socket = kisSoket((message) => {
+            console.log('Received message:', message);
+        });
+
+        return () => {
+            socket.close();
+            console.log('WebSocket connection closed');
+        };
+    }, []);
+
     const askData = Array.from({ length: 10 }, (_, i) => ({
         quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),
         price: parseFloat(mockOutput1[`askp${10 - i}`]),
@@ -85,7 +97,7 @@ export default function PriceScreen() {
                 </View>
                 <AntDesign name="search1" size={24} color="black" />
             </TouchableOpacity>
-            <ScrollView style={styles.container}>
+            <ScrollView style={styles.container} contentOffset={{ y: 100 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <View style={{ flex: 2 }}>
                         {askData.map((item, index) => (
