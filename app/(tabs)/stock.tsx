@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import React from "react";
+import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import React, {useState} from "react";
 import OrderBookRow from "../../components/OrderBookRow";
 
 const mockOutput1 = {
@@ -53,6 +53,7 @@ const mockOutput2 = {
 };
 
 export default function StockScreen() {
+    const [searchQuery, setSearchQuery] = useState("");
     const referencePrice = parseFloat(mockOutput2.stck_prpr);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
@@ -71,67 +72,78 @@ export default function StockScreen() {
     const maxBid = Math.max(...bidData.map((b) => b.quantity));
 
     return (
-        <ScrollView style={styles.container}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={{ flex: 2 }}>
-                    {askData.map((item, index) => (
-                        <OrderBookRow
-                            key={`ask-${index}`}
-                            currentPrice={referencePrice}
-                            item={item}
-                            type="ask"
-                            maxQuantity={maxAsk}
-                        />
-                    ))}
-                </View>
-                <View style={{ flex: 1, padding: 8 }}>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>상한가</Text>
-                        <Text style={styles.additionalText}>3,000</Text>
-                    </View>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>하한가</Text>
-                        <Text style={styles.additionalText}>2,000</Text>
-                    </View>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>시작</Text>
-                        <Text style={styles.additionalText}>1,000</Text>
-                    </View>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>고가</Text>
-                        <Text style={styles.additionalText}>2,000</Text>
-                    </View>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>저가</Text>
-                        <Text style={styles.additionalText}>21,000</Text>
-                    </View>
-                </View>
+        <>
+            {/* Stock Search Input */}
+            <View style={styles.searchContainer}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="주식 검색..."
+                    value={searchQuery}
+                    editable={false}
+                />
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={{ flex: 1 }}>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>상한가</Text>
-                        <Text style={styles.additionalText}>3,000</Text>
+            <ScrollView style={styles.container}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ flex: 2 }}>
+                        {askData.map((item, index) => (
+                            <OrderBookRow
+                                key={`ask-${index}`}
+                                currentPrice={referencePrice}
+                                item={item}
+                                type="ask"
+                                maxQuantity={maxAsk}
+                            />
+                        ))}
                     </View>
-                    <View style={styles.additionalContainer}>
-                        <Text style={styles.additionalText}>하한가</Text>
-                        <Text style={styles.additionalText}>2,000</Text>
+                    <View style={{ flex: 1, padding: 8 }}>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>상한가</Text>
+                            <Text style={styles.additionalText}>3,000</Text>
+                        </View>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>하한가</Text>
+                            <Text style={styles.additionalText}>2,000</Text>
+                        </View>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>시작</Text>
+                            <Text style={styles.additionalText}>1,000</Text>
+                        </View>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>고가</Text>
+                            <Text style={styles.additionalText}>2,000</Text>
+                        </View>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>저가</Text>
+                            <Text style={styles.additionalText}>21,000</Text>
+                        </View>
                     </View>
                 </View>
-                <View style={{ flex: 2 }}>
-                    {bidData.map((item, index) => (
-                        <OrderBookRow
-                            key={`bid-${index}`}
-                            currentPrice={referencePrice}
-                            item={item}
-                            type="bid"
-                            maxQuantity={maxBid}
-                        />
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ flex: 1 }}>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>상한가</Text>
+                            <Text style={styles.additionalText}>3,000</Text>
+                        </View>
+                        <View style={styles.additionalContainer}>
+                            <Text style={styles.additionalText}>하한가</Text>
+                            <Text style={styles.additionalText}>2,000</Text>
+                        </View>
+                    </View>
+                    <View style={{ flex: 2 }}>
+                        {bidData.map((item, index) => (
+                            <OrderBookRow
+                                key={`bid-${index}`}
+                                currentPrice={referencePrice}
+                                item={item}
+                                type="bid"
+                                maxQuantity={maxBid}
+                            />
 
-                    ))}
+                        ))}
+                    </View>
                 </View>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </>
     );
 }
 
@@ -200,5 +212,23 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#939393',
         textAlign: 'left',
+    },
+    searchContainer: {
+        marginBottom: 16,
+        paddingHorizontal: 16,
+        backgroundColor: '#f9f9f9',
+    },
+    searchInput: {
+        height: 40,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
 });
