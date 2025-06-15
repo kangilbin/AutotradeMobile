@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import React, {useState} from "react";
-import OrderBookRow from "../../components/OrderBookRow";
+import OrderBookRow from "../../../components/OrderBookRow";
+import { useLocalSearchParams } from 'expo-router';
 
 const mockOutput1 = {
     askp1: "10100",
@@ -52,8 +53,8 @@ const mockOutput2 = {
     stck_lwpr : "9500", // 최저가
 };
 
-export default function StockScreen() {
-    const [searchQuery, setSearchQuery] = useState("");
+export default function PriceScreen() {
+    const { stockName } = useLocalSearchParams();
     const referencePrice = parseFloat(mockOutput2.stck_prpr);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
@@ -78,7 +79,7 @@ export default function StockScreen() {
                 <TextInput
                     style={styles.searchInput}
                     placeholder="주식 검색..."
-                    value={searchQuery}
+                    value={stockName}
                     editable={false}
                 />
             </View>
@@ -214,8 +215,7 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     searchContainer: {
-        marginBottom: 16,
-        paddingHorizontal: 16,
+        padding: 16,
         backgroundColor: '#f9f9f9',
     },
     searchInput: {
