@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import {AccountResponse, AccountStatus} from "../types/account";
 import {AddAuthRequest, AuthStatus} from "../types/auth";
+import {StockResponse} from "../types/stock";
 
 let setLoadingState: (loading: boolean) => void;
 let isRefreshing = false;
@@ -206,7 +207,7 @@ export const getAuthList = async (): Promise<AuthStatus[]> => {
     }
 }
 
-
+// 계좌 목록 조회
 export const getAccountList = async (): Promise<AccountResponse> => {
     try {
         const response = await api.get('/accounts');
@@ -214,6 +215,18 @@ export const getAccountList = async (): Promise<AccountResponse> => {
     } catch (error) {
         console.log('Error Response:', error.response);
         Alert.alert('계좌 목록 조회 에러 발생', error.response?.data || error.message);
+    }
+}
+
+
+// 주식 검색
+export const searchStock = async (query: string): Promise<StockResponse> => {
+    try {
+        const response = await api.get('/stock', { params: { query } });
+        return response.data;
+    } catch (error) {
+        console.log('Error Response:', error.response);
+        Alert.alert('주식 검색 에러 발생', error.response?.data || error.message);
     }
 }
 

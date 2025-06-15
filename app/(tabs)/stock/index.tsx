@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import {StyleSheet, TextInput, View, FlatList, Text, TouchableOpacity} from "react-native";
 import {router} from "expo-router";
+import {getAccountList, searchStock} from "../../../contexts/backEndApi";
+import {StockStatus} from "../../../types/stock";
 
 const stockList = [
     "Apple Inc.",
@@ -17,19 +19,21 @@ const stockList = [
 
 export default function SearchStockScreen() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [filteredStocks, setFilteredStocks] = useState(stockList);
+    const [stocks, setStocks] = useState<StockStatus[]>();
+    useEffect(() => {
+        const fetchStockList = async () => {
+            const response = await searchStock(searchQuery);
+            setStocks(response?.data || []);
+        };
+        if (searchQuery.length !== 0){
+            fetchStockList();
+        }
+    }, [searchQuery]);
 
-    const handleSearch = (query: string) => {
-        setSearchQuery(query);
-        const filtered = stockList.filter((stock) =>
-            stock.toLowerCase().includes(query.toLowerCase())
-        );
-        setFilteredStocks(filtered);
-    };
-    const handleStockPress = (stockName: string) => {
+    const handleStockPress = (stockName: string, stCode: string) => {
         router.push({
             pathname: "stock/price",
-            params: { stockName },
+            params: { stockName, stCode },
         });
     };
 
@@ -41,20 +45,20 @@ export default function SearchStockScreen() {
                     style={styles.searchInput}
                     placeholder="Search stock..."
                     value={searchQuery}
-                    onChangeText={handleSearch}
+                    onChangeText={setSearchQuery}
                 />
             </View>
 
             {/* Filtered Stock List */}
             <FlatList
-                data={filteredStocks}
+                data={stocks}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         style={styles.stockItem}
-                        onPress={() => handleStockPress(item)}
+                        onPress={() => handleStockPress(item.NAME, item.ST_CODE)}
                     >
-                        <Text style={styles.stockText}>{item}</Text>
+                        <Text style={styles.stockText}>{item.NAME}</Text>
                     </TouchableOpacity>
                 )}
                 ListEmptyComponent={

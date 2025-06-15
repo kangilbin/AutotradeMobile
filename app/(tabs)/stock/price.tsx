@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import React, {useState} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
-import { useLocalSearchParams } from 'expo-router';
+import {router, useLocalSearchParams} from 'expo-router';
 
 const mockOutput1 = {
     askp1: "10100",
@@ -81,6 +81,7 @@ export default function PriceScreen() {
                     placeholder="주식 검색..."
                     value={stockName}
                     editable={false}
+                    onPressIn={() => router.back()}
                 />
             </View>
             <ScrollView style={styles.container}>
