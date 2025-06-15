@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import TopHeader from "../../components/TopHeader";
-import {StatusBar} from "expo-status-bar";
 import {SafeAreaProvider} from "react-native-safe-area-context";
 export default function TabLayout() {
     return (

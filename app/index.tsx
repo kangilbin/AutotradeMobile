@@ -13,7 +13,7 @@ export default function StartPageScreen() {
                 try {
                     const response = await refreshAccessToken(token);
                     await SecureStore.setItemAsync('access_token', response!.access_token);
-                    setRoute('/account');
+                    setRoute('/home');
                 } catch {
                     setRoute('/login');
                 }
