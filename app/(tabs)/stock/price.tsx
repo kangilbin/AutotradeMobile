@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
+import {View, Text, StyleSheet, ScrollView, TextInput, Pressable, TouchableOpacity} from 'react-native';
 import React, {useState} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams} from 'expo-router';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 const mockOutput1 = {
     askp1: "10100",
@@ -54,7 +55,7 @@ const mockOutput2 = {
 };
 
 export default function PriceScreen() {
-    const { stockName } = useLocalSearchParams();
+    const { stockName, stCode } = useLocalSearchParams();
     const referencePrice = parseFloat(mockOutput2.stck_prpr);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
@@ -75,15 +76,15 @@ export default function PriceScreen() {
     return (
         <>
             {/* Stock Search Input */}
-            <View style={styles.searchContainer}>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="주식 검색..."
-                    value={stockName}
-                    editable={false}
-                    onPressIn={() => router.back()}
-                />
-            </View>
+            <TouchableOpacity style={styles.searchContainer} onPress={() => router.back()}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 8 }}>
+                    <View style={[styles.stockCodeText, { marginRight: 12 }]}>
+                        <Text>{stCode}</Text>
+                    </View>
+                    <Text style={[styles.stockText, { flex: 1 }]}>{stockName}</Text>
+                </View>
+                <AntDesign name="search1" size={24} color="black" />
+            </TouchableOpacity>
             <ScrollView style={styles.container}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <View style={{ flex: 2 }}>
@@ -217,19 +218,49 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         padding: 16,
-        backgroundColor: '#f9f9f9',
+        paddingRight: 36,
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#ffffff",
+        borderBottomWidth: 1,
+        borderBottomColor: "#e0e0e0",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        borderRadius: 8,
     },
     searchInput: {
         height: 40,
         borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        backgroundColor: '#fff',
+        borderColor: '#B5EAD7', // Match the active tint color for consistency
+        borderRadius: 20, // Rounded corners for a modern look
+        paddingHorizontal: 16, // Increased padding for better usability
+        backgroundColor: '#F5F5F5', // Light gray background for a clean design
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
+    },
+    stockText: {
+        fontSize: 16,
+        color: "#333",
+    },
+    stockCodeText: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#333333", // Neutral dark gray for text
+        backgroundColor: "#F5F5F5", // Light gray background
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        textAlign: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 1,
     },
 });
