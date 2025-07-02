@@ -1,8 +1,8 @@
 import {StyleSheet, Text, TouchableOpacity} from "react-native";
+import { AccountStatus } from "../types/account";
 
 
-
-export default function AccountBox({account, onPress}) {
+export default function AccountBox({account, onPress}: {account: AccountStatus, onPress: () => void}) {
     return (
         <TouchableOpacity style={styles.codeBox} onPress={onPress}>
             <Text style={styles.label}>{account.SIMULATION_YN === 'Y' ? '모의' : '실전'}</Text>

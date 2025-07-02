@@ -4,8 +4,8 @@ import {Alert} from "react-native";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
-import {AccountResponse, AccountStatus} from "../types/account";
-import {AddAuthRequest, AuthStatus} from "../types/auth";
+import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/account";
+import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
 import {StockResponse} from "../types/stock";
 
 let setLoadingState: (loading: boolean) => void;
@@ -118,34 +118,54 @@ api.interceptors.response.use(
     }
 );
 
+// API 에러 타입 정의
+interface ApiErrorResponse {
+    detail?: string;
+    message?: string;
+    [key: string]: any;
+}
+
+// 타입 안전한 에러 처리 헬퍼 함수
+const isAxiosError = (error: unknown): error is AxiosError<ApiErrorResponse> => {
+    return axios.isAxiosError(error);
+};
+
+const handleApiError = (error: unknown, operation: string): undefined => {
+    if (isAxiosError(error)) {
+        console.log(`${operation} Error Response:`, error.response);
+        
+        const errorMessage = error.response?.data?.detail || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           '알 수 없는 오류가 발생했습니다';
+        
+        Alert.alert(`${operation} 실패`, errorMessage);
+    } else {
+        console.error(`${operation} Unexpected Error:`, error);
+        Alert.alert(`${operation} 실패`, '예상치 못한 오류가 발생했습니다');
+    }
+    return undefined;
+};
+
+
+
 // 회원 가입
-export const signup = async (param: any): Promise<any | undefined> => {
+export const signup = async (param: SignupRequest): Promise<any | undefined> => {
     try {
         const response = await api.post('/signup', param);
         return response.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('회원가입 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
-        return undefined;
+        return handleApiError(error, '회원가입');
     }
 };
 
-type LoginResponse = {
-    access_token: string;
-    refresh_token?: string;
-};
-
 // 로그인
-export const login = async (param: any): Promise<LoginResponse | undefined> => {
+export const login = async (param: LoginRequest): Promise<LoginResponse | undefined> => {
     try {
         const response = await api.post('/login', param);
         return response.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('로그인 실패', JSON.stringify(axiosError.response?.data) || axiosError.message);
-        return undefined;
+        return handleApiError(error, '로그인');
     }
 };
 
@@ -155,10 +175,7 @@ export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean }
         const response = await api.get('/check_id', { params: { user_id } });
         return response.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('중복 체크 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
-        return undefined;
+        return handleApiError(error, '중복 체크');
     }
 };
 
@@ -168,9 +185,7 @@ export const refreshAccessToken = async (refresh_token: string): Promise<LoginRe
         const response = await api.post('/refresh', { refresh_token });
         return response.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('토큰 오류', JSON.stringify(axiosError.response?.data) || axiosError.message);
+        console.error('토큰 갱신 실패:', error);
         return undefined;
     }
 };
@@ -187,10 +202,7 @@ export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus
         const response = await api.post('/account', param);
         return response.data.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('계좌 추가 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
-        return undefined;
+        return handleApiError(error, '계좌 추가');
     }
 };
 
@@ -201,21 +213,27 @@ export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undef
         const response = await api.post('/auth', param);
         return response.data.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('권한 추가 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
+        return handleApiError(error, '권한 추가');
     }
 };
 
-
+// 권한 목록 조회
 export const getAuthList = async (): Promise<AuthStatus[] | undefined> => {
     try {
         const response = await api.get('/auths');
         return response.data.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('권한 목록 조회 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
+        return handleApiError(error, '권한 목록 조회');
+    }
+}
+
+// 권한 선택
+export const chooseAuth = async (param: ChooseAccountRequest): Promise<AuthStatus | undefined> => {
+    try {
+        const response = await api.post('/auth/choice', param);
+        return response.data.data;
+    } catch (error: unknown) {  
+        return handleApiError(error, '권한 선택');
     }
 }
 
@@ -225,9 +243,7 @@ export const getAccountList = async (): Promise<AccountResponse | undefined> => 
         const response = await api.get('/accounts');
         return response.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('계좌 목록 조회 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
+        return handleApiError(error, '계좌 목록 조회');
     }
 }
 
@@ -238,12 +254,32 @@ export const searchStock = async (query: string): Promise<StockResponse | undefi
         const response = await api.get('/stock', { params: { query } });
         return response.data;
     } catch (error: unknown) {
-        const axiosError = error as AxiosError;
-        console.log('Error Response:', axiosError.response);
-        Alert.alert('주식 검색 에러 발생', JSON.stringify(axiosError.response?.data) || axiosError.message);
-        return undefined;
+        return handleApiError(error, '주식 검색');
     }
 }
+
+// WebSocket 토큰 인증 함수
+export const authenticateWebSocket = async (socket: WebSocket): Promise<boolean> => {
+    try {
+        const accessToken = await SecureStore.getItemAsync('access_token');
+        if (!accessToken) {
+            console.error('액세스 토큰이 없습니다');
+            return false;
+        }
+
+        // 인증 요청 전송
+        socket.send(JSON.stringify({
+            type: 'auth',
+            token: accessToken
+        }));
+        console.log('WebSocket 인증 토큰 전송 완료');
+        
+        return true;
+    } catch (error) {
+        console.error('WebSocket 인증 토큰 전송 실패:', error);
+        return false;
+    }
+};
 
 export const kisSoket = (onMessage: (message: any) => void): WebSocket => {
     const socket = new WebSocket('http://localhost:8000/kis_socket');

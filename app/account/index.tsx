@@ -6,6 +6,7 @@ import AccountBox from '../../components/AccountBox';
 import {getAccountList} from '../../contexts/backEndApi';
 import {AccountStatus} from "../../types/account";
 import {useAccountStore} from "../../stores/useAccountStore";
+import {chooseAuth} from '../../contexts/backEndApi';
 
 export default function AccountListScreen() {
     const router = useRouter();
@@ -22,6 +23,7 @@ export default function AccountListScreen() {
 
     const handleAccountPress = (account: AccountStatus) => {
         setAccount(account);
+        chooseAuth({AUTH_ID: account.AUTH_ID, ACCOUNT_NO: account.ACCOUNT_NO});
         router.back();
     }
     return (

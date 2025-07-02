@@ -3,14 +3,7 @@ import {Alert, StyleSheet, Text, TextInput, TouchableOpacity,} from 'react-nativ
 import {useRouter} from 'expo-router';
 import {checkId, signup} from '../../contexts/backEndApi';
 import DismissKeyboardView from "../../components/DismissKeyboardView";
-
-type FormState = {
-    USER_ID: string;
-    USER_NAME: string;
-    PHONE: string;
-    PASSWORD: string;
-    confirmPassword: string;
-}
+import { SignupRequest } from '../../types/auth';
 
 export default function SignupScreen() {
     const idInputRef = useRef<TextInput | null>(null);
@@ -18,7 +11,7 @@ export default function SignupScreen() {
     const passwordInputRef = useRef<TextInput | null>(null);
     const confirmPasswordInputRef = useRef<TextInput | null>(null);
     const [isDuplicate, setIsDuplicate] = useState(false);
-    const [form, setForm] = useState<FormState>({
+    const [form, setForm] = useState<SignupRequest>({
         USER_ID: '',
         USER_NAME: '',
         PHONE: '',
@@ -33,14 +26,16 @@ export default function SignupScreen() {
         if (!form.USER_ID) return;
 
         try {
-            const response: { isDuplicate: boolean } = await checkId(form.USER_ID);
-            setIsDuplicate(response.isDuplicate); // Assume API returns { isDuplicate: boolean }
+            const response = await checkId(form.USER_ID);
+            if (response) {
+                setIsDuplicate(response.isDuplicate);
+            }
         } catch (error) {
             console.error('Error checking duplicate ID:', error);
         }
     };
 
-    const handleInputChange = (field: keyof FormState, value: string) => {
+    const handleInputChange = (field: keyof SignupRequest, value: string) => {
         setForm((prev) => ({
             ...prev,
             [field]: value,
@@ -77,7 +72,7 @@ export default function SignupScreen() {
                     Alert.alert('오류', '중복된 아이디입니다.');
                     return;
                 }
-                Alert.alert('Signup Successful', '회원 가입 완료.');
+                Alert.alert('회원가입 완료', '회원가입이 성공적으로 완료되었습니다.');
                 router.dismiss();
             }
         } catch (error) {
@@ -87,9 +82,9 @@ export default function SignupScreen() {
 
     const isSignupEnabled =
         form.USER_ID.length > 0 &&
-        form.USER_NAME.length > 0 &&
+        (form.USER_NAME?.length ?? 0) > 0 &&
         form.PASSWORD.length > 0 &&
-        form.confirmPassword.length > 0 &&
+        (form.confirmPassword?.length ?? 0) > 0 &&
         !isDuplicate;
 
     return (
