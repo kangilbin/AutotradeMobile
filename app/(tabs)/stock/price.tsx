@@ -1,12 +1,16 @@
-import {View, Text, StyleSheet, ScrollView, TextInput, Pressable, TouchableOpacity} from 'react-native';
-import React, {useEffect, useState, useRef} from "react";
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import React, {useEffect, useState} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import {kisSoket, authenticateWebSocket} from "../../../contexts/backEndApi";
-import * as SecureStore from 'expo-secure-store';
+import { useWebSocketContext } from "../../../contexts/WebSocketContext";
 
-const mockOutput1 = {
+// 타입 정의 추가
+interface MockOutput1Type {
+    [key: string]: string;
+}
+
+const mockOutput1: MockOutput1Type = {
     askp1: "10100",
     askp2: "10200",
     askp3: "10300",
@@ -59,90 +63,29 @@ const mockOutput2 = {
 export default function PriceScreen() {
     const { stockName, stCode } = useLocalSearchParams();
     const referencePrice = parseFloat(mockOutput2.stck_prpr);
-    const socketRef = useRef<WebSocket | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { isConnected, connectionStatus, sendMessage } = useWebSocketContext();
+    const [stockData, setStockData] = useState<any>(null);
 
     useEffect(() => {
-        let isAuthenticated = false;
-        let hasRequestedData = false;
-        
-        const socket = kisSoket((message) => {
-            console.log('Received message:', message);
-            
-            try {
-                const data = JSON.parse(message);
+        // 연결되면 주식 데이터 요청
+        if (isConnected) {
+            sendMessage({
+                tr_type: 'H0STASP0',
+                tr_id: '1',
+                st_code: stCode
+            }, (data) => {
+                // 응답 처리
+                console.log('주식 데이터 응답:', data);
                 
-                // 인증 응답 처리
-                if (data.type === 'auth_response') {
-                    if (data.success) {
-                        console.log('인증 성공');
-                        isAuthenticated = true;
-                        setIsAuthenticated(true);
-                        
-                        // 인증 성공 후 첫 데이터 요청 (한 번만)
-                        if (!hasRequestedData) {
-                            socket.send(JSON.stringify({
-                                tr_type: 'H0STASP0',
-                                tr_id: '1',
-                                st_code: stCode
-                            }));
-                            console.log('첫 주식 시세 요청 전송 완료');
-                            hasRequestedData = true;
-                        }
-                    } else {
-                        console.error('인증 실패:', data.message);
-                        setIsAuthenticated(false);
-                    }
-                }
+                setStockData(data);
                 
-                // 주식 데이터 응답 처리
-                if (data.tr_type === 'H0STASP0') {
-                    console.log('주식 시세 데이터 수신:', data);
-                    // 여기서 실제 데이터 처리 로직 추가
-                    // setStockData(data); // 예시
-                }
-                
-                // 에러 응답 처리
                 if (data.type === 'error') {
                     console.error('서버 에러:', data.message);
                 }
-                
-            } catch (error) {
-                console.error('메시지 파싱 오류:', error);
-            }
-        });
-
-        // 웹소켓 연결 후 인증 토큰 전송
-        socket.onopen = async () => {
-            console.log('WebSocket 연결됨, 인증 시작...');
-            const authSuccess = await authenticateWebSocket(socket);
-            if (!authSuccess) {
-                console.error('WebSocket 인증 실패');
-                setIsAuthenticated(false);
-            }
-        };
-
-        // 연결 에러 처리
-        socket.onerror = (error) => {
-            console.error('WebSocket 연결 에러:', error);
-            setIsAuthenticated(false);
-        };
-
-        // 연결 종료 처리
-        socket.onclose = (event) => {
-            console.log('WebSocket 연결 종료:', event.code, event.reason);
-            setIsAuthenticated(false);
-        };
-
-        socketRef.current = socket;
-
-        return () => {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.close();
-            }
-            console.log('WebSocket connection closed');
-        };
-    }, [stCode]);
+            });
+            console.log('주식 시세 요청 전송 완료');
+        }
+    }, [isConnected, stCode]); // sendMessage 제거
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
         quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),
@@ -171,7 +114,17 @@ export default function PriceScreen() {
                 </View>
                 <AntDesign name="search1" size={24} color="black" />
             </TouchableOpacity>
-            <ScrollView style={styles.container} contentOffset={{ y: 100 }}>
+            
+            {/* 연결 상태 표시 */}
+            <View style={[styles.statusBar, { backgroundColor: connectionStatus === 'connected' ? '#4CAF50' : connectionStatus === 'connecting' ? '#FF9800' : '#F44336' }]}>
+                <Text style={styles.statusText}>
+                    {connectionStatus === 'connected' ? '연결됨' : 
+                     connectionStatus === 'connecting' ? '연결 중...' : 
+                     connectionStatus === 'error' ? '연결 오류' : '연결 끊김'}
+                </Text>
+            </View>
+            
+            <ScrollView style={styles.container} contentOffset={{ x: 0, y: 100 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <View style={{ flex: 2 }}>
                         {askData.map((item, index) => (
@@ -241,6 +194,15 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f9f9f9',
         padding: 16,
+    },
+    statusBar: {
+        padding: 8,
+        alignItems: 'center',
+    },
+    statusText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     section: {
         marginVertical: 8,
