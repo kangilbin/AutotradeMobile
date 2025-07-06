@@ -22,6 +22,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     const socketRef = useRef<WebSocket | null>(null);
     const responseCallbackRef = useRef<((data: any) => void) | null>(null);
     const hasSentInitialToken = useRef(false);
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const reconnectAttempts = useRef(0);
+    const maxReconnectAttempts = 5;
 
     const connect = useCallback(() => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -37,6 +40,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
                 console.log('WebSocket 연결됨');
                 setIsConnected(true);
                 setConnectionStatus('connected');
+                reconnectAttempts.current = 0; // 연결 성공 시 재시도 횟수 리셋
+                
+                // 재연결 타이머 정리
+                if (reconnectTimeoutRef.current) {
+                    clearTimeout(reconnectTimeoutRef.current);
+                    reconnectTimeoutRef.current = null;
+                }
                 
                 // 최초 연결 시 토큰 전송 (한 번만)
                 if (!hasSentInitialToken.current) {
@@ -87,7 +97,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
                 console.log('WebSocket 연결 종료:', event.code, event.reason);
                 setIsConnected(false);
                 setConnectionStatus('disconnected');
-                hasSentInitialToken.current = false; // 재연결 시 다시 토큰 전송
+                // hasSentInitialToken.current = false; // 재연결 시 토큰 재전송하지 않음
+                
+                // 자동 재연결 시도
+                if (reconnectAttempts.current < maxReconnectAttempts) {
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000); // 지수 백오프, 최대 30초
+                    console.log(`${delay}ms 후 재연결 시도 ${reconnectAttempts.current + 1}/${maxReconnectAttempts}`);
+                    
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        reconnectAttempts.current++;
+                        connect();
+                    }, delay);
+                } else {
+                    console.log('최대 재연결 시도 횟수 초과');
+                    setConnectionStatus('error');
+                }
             };
 
             socketRef.current = socket;
@@ -98,6 +122,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     }, [url]);
 
     const disconnect = useCallback(() => {
+        // 재연결 타이머 정리
+        if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+        }
+        
+        reconnectAttempts.current = 0; // 수동 연결 해제 시 재시도 횟수 리셋
+        
         if (socketRef.current) {
             socketRef.current.close();
             socketRef.current = null;
@@ -108,12 +140,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     }, []);
 
     const sendMessage = useCallback((message: any, onResponse?: (data: any) => void) => {
+        console.log('sendMessage 호출됨 - 연결 상태:', socketRef.current?.readyState);
         if (socketRef.current?.readyState === WebSocket.OPEN) {
             // 응답 콜백 저장
             if (onResponse) {
                 responseCallbackRef.current = onResponse;
             }
             
+            console.log('메시지 전송:', JSON.stringify(message));
             socketRef.current.send(JSON.stringify(message));
             return true;
         }
@@ -125,6 +159,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
         connect();
 
         return () => {
+            // 재연결 타이머 정리
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
             disconnect();
         };
     }, [connect, disconnect]);
