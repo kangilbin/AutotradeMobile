@@ -41,7 +41,7 @@ export default function AddAccountScreen() {
         };
         fetchAuthList();
     }, []);
-    const handleChange = (field: keyof AddAccountRequest, value) =>
+    const handleChange = (field: keyof AddAccountRequest, value: string | number) =>
         setForm(prev => ({...prev, [field]: value}));
 
     /* ─ 계좌 저장 ─ */
@@ -62,10 +62,10 @@ export default function AddAccountScreen() {
         try {
             const response = await addAuth(newAuth);
             setAuthList((prev) => [...prev, response as AuthStatus]);
-            handleChange('AUTH_ID', response?.AUTH_ID);
+            handleChange('AUTH_ID', response!.AUTH_ID);
             setNewAuth({SIMULATION_YN:'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
             setIsAddModalVisible(false);
-        } catch (error) {
+        } catch (error: any) {
             Alert.alert('오류', error.response?.data || error.message);
         }
     };
@@ -135,9 +135,9 @@ export default function AddAccountScreen() {
                         }}
                         style={styles.picker}
                     >
-                        <Picker.Item<number> label="보안키 선택" value={0} />
+                        <Picker.Item label="보안키 선택" value={0} />
                         {authList.map(a => (
-                            <Picker.Item<number> key={a.AUTH_ID} label={a.AUTH_NAME} value={a.AUTH_ID} />
+                            <Picker.Item key={a.AUTH_ID} label={a.AUTH_NAME} value={a.AUTH_ID} />
                         ))}
                     </Picker>
                 </View>

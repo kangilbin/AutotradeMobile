@@ -20,7 +20,7 @@ export default function AccountListScreen() {
         fetchAccountList();
     }, []);
 
-    const handleAccountPress = (account) => {
+    const handleAccountPress = (account: AccountStatus) => {
         setAccount(account);
         router.back();
     }

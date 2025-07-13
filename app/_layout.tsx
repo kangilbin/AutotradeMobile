@@ -2,7 +2,7 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font/build/FontHooks';
+import { useFonts } from 'expo-font';
 import LoadingIndicator from "../components/LoadingIndicator";
 
 SplashScreen.preventAutoHideAsync(); // 앱 시작 시 Splash 유지
