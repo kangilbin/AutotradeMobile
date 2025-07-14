@@ -1,7 +1,7 @@
 import {useEffect, useRef} from 'react';
 import { Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 
-export default function AuthToggle({ isOn, onToggle }){
+export default function AuthToggle({ isOn, onToggle }: { isOn: boolean, onToggle: () => void }){
     const animation = useRef(new Animated.Value(isOn ? 1 : 0)).current;
     useEffect(() => {
         Animated.timing(animation, {

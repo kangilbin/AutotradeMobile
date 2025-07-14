@@ -1,9 +1,10 @@
 import {View, Text, StyleSheet, ScrollView, TextInput, Pressable, TouchableOpacity} from 'react-native';
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useRef} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import {kisSoket} from "../../../contexts/backEndApi";
+import {kisSoket, authenticateWebSocket} from "../../../contexts/backEndApi";
+import * as SecureStore from 'expo-secure-store';
 
 const mockOutput1 = {
     askp1: "10100",
@@ -58,17 +59,90 @@ const mockOutput2 = {
 export default function PriceScreen() {
     const { stockName, stCode } = useLocalSearchParams();
     const referencePrice = parseFloat(mockOutput2.stck_prpr);
+    const socketRef = useRef<WebSocket | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
+        let isAuthenticated = false;
+        let hasRequestedData = false;
+        
         const socket = kisSoket((message) => {
             console.log('Received message:', message);
+            
+            try {
+                const data = JSON.parse(message);
+                
+                // 인증 응답 처리
+                if (data.type === 'auth_response') {
+                    if (data.success) {
+                        console.log('인증 성공');
+                        isAuthenticated = true;
+                        setIsAuthenticated(true);
+                        
+                        // 인증 성공 후 첫 데이터 요청 (한 번만)
+                        if (!hasRequestedData) {
+                            socket.send(JSON.stringify({
+                                tr_type: 'H0STASP0',
+                                tr_id: '1',
+                                st_code: stCode
+                            }));
+                            console.log('첫 주식 시세 요청 전송 완료');
+                            hasRequestedData = true;
+                        }
+                    } else {
+                        console.error('인증 실패:', data.message);
+                        setIsAuthenticated(false);
+                    }
+                }
+                
+                // 주식 데이터 응답 처리
+                if (data.tr_type === 'H0STASP0') {
+                    console.log('주식 시세 데이터 수신:', data);
+                    // 여기서 실제 데이터 처리 로직 추가
+                    // setStockData(data); // 예시
+                }
+                
+                // 에러 응답 처리
+                if (data.type === 'error') {
+                    console.error('서버 에러:', data.message);
+                }
+                
+            } catch (error) {
+                console.error('메시지 파싱 오류:', error);
+            }
         });
 
+        // 웹소켓 연결 후 인증 토큰 전송
+        socket.onopen = async () => {
+            console.log('WebSocket 연결됨, 인증 시작...');
+            const authSuccess = await authenticateWebSocket(socket);
+            if (!authSuccess) {
+                console.error('WebSocket 인증 실패');
+                setIsAuthenticated(false);
+            }
+        };
+
+        // 연결 에러 처리
+        socket.onerror = (error) => {
+            console.error('WebSocket 연결 에러:', error);
+            setIsAuthenticated(false);
+        };
+
+        // 연결 종료 처리
+        socket.onclose = (event) => {
+            console.log('WebSocket 연결 종료:', event.code, event.reason);
+            setIsAuthenticated(false);
+        };
+
+        socketRef.current = socket;
+
         return () => {
-            socket.close();
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
             console.log('WebSocket connection closed');
         };
-    }, []);
+    }, [stCode]);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
         quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),

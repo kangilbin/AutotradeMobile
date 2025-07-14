@@ -1,21 +1,9 @@
 import React, {useEffect, useState} from "react";
 import {StyleSheet, TextInput, View, FlatList, Text, TouchableOpacity} from "react-native";
 import {router} from "expo-router";
-import {getAccountList, searchStock} from "../../../contexts/backEndApi";
+import {searchStock} from "../../../contexts/backEndApi";
 import {StockStatus} from "../../../types/stock";
 
-const stockList = [
-    "Apple Inc.",
-    "Microsoft Corp.",
-    "Amazon.com Inc.",
-    "Tesla Inc.",
-    "Google LLC",
-    "Meta Platforms Inc.",
-    "Samsung Electronics",
-    "NVIDIA Corp.",
-    "Intel Corp.",
-    "Netflix Inc.",
-];
 
 export default function SearchStockScreen() {
     const [searchQuery, setSearchQuery] = useState("");

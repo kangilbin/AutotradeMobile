@@ -7,21 +7,16 @@ import {login, useApiLoading} from '../../contexts/backEndApi';
 import LoadingIndicator from "../../components/LoadingIndicator"; // 로그인 API 호출 함수
 import { router } from 'expo-router';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
-import {useAccountStore} from "../../stores/useAccountStore";
+import { LoginRequest } from '../../types/auth';
 
 
-interface FormState {
-    USER_ID: string;
-    PASSWORD: string;
-}
 
 export default function LoginScreen () {
     const loading = useApiLoading();
-    const [form, setForm] = useState<FormState>({
+    const [form, setForm] = useState<LoginRequest>({
         USER_ID: '',
         PASSWORD: '',
     });
-    const account = useAccountStore((state) => state.account);
 
     const handleBiometricLogin = async (token: string) => {
         try {
@@ -40,7 +35,7 @@ export default function LoginScreen () {
         }
     };
 
-    const handleInputChange = (field: keyof FormState, value: string | boolean) => {
+    const handleInputChange = (field: keyof LoginRequest, value: string | boolean) => {
         setForm((prev) => ({
             ...prev,
             [field]: value,
@@ -49,7 +44,7 @@ export default function LoginScreen () {
 
     const handleLogin = async () => {
         try {
-            const response = await login(form);
+            const response = await login({USER_ID: form.USER_ID, PASSWORD: form.PASSWORD});
             if (response?.access_token) {
                 await SecureStore.setItemAsync('access_token', response.access_token);
                 await SecureStore.setItemAsync('refresh_token', response.refresh_token!);
