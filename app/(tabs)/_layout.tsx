@@ -3,11 +3,14 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import TopHeader from "../../components/TopHeader";
 import {SafeAreaProvider} from "react-native-safe-area-context";
+import { WebSocketProvider } from "../../contexts/WebSocketContext";
+
 export default function TabLayout() {
     return (
-        <SafeAreaProvider>
-            <TopHeader />
-            <Tabs screenOptions={{ tabBarActiveTintColor: '#B5EAD7', headerShown: false }}>
+        <WebSocketProvider url="ws://localhost:8000/kis_socket">
+            <SafeAreaProvider>
+                <TopHeader />
+                <Tabs screenOptions={{ tabBarActiveTintColor: '#B5EAD7', headerShown: false }}>
                 <Tabs.Screen
                     name="home"
                     options={{
@@ -37,6 +40,7 @@ export default function TabLayout() {
                     }}
                 />
             </Tabs>
-        </SafeAreaProvider>
+            </SafeAreaProvider>
+        </WebSocketProvider>
     );
 }
