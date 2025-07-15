@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {Alert} from "react-native";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
@@ -8,7 +8,33 @@ import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/acc
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
 import {StockResponse, StockPriceResponse} from "../types/stock";
 
-let setLoadingState: (loading: boolean) => void;
+// API 로딩 상태
+let apiLoading = false;
+let setApiLoadingCallback: ((loading: boolean) => void) | null = null;
+
+const setApiLoading = (loading: boolean) => {
+    apiLoading = loading;
+    if (setApiLoadingCallback) {
+        setApiLoadingCallback(loading);
+    }
+};
+
+export const useApiLoading = () => {
+    const [loading, setLoading] = useState(apiLoading);
+    
+    useEffect(() => {
+        // 콜백 등록
+        setApiLoadingCallback = setLoading;
+        
+        // 컴포넌트 언마운트 시 콜백 제거
+        return () => {
+            setApiLoadingCallback = null;
+        };
+    }, []);
+    
+    return loading;
+};
+
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
@@ -23,11 +49,6 @@ function processQueue(error: any, token: string | null) {
     failedQueue = [];
 }
 
-export const useApiLoading = () => {
-    const [loading, setLoading] = useState(false);
-    setLoadingState = setLoading;
-    return loading;
-};
 const api = axios.create({
     baseURL: 'http://localhost:8000', // 공통 주소 설정
     // timeout: 5000, // 타임아웃 설정
@@ -39,7 +60,7 @@ const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
     async (config) => {
-        if (setLoadingState) setLoadingState(true); // Show loading
+        setApiLoading(true); // Show loading
 
         const accessToken = await SecureStore.getItemAsync('access_token');
         if (accessToken) {
@@ -49,7 +70,7 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
-        if (setLoadingState) setLoadingState(false); // Hide loading on error
+        setApiLoading(false); // Hide loading on error
         return Promise.reject(error);
     }
 );
@@ -57,11 +78,11 @@ api.interceptors.request.use(
 // Add response interceptor
 api.interceptors.response.use(
     (response: AxiosResponse) => {
-        if (setLoadingState) setLoadingState(false);
+        setApiLoading(false);
         return response;
     },
     async (error: AxiosError) => {
-        if (setLoadingState) setLoadingState(false);
+        setApiLoading(false);
 
         const originalRequest: any = error.config;
 
@@ -263,7 +284,7 @@ export const searchStock = async (query: string): Promise<StockResponse | undefi
 export const getStockPrice = async (st_code: string): Promise<StockPriceResponse | undefined> => {
     try {
         const response = await api.get('/asking_price', { params: { st_code } });
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 호가');
     }
