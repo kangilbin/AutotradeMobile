@@ -1,5 +1,5 @@
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useCallback} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -66,26 +66,26 @@ export default function PriceScreen() {
     const { isConnected, connectionStatus, sendMessage } = useWebSocketContext();
     const [stockData, setStockData] = useState<any>(null);
 
+    // 연결되면 메시지 전송
     useEffect(() => {
-        // 연결되면 주식 데이터 요청
-        if (isConnected) {
-            sendMessage({
-                tr_type: 'H0STASP0',
-                tr_id: '1',
+        if (isConnected && stCode) {
+            const message = {
+                tr_type: '1',
+                tr_id: 'H0STASP0',
                 st_code: stCode
-            }, (data) => {
-                // 응답 처리
+            };
+            
+            console.log('주식 데이터 요청:', message);
+            sendMessage(message, (data) => {
                 console.log('주식 데이터 응답:', data);
-                
                 setStockData(data);
                 
                 if (data.type === 'error') {
                     console.error('서버 에러:', data.message);
                 }
             });
-            console.log('주식 시세 요청 전송 완료');
         }
-    }, [isConnected, stCode]); // sendMessage 제거
+    }, [isConnected, stCode]);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
         quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),
