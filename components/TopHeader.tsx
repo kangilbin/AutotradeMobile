@@ -16,7 +16,7 @@ export default function TopHeader() {
             const accessToken = await SecureStore.getItemAsync('access_token');
             if (accessToken) {
                 const decodedToken = jwtDecode<JwtPayload>(accessToken);
-                setUserName(decodedToken.USER_NAME || '');
+                setUserName(decodedToken.user_claims?.USER_NAME || '');
             }
         };
         fetchAccessToken();

@@ -32,6 +32,8 @@ export type JwtPayload = {
     aud?: string;
     exp?: number;
     iat?: number;
-    USER_NAME?: string;
-    PHONE?: string;
+    user_claims?: {
+        PHONE?: string;
+        USER_NAME?: string;
+    };
 };
