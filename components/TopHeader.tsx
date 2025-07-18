@@ -5,12 +5,11 @@ import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { JwtPayload } from "../types/auth";
-import {router, usePathname} from "expo-router";
+import {router} from "expo-router";
 
 export default function TopHeader() {
     const account = useAccountStore((state) => state.account);
     const [userName, setUserName] = useState<string>('');
-    const pathname = usePathname();
     useEffect(() => {
         const fetchAccessToken = async () => {
             const accessToken = await SecureStore.getItemAsync('access_token');

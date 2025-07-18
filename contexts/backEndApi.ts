@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
-import {StockResponse} from "../types/stock";
+import {StockResponse, StockPriceResponse} from "../types/stock";
 
 let setLoadingState: (loading: boolean) => void;
 let isRefreshing = false;
@@ -223,7 +223,7 @@ export const getAuthList = async (): Promise<AuthStatus[] | undefined> => {
         const response = await api.get('/auths');
         return response.data.data;
     } catch (error: unknown) {
-        return handleApiError(error, '권한 목록 조회');
+        return handleApiError(error, '권한 목록');
     }
 }
 
@@ -243,7 +243,7 @@ export const getAccountList = async (): Promise<AccountResponse | undefined> => 
         const response = await api.get('/accounts');
         return response.data;
     } catch (error: unknown) {
-        return handleApiError(error, '계좌 목록 조회');
+        return handleApiError(error, '계좌 목록');
     }
 }
 
@@ -258,3 +258,13 @@ export const searchStock = async (query: string): Promise<StockResponse | undefi
     }
 }
 
+
+// 주식 호가 조회
+export const getStockPrice = async (st_code: string): Promise<StockPriceResponse | undefined> => {
+    try {
+        const response = await api.get('/asking_price', { params: { st_code } });
+        return response.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '주식 호가');
+    }
+}

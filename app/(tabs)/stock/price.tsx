@@ -4,6 +4,8 @@ import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useWebSocketContext } from "../../../contexts/WebSocketContext";
+import { getStockPrice } from "../../../contexts/backEndApi";
+import { StockPriceResponse } from "../../../types/stock";
 
 // 타입 정의 추가
 interface MockOutput1Type {
@@ -66,26 +68,60 @@ export default function PriceScreen() {
     const { isConnected, connectionStatus, sendMessage } = useWebSocketContext();
     const [stockData, setStockData] = useState<any>(null);
 
-    // 연결되면 메시지 전송
-    useEffect(() => {
-        if (isConnected && stCode) {
+    // 주식 장 시간인지 확인하는 함수
+    const isMarketTime = useCallback(() => {
+        const now = new Date();
+        const currentTime = now.getHours() * 100 + now.getMinutes(); // HHMM 형식
+        const marketStart = 830; // 8:30
+        const marketEnd = 1530; // 15:30
+        
+        // 주말 체크 (토요일: 6, 일요일: 0)
+        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+        
+        if (isWeekend) {
+            console.log('주말 - 주식 장 휴장');
+            return false;
+        }
+        
+        const isInMarketTime = currentTime >= marketStart && currentTime <= marketEnd;
+        console.log(`현재 시간: ${currentTime}, 장 시간: ${isInMarketTime ? '예' : '아니오'}`);
+        return isInMarketTime;
+    }, []);
+
+    // 주식 데이터 요청 함수
+    const requestStockData = useCallback(async () => {
+        if (!stCode) return;
+
+        if (isMarketTime() && isConnected) {
+            // 주식 장 시간이고 소켓이 연결되어 있으면 소켓 통신
             const message = {
                 tr_type: '1',
                 tr_id: 'H0STASP0',
                 st_code: stCode
             };
             
-            console.log('주식 데이터 요청:', message);
+            console.log('소켓으로 주식 데이터 요청:', message);
             sendMessage(message, (data) => {
-                console.log('주식 데이터 응답:', data);
+                console.log('소켓 주식 데이터 응답:', data);
                 setStockData(data);
                 
                 if (data.type === 'error') {
                     console.error('서버 에러:', data.message);
                 }
             });
+        } else {
+            // 주식 장 시간이 아니거나 소켓이 연결되지 않았으면 API 통신
+            console.log('API로 주식 데이터 요청');
+            const response = await getStockPrice(stCode as string);
+            console.log('API 주식 데이터 응답:', response);
+            setStockData(response);
         }
-    }, [isConnected, stCode]);
+    }, [stCode, isMarketTime, isConnected, sendMessage]);
+
+    // stCode가 변경되거나 연결 상태가 변경될 때 데이터 요청
+    useEffect(() => {
+        requestStockData();
+    }, [stCode, isConnected, requestStockData]);
 
     const askData = Array.from({ length: 10 }, (_, i) => ({
         quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),
@@ -116,11 +152,13 @@ export default function PriceScreen() {
             </TouchableOpacity>
             
             {/* 연결 상태 표시 */}
-            <View style={[styles.statusBar, { backgroundColor: connectionStatus === 'connected' ? '#4CAF50' : connectionStatus === 'connecting' ? '#FF9800' : '#F44336' }]}>
+            <View style={[styles.statusBar, { backgroundColor: isMarketTime() ? (connectionStatus === 'connected' ? '#4CAF50' : connectionStatus === 'connecting' ? '#FF9800' : '#F44336') : '#9E9E9E' }]}>
                 <Text style={styles.statusText}>
-                    {connectionStatus === 'connected' ? '연결됨' : 
-                     connectionStatus === 'connecting' ? '연결 중...' : 
-                     connectionStatus === 'error' ? '연결 오류' : '연결 끊김'}
+                    {isMarketTime() ? 
+                        (connectionStatus === 'connected' ? '소켓 연결됨' : 
+                         connectionStatus === 'connecting' ? '소켓 연결 중...' : 
+                         connectionStatus === 'error' ? '소켓 연결 오류' : 'API 통신') : 
+                        '장 시간 외 - API 통신'}
                 </Text>
             </View>
             
