@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
-import {StockResponse, StockPriceResponse} from "../types/stock";
+import {StockResponse, StockPriceResponse, AddStockAutoRequest, StockAutoStatus } from "../types/stock";
 
 // API 로딩 상태
 let apiLoading = false;
@@ -283,9 +283,29 @@ export const searchStock = async (query: string): Promise<StockResponse | undefi
 // 주식 호가 조회
 export const getStockPrice = async (st_code: string): Promise<StockPriceResponse | undefined> => {
     try {
-        const response = await api.get('/asking_price', { params: { st_code } });
+        const response = await api.get('/stock/price', { params: { st_code } });
         return response.data.data;
     } catch (error: unknown) {
-        return handleApiError(error, '주식 호가');
+        return handleApiError(error, '주식 시세 조회');
     }
-}
+};
+
+// 주식 오토 설정 추가
+export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | undefined> => {
+    try {
+        const response = await api.post('/stock/auto', param);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '주식 오토 설정 추가');
+    }
+};
+
+// 주식 오토 설정 목록 조회
+export const getStockAutoList = async (): Promise<StockAutoStatus[] | undefined> => {
+    try {
+        const response = await api.get('/stock/auto');
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '주식 오토 설정 목록 조회');
+    }
+};

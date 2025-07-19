@@ -253,7 +253,13 @@ export default function PriceScreen() {
             {/* 플러스 등록 버튼 - 화면 최하단 우측 고정 */}
             <TouchableOpacity 
                 style={styles.floatingButton}
-                onPress={() => router.push('/stock/add')}
+                onPress={() => router.push({
+                    pathname: '/stock/add',
+                    params: { 
+                        stCode: stCode as string,
+                        stockName: stockName as string 
+                    }
+                })}
                 activeOpacity={0.8}
             >
                 <AntDesign name="plus" size={24} color="white" />
