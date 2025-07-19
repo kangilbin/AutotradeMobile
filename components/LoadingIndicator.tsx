@@ -38,6 +38,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 99999,
+        elevation: 99999,
     },
     image: {
         width: width * 0.3,

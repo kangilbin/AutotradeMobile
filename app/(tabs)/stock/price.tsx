@@ -1,72 +1,24 @@
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, FlatList, TouchableOpacity} from 'react-native';
 import React, {useEffect, useState, useCallback} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
-import {router, useLocalSearchParams} from 'expo-router';
+import {router, useLocalSearchParams, useFocusEffect} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useWebSocketContext } from "../../../contexts/WebSocketContext";
-import { getStockPrice } from "../../../contexts/backEndApi";
+import { getStockPrice, useApiLoading } from "../../../contexts/backEndApi";
 import { StockPriceResponse } from "../../../types/stock";
+import LoadingIndicator from "../../../components/LoadingIndicator";
 
-// 타입 정의 추가
-interface MockOutput1Type {
-    [key: string]: string;
-}
 
-const mockOutput1: MockOutput1Type = {
-    askp1: "10100",
-    askp2: "10200",
-    askp3: "10300",
-    askp4: "10400",
-    askp5: "10500",
-    askp6: "10600",
-    askp7: "10700",
-    askp8: "10800",
-    askp9: "10900",
-    askp10: "11000",
-    bidp1: "10050",
-    bidp2: "9900",
-    bidp3: "9800",
-    bidp4: "9700",
-    bidp5: "9600",
-    bidp6: "9500",
-    bidp7: "9400",
-    bidp8: "9300",
-    bidp9: "9200",
-    bidp10: "9100",
-    askp_rsqn1: "500",
-    askp_rsqn2: "400",
-    askp_rsqn3: "300",
-    askp_rsqn4: "200",
-    askp_rsqn5: "100",
-    askp_rsqn6: "90",
-    askp_rsqn7: "80",
-    askp_rsqn8: "70",
-    askp_rsqn9: "60",
-    askp_rsqn10: "50",
-    bidp_rsqn1: "450",
-    bidp_rsqn2: "350",
-    bidp_rsqn3: "250",
-    bidp_rsqn4: "150",
-    bidp_rsqn5: "50",
-    bidp_rsqn6: "40",
-    bidp_rsqn7: "30",
-    bidp_rsqn8: "20",
-    bidp_rsqn9: "10",
-    bidp_rsqn10: "5",
-};
-
-const mockOutput2 = {
-    stck_prpr: "10050", // 현재가
-    stck_sdpr: "10000", // 기준가
-    stck_hgpr : "10500", // 최고가
-    stck_lwpr : "9500", // 최저가
-};
 
 export default function PriceScreen() {
     const { stockName, stCode } = useLocalSearchParams();
-    const referencePrice = parseFloat(mockOutput2.stck_prpr);
     const { isConnected, connectionStatus, sendMessage } = useWebSocketContext();
-    const [stockData, setStockData] = useState<any>(null);
+    const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
+    const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 160 });
+    const loading = useApiLoading();
+    
+    // 현재가를 기준가로 사용 (stockData가 없으면 기본값 10000)
+    const referencePrice = stockData?.output2?.stck_prpr ? parseFloat(stockData.output2.stck_prpr) : 10000;
 
     // 주식 장 시간인지 확인하는 함수
     const isMarketTime = useCallback(() => {
@@ -92,6 +44,8 @@ export default function PriceScreen() {
     const requestStockData = useCallback(async () => {
         if (!stCode) return;
 
+        console.log('주식 데이터 요청 시작 - 장 시간:', isMarketTime(), '소켓 연결:', isConnected);
+
         if (isMarketTime() && isConnected) {
             // 주식 장 시간이고 소켓이 연결되어 있으면 소켓 통신
             const message = {
@@ -103,7 +57,7 @@ export default function PriceScreen() {
             console.log('소켓으로 주식 데이터 요청:', message);
             sendMessage(message, (data) => {
                 console.log('소켓 주식 데이터 응답:', data);
-                setStockData(data);
+                setStockData(data as StockPriceResponse);
                 
                 if (data.type === 'error') {
                     console.error('서버 에러:', data.message);
@@ -111,10 +65,16 @@ export default function PriceScreen() {
             });
         } else {
             // 주식 장 시간이 아니거나 소켓이 연결되지 않았으면 API 통신
-            console.log('API로 주식 데이터 요청');
-            const response = await getStockPrice(stCode as string);
-            console.log('API 주식 데이터 응답:', response);
-            setStockData(response);
+            console.log('API로 주식 데이터 요청 시작');
+            try {
+                const response = await getStockPrice(stCode as string);
+                console.log('API 주식 데이터 응답:', response);
+                if (response) {
+                    setStockData(response);
+                }
+            } catch (error) {
+                console.error('API 호출 중 오류:', error);
+            }
         }
     }, [stCode, isMarketTime, isConnected, sendMessage]);
 
@@ -123,23 +83,48 @@ export default function PriceScreen() {
         requestStockData();
     }, [stCode, isConnected, requestStockData]);
 
-    const askData = Array.from({ length: 10 }, (_, i) => ({
-        quantity: parseInt(mockOutput1[`askp_rsqn${10 - i}`], 10),
-        price: parseFloat(mockOutput1[`askp${10 - i}`]),
-        rate: (((parseFloat(mockOutput1[`askp${10 - i}`]) - referencePrice) / referencePrice) * 100).toFixed(2),
-    }));
+    // 화면이 포커스될 때마다 스크롤 위치를 중앙으로 복원
+    useFocusEffect(
+        useCallback(() => {
+            setScrollOffset({ x: 0, y: 160 });
+        }, [])
+    );
 
-    const bidData = Array.from({ length: 10 }, (_, i) => ({
-        quantity: parseInt(mockOutput1[`bidp_rsqn${i + 1}`], 10),
-        price: parseFloat(mockOutput1[`bidp${i + 1}`]),
-        rate: (((parseFloat(mockOutput1[`bidp${i + 1}`]) - referencePrice) / referencePrice) * 100).toFixed(2),
-    }));
+    // 실제 데이터가 있으면 사용, 없으면 빈 배열
+    const askData = stockData?.output1 ? Array.from({ length: 10 }, (_, i) => {
+        const askPrice = stockData.output1[`askp${10 - i}` as keyof typeof stockData.output1];
+        const askQuantity = stockData.output1[`askp_rsqn${10 - i}` as keyof typeof stockData.output1];
+        const price = askPrice ? parseFloat(askPrice) : 0;
+        const quantity = askQuantity ? parseInt(askQuantity, 10) : 0;
+        
+        return {
+            quantity,
+            price,
+            rate: price > 0 ? (((price - referencePrice) / referencePrice) * 100).toFixed(2) : '0.00',
+            type: 'ask' as const,
+        };
+    }) : [];
 
-    const maxAsk = Math.max(...askData.map((a) => a.quantity));
-    const maxBid = Math.max(...bidData.map((b) => b.quantity));
+    const bidData = stockData?.output1 ? Array.from({ length: 10 }, (_, i) => {
+        const bidPrice = stockData.output1[`bidp${i + 1}` as keyof typeof stockData.output1];
+        const bidQuantity = stockData.output1[`bidp_rsqn${i + 1}` as keyof typeof stockData.output1];
+        const price = bidPrice ? parseFloat(bidPrice) : 0;
+        const quantity = bidQuantity ? parseInt(bidQuantity, 10) : 0;
+        
+        return {
+            quantity,
+            price,
+            rate: price > 0 ? (((price - referencePrice) / referencePrice) * 100).toFixed(2) : '0.00',
+            type: 'bid' as const,
+        };
+    }) : [];
+
+    const maxAsk = askData.length > 0 ? Math.max(...askData.map((a) => a.quantity)) : 0;
+    const maxBid = bidData.length > 0 ? Math.max(...bidData.map((b) => b.quantity)) : 0;
 
     return (
         <>
+            {loading && <LoadingIndicator />}
             {/* Stock Search Input */}
             <TouchableOpacity style={styles.searchContainer} onPress={() => router.back()}>
                 <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 8 }}>
@@ -162,67 +147,98 @@ export default function PriceScreen() {
                 </Text>
             </View>
             
-            <ScrollView style={styles.container} contentOffset={{ x: 0, y: 100 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <View style={{ flex: 2 }}>
-                        {askData.map((item, index) => (
-                            <OrderBookRow
-                                key={`ask-${index}`}
-                                currentPrice={referencePrice}
-                                item={item}
-                                type="ask"
-                                maxQuantity={maxAsk}
-                            />
-                        ))}
+            <FlatList 
+                style={styles.container}
+                data={[]}
+                renderItem={() => null}
+                keyExtractor={() => ''}
+                contentOffset={scrollOffset}
+                onContentSizeChange={() => {
+                    setScrollOffset({ x: 0, y: 160 });
+                }}
+                onScroll={(event) => {
+                    const { x, y } = event.nativeEvent.contentOffset;
+                    setScrollOffset({ x, y });
+                }}
+                scrollEventThrottle={16}
+                ListHeaderComponent={() => (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={{ flex: 2 }}>
+                            {askData.map((item, index) => (
+                                <OrderBookRow
+                                    key={`ask-${index}`}
+                                    currentPrice={referencePrice}
+                                    item={item}
+                                    type="ask"
+                                    maxQuantity={maxAsk}
+                                />
+                            ))}
+                        </View>
+                        <View style={{ flex: 1, padding: 8 }}>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>현재가</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.stck_prpr ? parseInt(stockData.output2.stck_prpr).toLocaleString() : '-'}
+                                </Text>
+                            </View>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>기준가</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.stck_sdpr ? parseInt(stockData.output2.stck_sdpr).toLocaleString() : '-'}
+                                </Text>
+                            </View>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>시가</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.stck_oprc ? parseInt(stockData.output2.stck_oprc).toLocaleString() : '-'}
+                                </Text>
+                            </View>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>고가</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.stck_hgpr ? parseInt(stockData.output2.stck_hgpr).toLocaleString() : '-'}
+                                </Text>
+                            </View>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>저가</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.stck_lwpr ? parseInt(stockData.output2.stck_lwpr).toLocaleString() : '-'}
+                                </Text>
+                            </View>
+                        </View>
                     </View>
-                    <View style={{ flex: 1, padding: 8 }}>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>상한가</Text>
-                            <Text style={styles.additionalText}>3,000</Text>
+                )}
+                ListFooterComponent={() => (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <View style={{ flex: 1 }}>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>예상체결가</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.antc_cnpr ? parseInt(stockData.output2.antc_cnpr).toLocaleString() : '-'}
+                                </Text>
+                            </View>
+                            <View style={styles.additionalContainer}>
+                                <Text style={styles.additionalText}>예상대비</Text>
+                                <Text style={styles.additionalText}>
+                                    {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}
+                                </Text>
+                            </View>
                         </View>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>하한가</Text>
-                            <Text style={styles.additionalText}>2,000</Text>
-                        </View>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>시작</Text>
-                            <Text style={styles.additionalText}>1,000</Text>
-                        </View>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>고가</Text>
-                            <Text style={styles.additionalText}>2,000</Text>
-                        </View>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>저가</Text>
-                            <Text style={styles.additionalText}>21,000</Text>
-                        </View>
-                    </View>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <View style={{ flex: 1 }}>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>상한가</Text>
-                            <Text style={styles.additionalText}>3,000</Text>
-                        </View>
-                        <View style={styles.additionalContainer}>
-                            <Text style={styles.additionalText}>하한가</Text>
-                            <Text style={styles.additionalText}>2,000</Text>
-                        </View>
-                    </View>
-                    <View style={{ flex: 2 }}>
-                        {bidData.map((item, index) => (
-                            <OrderBookRow
-                                key={`bid-${index}`}
-                                currentPrice={referencePrice}
-                                item={item}
-                                type="bid"
-                                maxQuantity={maxBid}
-                            />
+                        <View style={{ flex: 2 }}>
+                            {bidData.map((item, index) => (
+                                <OrderBookRow
+                                    key={`bid-${index}`}
+                                    currentPrice={referencePrice}
+                                    item={item}
+                                    type="bid"
+                                    maxQuantity={maxBid}
+                                />
 
-                        ))}
+                            ))}
+                        </View>
                     </View>
-                </View>
-            </ScrollView>
+                )}
+            />
         </>
     );
 }
@@ -320,10 +336,10 @@ const styles = StyleSheet.create({
     searchInput: {
         height: 40,
         borderWidth: 1,
-        borderColor: '#B5EAD7', // Match the active tint color for consistency
-        borderRadius: 20, // Rounded corners for a modern look
-        paddingHorizontal: 16, // Increased padding for better usability
-        backgroundColor: '#F5F5F5', // Light gray background for a clean design
+        borderColor: '#B5EAD7',
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        backgroundColor: '#F5F5F5',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -337,8 +353,8 @@ const styles = StyleSheet.create({
     stockCodeText: {
         fontSize: 16,
         fontWeight: "bold",
-        color: "#333333", // Neutral dark gray for text
-        backgroundColor: "#F5F5F5", // Light gray background
+        color: "#333333",
+        backgroundColor: "#F5F5F5",
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 20,
