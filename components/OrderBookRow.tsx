@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 
@@ -11,10 +12,19 @@ interface RowProps {
     type: 'ask' | 'bid';
     currentPrice: number;
     maxQuantity: number;
+    basePrice?: number;
 }
 
 
-export default function OrderBookRow({ item, type, currentPrice, maxQuantity }:RowProps) {
+export default function OrderBookRow({ item, type, currentPrice, maxQuantity, basePrice }:RowProps) {
+    const priceColor = basePrice
+        ? item.price > basePrice
+            ? '#E74C3C'
+            : item.price < basePrice
+                ? '#3498DB'
+                : '#666'
+        : '#666';
+
     return (
         <View style={[
             item.price === currentPrice 
@@ -24,7 +34,7 @@ export default function OrderBookRow({ item, type, currentPrice, maxQuantity }:R
             {type === 'ask' ? (
                 <>
                     <View style={styles.quantityContainer}>
-                        <Text style={[styles.quantity, { textAlign: 'right', flex: 1 }]}>
+                        <Text style={[styles.quantity, { textAlign: 'right', flex: 1, color: '#3498DB' }]}>
                             {item.quantity.toLocaleString()}
                         </Text>
                         <View
@@ -35,13 +45,19 @@ export default function OrderBookRow({ item, type, currentPrice, maxQuantity }:R
                         />
                     </View>
                     <View style={styles.priceContainer}>
-                        <Text style={styles.price}>{item.price.toLocaleString()}</Text>
+                        <Text style={[styles.price, { color: priceColor }]}>{item.price.toLocaleString()}</Text>
+                        <Text style={[styles.rateText, { color: priceColor }]}>
+                           {item.rate}%
+                        </Text>
                     </View>
                 </>
             ) : (
                 <>
                     <View style={styles.priceContainer}>
-                        <Text style={styles.price}>{item.price.toLocaleString()}</Text>
+                        <Text style={[styles.price, { color: priceColor }]}>{item.price.toLocaleString()}</Text>
+                        <Text style={[styles.rateText, { color: priceColor }]}>
+                            {item.rate}%
+                        </Text>
                     </View>
                     <View style={styles.quantityContainer}>
                         <View
@@ -50,7 +66,7 @@ export default function OrderBookRow({ item, type, currentPrice, maxQuantity }:R
                                 { width: `${(item.quantity / maxQuantity) * 100}%`, backgroundColor: '#fce1e1', left: 0 },
                             ]}
                         />
-                        <Text style={styles.quantity}>{item.quantity.toLocaleString()}</Text>
+                        <Text style={[styles.quantity, { color: '#E74C3C' }]}>{item.quantity.toLocaleString()}</Text>
                     </View>
                 </>
             )}
@@ -92,7 +108,10 @@ const styles= StyleSheet.create({
 
     priceContainer: {
         flex: 0.5,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
     },
     price: {
         fontSize: 16,
@@ -114,6 +133,12 @@ const styles= StyleSheet.create({
     quantity: {
         fontSize: 14,
         color: '#333',
+        textAlign: 'right',
+        zIndex: 1,
+    },
+    rateText: {
+        fontSize: 10,
+        color: '#666',
         textAlign: 'right',
         zIndex: 1,
     },

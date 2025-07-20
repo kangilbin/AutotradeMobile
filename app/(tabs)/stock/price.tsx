@@ -1,5 +1,5 @@
 import {View, Text, StyleSheet, FlatList, TouchableOpacity} from 'react-native';
-import React, {useEffect, useState, useCallback} from "react";
+import React, {useEffect, useState, useCallback, useMemo} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams, useFocusEffect} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -17,11 +17,13 @@ export default function PriceScreen() {
     const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 160 });
     const loading = useApiLoading();
     
-    // 현재가를 기준가로 사용 (stockData가 없으면 기본값 10000)
+    // 현재가 (stockData가 없으면 기본값 10000)
     const referencePrice = stockData?.output2?.stck_prpr ? parseFloat(stockData.output2.stck_prpr) : 10000;
+    // 기준가 (stockData가 없으면 기본값 10000)
+    const basePrice = stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : 10000;
 
-    // 주식 장 시간인지 확인하는 함수
-    const isMarketTime = useCallback(() => {
+    // 주식 장 시간인지 확인하는 함수 (useMemo로 메모이제이션)
+    const isMarketTime = useMemo(() => {
         const now = new Date();
         const currentTime = now.getHours() * 100 + now.getMinutes(); // HHMM 형식
         const marketStart = 830; // 8:30
@@ -38,15 +40,15 @@ export default function PriceScreen() {
         const isInMarketTime = currentTime >= marketStart && currentTime <= marketEnd;
         console.log(`현재 시간: ${currentTime}, 장 시간: ${isInMarketTime ? '예' : '아니오'}`);
         return isInMarketTime;
-    }, []);
+    }, []); // 의존성 배열이 비어있으므로 컴포넌트 마운트 시에만 계산
 
     // 주식 데이터 요청 함수
     const requestStockData = useCallback(async () => {
         if (!stCode) return;
 
-        console.log('주식 데이터 요청 시작 - 장 시간:', isMarketTime(), '소켓 연결:', isConnected);
+        console.log('주식 데이터 요청 시작 - 장 시간:', isMarketTime, '소켓 연결:', isConnected);
 
-        if (isMarketTime() && isConnected) {
+        if (isMarketTime && isConnected) {
             // 주식 장 시간이고 소켓이 연결되어 있으면 소켓 통신
             const message = {
                 tr_type: '1',
@@ -83,6 +85,15 @@ export default function PriceScreen() {
         requestStockData();
     }, [stCode, isConnected, requestStockData]);
 
+    // 스크롤 핸들러 메모이제이션
+    const handleScroll = useCallback((event: any) => {
+        const { x, y } = event.nativeEvent.contentOffset;
+        // 스크롤 위치가 실제로 변경되었을 때만 상태 업데이트
+        if (Math.abs(scrollOffset.y - y) > 1 || Math.abs(scrollOffset.x - x) > 1) {
+            setScrollOffset({ x, y });
+        }
+    }, [scrollOffset]);
+
     // 화면이 포커스될 때마다 스크롤 위치를 중앙으로 복원
     useFocusEffect(
         useCallback(() => {
@@ -100,7 +111,7 @@ export default function PriceScreen() {
         return {
             quantity,
             price,
-            rate: price > 0 ? (((price - referencePrice) / referencePrice) * 100).toFixed(2) : '0.00',
+            rate: price > 0 ? (((price - basePrice) / basePrice) * 100).toFixed(2) : '0.00',
             type: 'ask' as const,
         };
     }) : [];
@@ -114,7 +125,7 @@ export default function PriceScreen() {
         return {
             quantity,
             price,
-            rate: price > 0 ? (((price - referencePrice) / referencePrice) * 100).toFixed(2) : '0.00',
+            rate: price > 0 ? (((price - basePrice) / basePrice) * 100).toFixed(2) : '0.00',
             type: 'bid' as const,
         };
     }) : [];
@@ -137,9 +148,9 @@ export default function PriceScreen() {
             </TouchableOpacity>
             
             {/* 연결 상태 표시 */}
-            <View style={[styles.statusBar, { backgroundColor: isMarketTime() ? (connectionStatus === 'connected' ? '#4CAF50' : connectionStatus === 'connecting' ? '#FF9800' : '#F44336') : '#9E9E9E' }]}>
+            <View style={[styles.statusBar, { backgroundColor: isMarketTime ? (connectionStatus === 'connected' ? '#4CAF50' : connectionStatus === 'connecting' ? '#FF9800' : '#F44336') : '#9E9E9E' }]}>
                 <Text style={styles.statusText}>
-                    {isMarketTime() ? 
+                    {isMarketTime ? 
                         (connectionStatus === 'connected' ? '소켓 연결됨' : 
                          connectionStatus === 'connecting' ? '소켓 연결 중...' : 
                          connectionStatus === 'error' ? '소켓 연결 오류' : 'API 통신') : 
@@ -156,11 +167,8 @@ export default function PriceScreen() {
                 onContentSizeChange={() => {
                     setScrollOffset({ x: 0, y: 160 });
                 }}
-                onScroll={(event) => {
-                    const { x, y } = event.nativeEvent.contentOffset;
-                    setScrollOffset({ x, y });
-                }}
-                scrollEventThrottle={16}
+                onScroll={handleScroll}
+                scrollEventThrottle={32}
                 ListHeaderComponent={() => (
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                         <View style={{ flex: 2 }}>
@@ -171,6 +179,7 @@ export default function PriceScreen() {
                                     item={item}
                                     type="ask"
                                     maxQuantity={maxAsk}
+                                    basePrice={stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : undefined}
                                 />
                             ))}
                         </View>
@@ -232,6 +241,7 @@ export default function PriceScreen() {
                                     item={item}
                                     type="bid"
                                     maxQuantity={maxBid}
+                                    basePrice={stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : undefined}
                                 />
 
                             ))}
