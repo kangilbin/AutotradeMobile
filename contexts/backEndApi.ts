@@ -293,7 +293,7 @@ export const getStockPrice = async (st_code: string): Promise<StockPriceResponse
 // 주식 오토 설정 추가
 export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | undefined> => {
     try {
-        const response = await api.post('/stock/auto', param);
+        const response = await api.post('/swing', param);
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 오토 설정 추가');
