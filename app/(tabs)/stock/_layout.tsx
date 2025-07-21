@@ -5,6 +5,7 @@ export default function StackLayout() {
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="price"/>
+            <Stack.Screen name="add"/>
         </Stack>
     );
 }

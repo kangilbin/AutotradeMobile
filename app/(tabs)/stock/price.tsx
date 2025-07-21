@@ -134,7 +134,7 @@ export default function PriceScreen() {
     const maxBid = bidData.length > 0 ? Math.max(...bidData.map((b) => b.quantity)) : 0;
 
     return (
-        <>
+        <View style={styles.mainContainer}>
             {loading && <LoadingIndicator />}
             {/* Stock Search Input */}
             <TouchableOpacity style={styles.searchContainer} onPress={() => router.back()}>
@@ -229,7 +229,7 @@ export default function PriceScreen() {
                             <View style={styles.additionalContainer}>
                                 <Text style={styles.additionalText}>예상대비</Text>
                                 <Text style={styles.additionalText}>
-                                    {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}
+                                    {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}%
                                 </Text>
                             </View>
                         </View>
@@ -249,15 +249,45 @@ export default function PriceScreen() {
                     </View>
                 )}
             />
-        </>
+            
+            {/* 플러스 등록 버튼 - 화면 최하단 우측 고정 */}
+            <TouchableOpacity 
+                style={styles.floatingButton}
+                onPress={() => router.push('/stock/add')}
+                activeOpacity={0.8}
+            >
+                <AntDesign name="plus" size={24} color="white" />
+            </TouchableOpacity>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: '#f9f9f9',
+    },
     container: {
         flex: 1,
         backgroundColor: '#f9f9f9',
         padding: 16,
+    },
+    floatingButton: {
+        position: 'absolute',
+        bottom: 30,
+        right: 20,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#B5EAD7',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+        zIndex: 1000,
     },
     statusBar: {
         padding: 8,
