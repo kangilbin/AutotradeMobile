@@ -1,7 +1,14 @@
 import {useEffect, useRef} from 'react';
 import { Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 
-export default function AuthToggle({ isOn, onToggle }: { isOn: boolean, onToggle: () => void }){
+interface AuthToggleProps {
+    isOn: boolean;
+    onToggle: () => void;
+    onText?: string;
+    offText?: string;
+}
+
+export default function AuthToggle({ isOn, onText, offText, onToggle}: AuthToggleProps){
     const animation = useRef(new Animated.Value(isOn ? 1 : 0)).current;
     useEffect(() => {
         Animated.timing(animation, {
@@ -25,7 +32,7 @@ export default function AuthToggle({ isOn, onToggle }: { isOn: boolean, onToggle
         <TouchableOpacity onPress={onToggle} activeOpacity={0.8}>
             <Animated.View style={[styles.toggleContainer, { backgroundColor }]}>
                 {/* ON 텍스트는 왼쪽에 */}
-                <Text style={[styles.text, isOn ? styles.leftText : styles.rightText]}>{isOn ? '모의' : '실전'}</Text>
+                <Text style={[styles.text, isOn ? styles.leftText : styles.rightText]}>{isOn ? onText : offText}</Text>
                 <Animated.View style={[styles.circle, { transform: [{ translateX }] }]} />
             </Animated.View>
         </TouchableOpacity>

@@ -9,6 +9,32 @@ export type StockResponse = {
     data: StockStatus[];
 }
 
+// 주식 오토 설정 등록 요청 타입
+export type AddStockAutoRequest = {
+    ST_CODE: string
+    STOCK_NAME: string
+    SWING_TYPE: string  // '일' 또는 '분'
+    SHORT_MA: number    // 단기 이평선
+    MID_MA: number      // 중기 이평선
+    LONG_MA: number     // 장기 이평선
+    BUY_RATIO: number   // 매수 비율
+    SELL_RATIO: number  // 매도 비율
+}
+
+// 주식 오토 설정 상태 타입
+export type StockAutoStatus = {
+    AUTO_ID: number
+    STOCK_NAME: string
+    SWING_TYPE: string
+    SHORT_MA: number
+    MID_MA: number
+    LONG_MA: number
+    BUY_RATIO: number
+    SELL_RATIO: number
+    DEL_YN: string
+    CREATED_AT: string
+}
+
 // 주식 시세 API 응답 타입
 export type StockPriceResponse = {
     rt_cd: string;        // 성공 실패 여부

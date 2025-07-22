@@ -156,6 +156,8 @@ export default function AddAccountScreen() {
                         <View style={{margin: 10, flexDirection: 'row', justifyContent: 'flex-end'}}>
                             <AuthToggle
                                 isOn={isOn}
+                                onText="모의"
+                                offText="실전"
                                 onToggle={() => {
                                 setIsOn(prev => !prev)
                                 setNewAuth((prev) => ({ ...prev, SIMULATION_YN: isOn ? 'Y' : 'N' }))}}
