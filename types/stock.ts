@@ -12,11 +12,12 @@ export type StockResponse = {
 // 주식 오토 설정 등록 요청 타입
 export type AddStockAutoRequest = {
     ST_CODE: string
-    STOCK_NAME: string
-    SWING_TYPE: string  // '일' 또는 '분'
-    SHORT_MA: number    // 단기 이평선
-    MID_MA: number      // 중기 이평선
-    LONG_MA: number     // 장기 이평선
+    ACCOUNT_NO: string
+    SWING_AMOUNT: number
+    SWING_TYPE: string  // 'D' 또는 'M'
+    SHORT_TERM: number    // 단기 이평선
+    MEDIUM_TERM: number      // 중기 이평선
+    LONG_TERM: number     // 장기 이평선
     BUY_RATIO: number   // 매수 비율
     SELL_RATIO: number  // 매도 비율
 }

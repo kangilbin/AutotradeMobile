@@ -5,8 +5,9 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
-    TouchableWithoutFeedback,
     ViewStyle,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 
 interface KeyboardScrollableProps {
@@ -16,20 +17,22 @@ interface KeyboardScrollableProps {
 
 const DismissKeyboardView: React.FC<KeyboardScrollableProps> = ({ children, style }) => {
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={[styles.container, style]}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={[styles.container, style]}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
+            <ScrollView
+                contentContainerStyle={styles.scrollContainer}
+                keyboardShouldPersistTaps="handled"
             >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContainer}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {children}
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <View style={{ flex: 1 }}>
+                        {children}
+                    </View>
+                </TouchableWithoutFeedback>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -41,7 +44,6 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flexGrow: 1,
-        justifyContent: 'center', // Center vertically
     },
 });
 

@@ -160,6 +160,7 @@ export default function PriceScreen() {
             
             <FlatList 
                 style={styles.container}
+                contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}
                 data={[]}
                 renderItem={() => null}
                 keyExtractor={() => ''}
