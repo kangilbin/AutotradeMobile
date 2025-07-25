@@ -3,19 +3,15 @@ import React, {useEffect, useState, useCallback, useMemo} from "react";
 import OrderBookRow from "../../../components/OrderBookRow";
 import {router, useLocalSearchParams, useFocusEffect} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { useWebSocketContext } from "../../../contexts/WebSocketContext";
-import { getStockPrice, useApiLoading } from "../../../contexts/backEndApi";
+import { getStockPrice } from "../../../contexts/backEndApi";
 import { StockPriceResponse } from "../../../types/stock";
-import LoadingIndicator from "../../../components/LoadingIndicator";
 
 
 
 export default function PriceScreen() {
     const { stockName, stCode } = useLocalSearchParams();
-    const { isConnected, connectionStatus, sendMessage } = useWebSocketContext();
     const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
     const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 160 });
-    const loading = useApiLoading();
     
     // 현재가 (stockData가 없으면 기본값 10000)
     const referencePrice = stockData?.output2?.stck_prpr ? parseFloat(stockData.output2.stck_prpr) : 10000;
@@ -46,44 +42,33 @@ export default function PriceScreen() {
     const requestStockData = useCallback(async () => {
         if (!stCode) return;
 
-        console.log('주식 데이터 요청 시작 - 장 시간:', isMarketTime, '소켓 연결:', isConnected);
+        console.log('주식 데이터 요청 시작 - 장 시간:', isMarketTime);
 
-        if (isMarketTime && isConnected) {
-            // 주식 장 시간이고 소켓이 연결되어 있으면 소켓 통신
-            const message = {
-                tr_type: '1',
-                tr_id: 'H0STASP0',
-                st_code: stCode
-            };
-            
-            console.log('소켓으로 주식 데이터 요청:', message);
-            sendMessage(message, (data) => {
-                console.log('소켓 주식 데이터 응답:', data);
-                setStockData(data as StockPriceResponse);
-                
-                if (data.type === 'error') {
-                    console.error('서버 에러:', data.message);
-                }
-            });
-        } else {
-            // 주식 장 시간이 아니거나 소켓이 연결되지 않았으면 API 통신
-            console.log('API로 주식 데이터 요청 시작');
-            try {
-                const response = await getStockPrice(stCode as string);
-                console.log('API 주식 데이터 응답:', response);
-                if (response) {
-                    setStockData(response);
-                }
-            } catch (error) {
-                console.error('API 호출 중 오류:', error);
+        try {
+            const response = await getStockPrice(stCode as string);
+            if (response) {
+                setStockData(response);
             }
+        } catch (error) {
+            console.error('API 호출 중 오류:', error);
         }
-    }, [stCode, isMarketTime, isConnected, sendMessage]);
+    }, [stCode, isMarketTime]);
 
-    // stCode가 변경되거나 연결 상태가 변경될 때 데이터 요청
+    // stCode가 변경되거나 장 시간 상태가 변경될 때 데이터 요청
     useEffect(() => {
         requestStockData();
-    }, [stCode, isConnected, requestStockData]);
+    }, [stCode, requestStockData]);
+
+    // 주식 장 시간일 때만 1초마다 반복 통신
+    useEffect(() => {
+        if (!isMarketTime || !stCode) return;
+
+        const interval = setInterval(() => {
+            requestStockData();
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [isMarketTime, stCode, requestStockData]);
 
     // 스크롤 핸들러 메모이제이션
     const handleScroll = useCallback((event: any) => {
@@ -135,7 +120,6 @@ export default function PriceScreen() {
 
     return (
         <View style={styles.mainContainer}>
-            {loading && <LoadingIndicator />}
             {/* Stock Search Input */}
             <TouchableOpacity style={styles.searchContainer} onPress={() => router.back()}>
                 <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 8 }}>
@@ -148,13 +132,9 @@ export default function PriceScreen() {
             </TouchableOpacity>
             
             {/* 연결 상태 표시 */}
-            <View style={[styles.statusBar, { backgroundColor: isMarketTime ? (connectionStatus === 'connected' ? '#4CAF50' : connectionStatus === 'connecting' ? '#FF9800' : '#F44336') : '#9E9E9E' }]}>
+            <View style={[styles.statusBar, { backgroundColor: isMarketTime ? '#4CAF50' : '#9E9E9E' }]}>
                 <Text style={styles.statusText}>
-                    {isMarketTime ? 
-                        (connectionStatus === 'connected' ? '소켓 연결됨' : 
-                         connectionStatus === 'connecting' ? '소켓 연결 중...' : 
-                         connectionStatus === 'error' ? '소켓 연결 오류' : 'API 통신') : 
-                        '장 시간 외 - API 통신'}
+                    {isMarketTime ? '장 시간 - 실시간 업데이트' : '장 시간 외 - 정적 데이터'}
                 </Text>
             </View>
             
