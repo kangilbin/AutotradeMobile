@@ -12,21 +12,22 @@ import DismissKeyboardView from '../../../components/DismissKeyboardView';
 import {addStockAuto, useApiLoading} from "../../../contexts/backEndApi";
 import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
+import { useAccountStore } from '../../../stores/useAccountStore';
 
 export default function AddStockScreen() {
     const router = useRouter();
     const { stCode, stockName } = useLocalSearchParams();
-    const stockNameRef = useRef<TextInput | null>(null);
     const swingAmountRef = useRef<TextInput | null>(null);
     const shortMaRef = useRef<TextInput | null>(null);
     const midMaRef = useRef<TextInput | null>(null);
     const longMaRef = useRef<TextInput | null>(null);
     const buyRatioRef = useRef<TextInput | null>(null);
     const sellRatioRef = useRef<TextInput | null>(null);
+    const account = useAccountStore((state) => state.account);
 
     const [form, setForm] = useState<AddStockAutoRequest>({
         ST_CODE: stCode as string || '',
-        ACCOUNT_NO: '',
+        ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         SWING_AMOUNT: 0,
         SWING_TYPE: 'D',
         SHORT_TERM: 0,
@@ -42,12 +43,6 @@ export default function AddStockScreen() {
     // 포커스 핸들러
     const handleFocus = (fieldName: string) => {
         setFocusedField(fieldName);
-        // setValidationErrors는 제거!
-    };
-
-    // handleBlur도 섹션명을 받을 수 있도록 수정
-    const handleBlur = () => {
-        setFocusedField(null);
     };
 
     // 입력 필드 스타일 생성
@@ -59,7 +54,7 @@ export default function AddStockScreen() {
     // 필드명과 섹션명 매핑 함수
     const getSectionByField = (field: string) => {
         if (["SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"].includes(field)) return 'movingAverage';
-        if (["BUY_RATIO", "SELL_RATIO", "buyRatio", "sellRatio"].includes(field)) return 'ratio';
+        if (["buyRatio", "sellRatio"].includes(field)) return 'ratio';
         if (field === 'SWING_AMOUNT' || field === 'swingAmount') return 'swingAmount';
         return '';
     };
@@ -78,6 +73,11 @@ export default function AddStockScreen() {
     // handleChange에서 에러 해제도 섹션 단위로
     const handleChange = (field: keyof AddStockAutoRequest, value: string | number) => {
         setForm(prev => ({ ...prev, [field]: value }));
+        // 스윙 타입 선택 시
+        if (field === 'SWING_TYPE') {
+            setValidationErrors(prev => ({ ...prev, swingType: false }));
+        }
+        
         // 스윙 금액 입력 시
         if (field === 'SWING_AMOUNT') {
             setValidationErrors(prev => ({ ...prev, swingAmount: false }));
@@ -140,9 +140,10 @@ export default function AddStockScreen() {
         }
 
         try {
+
             await addStockAuto(form);
             Alert.alert('완료', '주식 오토 설정이 추가되었습니다.');
-            router.back();
+            router.replace('/swing');
         } catch (error) {
             console.error('주식 오토 설정 추가 중 오류:', error);
         }
@@ -175,7 +176,9 @@ export default function AddStockScreen() {
                     <View style={styles.radioContainer}>
                         <TouchableOpacity 
                             style={styles.radioOption} 
-                            onPress={() => handleChange('SWING_TYPE', 'D')}
+                            onPress={() => {
+                                handleChange('SWING_TYPE', 'D')
+                            }}
                         >
                             <View style={[
                                 styles.radioButton, 
@@ -193,9 +196,7 @@ export default function AddStockScreen() {
                             style={styles.radioOption} 
                             onPress={() => {
                                 handleChange('SWING_TYPE', 'M');
-                                setFocusedField('swingType');
                             }}
-                            onBlur={handleBlur}
                         >
                             <View style={[
                                 styles.radioButton, 
@@ -228,7 +229,6 @@ export default function AddStockScreen() {
                             }}
                             keyboardType="number-pad"
                             onFocus={() => handleFocus('swingAmount')}
-                            onBlur={handleBlur}
                         />
                         <Text style={styles.amountText}>원</Text>
                     </View>
@@ -248,7 +248,6 @@ export default function AddStockScreen() {
                                 onChangeText={t => handleChange('SHORT_TERM', parseInt(t) || 0)}
                                 keyboardType="number-pad"
                                 onFocus={() => handleFocus('SHORT_TERM')}
-                                onBlur={handleBlur}
                             />
                         </View>
                         <View style={styles.maItem}>
@@ -261,7 +260,6 @@ export default function AddStockScreen() {
                                 onChangeText={t => handleChange('MEDIUM_TERM', parseInt(t) || 0)}
                                 keyboardType="number-pad"
                                 onFocus={() => handleFocus('MEDIUM_TERM')}
-                                onBlur={handleBlur}
                             />
                         </View>
                         <View style={styles.maItem}>
@@ -274,7 +272,6 @@ export default function AddStockScreen() {
                                 onChangeText={t => handleChange('LONG_TERM', parseInt(t) || 0)}
                                 keyboardType="number-pad"
                                 onFocus={() => handleFocus('LONG_TERM')}
-                                onBlur={handleBlur}
                             />
                         </View>
                     </View>
@@ -286,29 +283,40 @@ export default function AddStockScreen() {
                     <View style={styles.ratioContainer}>
                         <View style={styles.ratioItem}>
                             <Text style={styles.ratioLabel}>매수</Text>
-                            <View style={[
-                                styles.ratioInputContainer,
-                                focusedField === 'buyRatio' && styles.ratioInputContainerFocused
-                            ]}>
+                            <TouchableOpacity 
+                                style={[
+                                    styles.ratioInputContainer,
+                                    focusedField === 'buyRatio' && styles.ratioInputContainerFocused
+                                ]}
+                                onPress={() => buyRatioRef.current?.focus()}
+                                activeOpacity={0.8}
+                            >
                                 <TextInput
                                     ref={buyRatioRef}
                                     style={getInputStyle('buyRatio')}
                                     placeholder="0~100"
                                     value={form.BUY_RATIO ? form.BUY_RATIO.toString() : ''}
-                                    onChangeText={t => handleChange('BUY_RATIO', parseInt(t) || 0)}
+                                    onChangeText={t => {
+                                        if (/^[0-9]*$/.test(t)) {
+                                            handleChange('BUY_RATIO', t === '' ? '' : parseInt(t, 10));
+                                        }
+                                    }}
                                     keyboardType="number-pad"
                                     onFocus={() => handleFocus('buyRatio')}
-                                    onBlur={handleBlur}
                                 />
                                 <Text style={styles.percentText}>%</Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                         <View style={styles.ratioItem}>
                             <Text style={styles.ratioLabel}>매도</Text>
-                            <View style={[
-                                styles.ratioInputContainer,
-                                focusedField === 'sellRatio' && styles.ratioInputContainerFocused
-                            ]}>
+                            <TouchableOpacity 
+                                style={[
+                                    styles.ratioInputContainer,
+                                    focusedField === 'sellRatio' && styles.ratioInputContainerFocused
+                                ]}
+                                onPress={() => sellRatioRef.current?.focus()}
+                                activeOpacity={0.8}
+                            >
                                 <TextInput
                                     ref={sellRatioRef}
                                     style={getInputStyle('sellRatio')}
@@ -321,10 +329,9 @@ export default function AddStockScreen() {
                                     }}
                                     keyboardType="number-pad"
                                     onFocus={() => handleFocus('sellRatio')}
-                                    onBlur={handleBlur}
                                 />
                                 <Text style={styles.percentText}>%</Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -567,6 +574,6 @@ const styles = StyleSheet.create({
         borderColor: '#ff6b6b',
     },
     sectionContainerFocused: {
-        borderColor: '#4CAF50', // 초록색
+        borderColor: '#B5EAD7', // 초록색
     },
 });
