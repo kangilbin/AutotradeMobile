@@ -170,3 +170,5 @@ export type StockPriceOutput2 = {
     stck_shrn_iscd: string;           // 주식 단축 종목코드
     vi_cls_code: string;              // VI적용구분코드
 }
+
+

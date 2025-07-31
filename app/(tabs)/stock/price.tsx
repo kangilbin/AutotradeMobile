@@ -34,15 +34,15 @@ export default function PriceScreen() {
         }
         
         const isInMarketTime = currentTime >= marketStart && currentTime <= marketEnd;
-        console.log(`현재 시간: ${currentTime}, 장 시간: ${isInMarketTime ? '예' : '아니오'}`);
+        const hour = currentTime.toString().slice(0, 2);
+        const minute = currentTime.toString().slice(2, 4);
+        console.log(`현재 시간: ${hour}:${minute}, 장 시간: ${isInMarketTime ? '예' : '아니오'}`);
         return isInMarketTime;
     }, []); // 의존성 배열이 비어있으므로 컴포넌트 마운트 시에만 계산
 
     // 주식 데이터 요청 함수
     const requestStockData = useCallback(async () => {
         if (!stCode) return;
-
-        console.log('주식 데이터 요청 시작 - 장 시간:', isMarketTime);
 
         try {
             const response = await getStockPrice(stCode as string);
