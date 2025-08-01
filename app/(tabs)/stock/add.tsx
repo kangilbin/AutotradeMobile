@@ -143,6 +143,7 @@ export default function AddStockScreen() {
 
             await addStockAuto(form);
             Alert.alert('완료', '주식 오토 설정이 추가되었습니다.');
+            router.dismissAll();
             router.replace('/swing');
         } catch (error) {
             console.error('주식 오토 설정 추가 중 오류:', error);

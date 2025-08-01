@@ -7,6 +7,7 @@ import {router} from "expo-router";
 import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
 import {StockResponse, StockPriceResponse, AddStockAutoRequest, StockAutoStatus } from "../types/stock";
+import { SwingItem, SwingSummary } from '../types/swing';
 
 // API 로딩 상태
 let apiLoading = false;
@@ -307,5 +308,25 @@ export const getStockAutoList = async (): Promise<StockAutoStatus[] | undefined>
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 오토 설정 목록 조회');
+    }
+};
+
+// 스윙 목록 조회
+export const getSwingList = async (): Promise<SwingItem[] | undefined> => {
+    try {
+        const response = await api.get('/swing/list');
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '스윙 목록 조회');
+    }
+};
+
+// 스윙 요약 정보 조회
+export const getSwingSummary = async (): Promise<SwingSummary | undefined> => {
+    try {
+        const response = await api.get('/swing/summary');
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '스윙 요약 정보 조회');
     }
 };
