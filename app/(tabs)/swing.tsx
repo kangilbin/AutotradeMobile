@@ -4,6 +4,113 @@ import { getSwingList, getSwingSummary } from '../../contexts/backEndApi';
 import { SwingItem, SwingSummary } from '../../types/swing';
 import LoadingIndicator from '../../components/LoadingIndicator';
 
+// 임시 데이터
+const mockSwingList: SwingItem[] = [
+    {
+        AUTO_ID: 1,
+        ST_CODE: '005930',
+        STOCK_NAME: '삼성전자',
+        IS_ACTIVE: true,
+        EVALUATION_AMOUNT: 15000000,
+        EVALUATION_PROFIT_LOSS: 2500000,
+        EVALUATION_PROFIT_LOSS_RATE: 20.5,
+        HOLDING_QUANTITY: 100,
+        SWING_TYPE: 'D',
+        SWING_AMOUNT: 12500000,
+        SHORT_MA: 75000,
+        MID_MA: 72000,
+        LONG_MA: 68000,
+        BUY_RATIO: 0.8,
+        SELL_RATIO: 0.2,
+        DEL_YN: 'N',
+        CREATED_AT: '2024-01-15'
+    },
+    {
+        AUTO_ID: 2,
+        ST_CODE: '000660',
+        STOCK_NAME: 'SK하이닉스',
+        IS_ACTIVE: true,
+        EVALUATION_AMOUNT: 8500000,
+        EVALUATION_PROFIT_LOSS: -500000,
+        EVALUATION_PROFIT_LOSS_RATE: -5.5,
+        HOLDING_QUANTITY: 50,
+        SWING_TYPE: 'M',
+        SWING_AMOUNT: 9000000,
+        SHORT_MA: 170000,
+        MID_MA: 165000,
+        LONG_MA: 160000,
+        BUY_RATIO: 0.7,
+        SELL_RATIO: 0.3,
+        DEL_YN: 'N',
+        CREATED_AT: '2024-01-20'
+    },
+    {
+        AUTO_ID: 3,
+        ST_CODE: '373220',
+        STOCK_NAME: 'LG에너지솔루션',
+        IS_ACTIVE: false,
+        EVALUATION_AMOUNT: 12000000,
+        EVALUATION_PROFIT_LOSS: 1800000,
+        EVALUATION_PROFIT_LOSS_RATE: 17.8,
+        HOLDING_QUANTITY: 80,
+        SWING_TYPE: 'D',
+        SWING_AMOUNT: 10200000,
+        SHORT_MA: 150000,
+        MID_MA: 145000,
+        LONG_MA: 140000,
+        BUY_RATIO: 0.6,
+        SELL_RATIO: 0.4,
+        DEL_YN: 'N',
+        CREATED_AT: '2024-01-10'
+    },
+    {
+        AUTO_ID: 4,
+        ST_CODE: '005380',
+        STOCK_NAME: '현대차',
+        IS_ACTIVE: true,
+        EVALUATION_AMOUNT: 9500000,
+        EVALUATION_PROFIT_LOSS: 1200000,
+        EVALUATION_PROFIT_LOSS_RATE: 14.5,
+        HOLDING_QUANTITY: 60,
+        SWING_TYPE: 'M',
+        SWING_AMOUNT: 8300000,
+        SHORT_MA: 158000,
+        MID_MA: 152000,
+        LONG_MA: 148000,
+        BUY_RATIO: 0.75,
+        SELL_RATIO: 0.25,
+        DEL_YN: 'N',
+        CREATED_AT: '2024-01-25'
+    },
+    {
+        AUTO_ID: 5,
+        ST_CODE: '000270',
+        STOCK_NAME: '기아',
+        IS_ACTIVE: true,
+        EVALUATION_AMOUNT: 6800000,
+        EVALUATION_PROFIT_LOSS: -320000,
+        EVALUATION_PROFIT_LOSS_RATE: -4.5,
+        HOLDING_QUANTITY: 40,
+        SWING_TYPE: 'D',
+        SWING_AMOUNT: 7120000,
+        SHORT_MA: 178000,
+        MID_MA: 172000,
+        LONG_MA: 168000,
+        BUY_RATIO: 0.65,
+        SELL_RATIO: 0.35,
+        DEL_YN: 'N',
+        CREATED_AT: '2024-01-30'
+    }
+];
+
+const mockSummary: SwingSummary = {
+    TOTAL_INVESTMENT_AMOUNT: 51800000,
+    TOTAL_PRINCIPAL: 50000000,
+    TOTAL_PROFIT: 4500000,
+    TOTAL_PROFIT_RATE: 9.0,
+    CASH_ASSET: 8200000
+};
+
 export default function SwingScreen() {
     const [swingList, setSwingList] = useState<SwingItem[]>([]);
     const [summary, setSummary] = useState<SwingSummary | null>(null);
@@ -13,13 +120,15 @@ export default function SwingScreen() {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [listData, summaryData] = await Promise.all([
-                getSwingList(),
-                getSwingSummary()
-            ]);
+            // 실제 API 호출 대신 임시 데이터 사용
+            // const [listData, summaryData] = await Promise.all([
+            //     getSwingList(),
+            //     getSwingSummary()
+            // ]);
             
-            if (listData) setSwingList(listData);
-            if (summaryData) setSummary(summaryData);
+            // 임시 데이터로 설정
+            setSwingList(mockSwingList);
+            setSummary(mockSummary);
         } catch (error) {
             console.error('스윙 데이터 로드 실패:', error);
         } finally {
@@ -41,12 +150,12 @@ export default function SwingScreen() {
         return num.toLocaleString('ko-KR');
     };
 
-    const formatPercentage = (num: number) => {
-        return `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
+    const formatCurrency = (num: number) => {
+        return num.toLocaleString('ko-KR');
     };
 
     const getProfitLossColor = (amount: number) => {
-        return amount >= 0 ? '#FF6B6B' : '#4ECDC4';
+        return amount >= 0 ? '#FF6B6B' : '#3498DB';
     };
 
     const getSwingTypeText = (type: string) => {
@@ -91,7 +200,7 @@ export default function SwingScreen() {
                                 styles.profitRate,
                                 { color: summary ? getProfitLossColor(summary.TOTAL_PROFIT_RATE) : '#666' }
                             ]}>
-                                {summary ? formatPercentage(summary.TOTAL_PROFIT_RATE) : '0%'}
+                                {summary ? (summary.TOTAL_PROFIT_RATE >= 0 ? '+' : '') + summary.TOTAL_PROFIT_RATE.toFixed(2) + '%' : '0%'}
                             </Text>
                         </View>
                     </View>
@@ -118,9 +227,12 @@ export default function SwingScreen() {
                     </View>
                 ) : (
                     swingList.map((item) => (
-                        <TouchableOpacity key={item.AUTO_ID} style={styles.swingItem}>
+                        <TouchableOpacity key={item.AUTO_ID} style={styles.swingCard}>
                             <View style={styles.swingHeader}>
-                                <Text style={styles.stockName}>{item.STOCK_NAME}</Text>
+                                <View>
+                                    <Text style={styles.stockName}>{item.STOCK_NAME}</Text>
+                                    <Text style={styles.stockCode}>{item.ST_CODE}</Text>
+                                </View>
                                 <View style={[
                                     styles.activeBadge,
                                     { backgroundColor: item.IS_ACTIVE ? '#4ECDC4' : '#95A5A6' }
@@ -132,44 +244,67 @@ export default function SwingScreen() {
                             </View>
                             
                             <View style={styles.swingDetails}>
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>평가금액:</Text>
-                                    <Text style={styles.detailValue}>
-                                        {formatNumber(item.EVALUATION_AMOUNT)}원
-                                    </Text>
+                                <View style={styles.additionalInfoRow}>
+                                    <View style={styles.additionalInfoItem}>
+                                        <Text style={styles.additionalLabel}>스윙타입</Text>
+                                        <Text style={styles.additionalValue}>
+                                            {getSwingTypeText(item.SWING_TYPE)}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.additionalInfoItem}>
+                                        <Text style={styles.additionalLabel}>매수비율</Text>
+                                        <Text style={styles.additionalValue}>
+                                            {(item.BUY_RATIO * 100).toFixed(0)}%
+                                        </Text>
+                                    </View>
+                                    <View style={styles.additionalInfoItem}>
+                                        <Text style={styles.additionalLabel}>매도비율</Text>
+                                        <Text style={styles.additionalValue}>
+                                            {(item.SELL_RATIO * 100).toFixed(0)}%
+                                        </Text>
+                                    </View>
                                 </View>
-                                
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>평가손익:</Text>
-                                    <Text style={[
-                                        styles.detailValue,
-                                        { color: getProfitLossColor(item.EVALUATION_PROFIT_LOSS) }
-                                    ]}>
-                                        {formatNumber(item.EVALUATION_PROFIT_LOSS)}원
-                                    </Text>
+                                <View style={styles.divider} />
+                                <View style={styles.swingDetailRow}>
+                                    <View style={styles.swingDetailItem}>
+                                        <Text style={styles.detailLabel}>평가금액</Text>
+                                        <Text style={styles.detailValue} numberOfLines={1} adjustsFontSizeToFit>
+                                            {formatNumber(item.EVALUATION_AMOUNT)}원
+                                        </Text>
+                                    </View>
+                                    <View style={styles.swingDetailItem}>
+                                        <Text style={styles.detailLabel}>보유수량</Text>
+                                        <Text style={styles.detailValue} numberOfLines={1} adjustsFontSizeToFit>
+                                            {formatNumber(item.HOLDING_QUANTITY)}주
+                                        </Text>
+                                    </View>
+                                    <View style={styles.swingDetailItem}>
+                                        <Text style={styles.detailLabel}>수익률</Text>
+                                        <Text 
+                                            style={[
+                                                styles.detailValue,
+                                                { color: item.EVALUATION_PROFIT_LOSS_RATE >= 0 ? '#FF6B6B' : '#3498DB' }
+                                            ]}
+                                            numberOfLines={1}
+                                            adjustsFontSizeToFit
+                                        >
+                                            {item.EVALUATION_PROFIT_LOSS_RATE >= 0 ? '+' : ''}
+                                            {item.EVALUATION_PROFIT_LOSS_RATE.toFixed(2)}%
+                                        </Text>
+                                    </View>
                                 </View>
-                                
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>손익율:</Text>
-                                    <Text style={[
-                                        styles.detailValue,
-                                        { color: getProfitLossColor(item.EVALUATION_PROFIT_LOSS_RATE) }
-                                    ]}>
-                                        {formatPercentage(item.EVALUATION_PROFIT_LOSS_RATE)}
-                                    </Text>
-                                </View>
-                                
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>보유수량:</Text>
-                                    <Text style={styles.detailValue}>
-                                        {formatNumber(item.HOLDING_QUANTITY)}주
-                                    </Text>
-                                </View>
-                                
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>스윙타입:</Text>
-                                    <Text style={styles.detailValue}>
-                                        {getSwingTypeText(item.SWING_TYPE)}
+                                <View style={styles.profitLossRow}>
+                                    <Text style={styles.detailLabel}>평가손익</Text>
+                                    <Text 
+                                        style={[
+                                            styles.profitLossValue,
+                                            { color: item.EVALUATION_PROFIT_LOSS >= 0 ? '#FF6B6B' : '#3498DB' }
+                                        ]}
+                                        numberOfLines={1}
+                                        adjustsFontSizeToFit
+                                    >
+                                        {item.EVALUATION_PROFIT_LOSS >= 0 ? '+' : ''}
+                                        {formatCurrency(item.EVALUATION_PROFIT_LOSS)}원
                                     </Text>
                                 </View>
                             </View>
@@ -257,32 +392,38 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#999',
     },
-    swingItem: {
+    swingCard: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
+        borderRadius: 16,
+        padding: 20,
         marginBottom: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: 8,
         elevation: 3,
     },
     swingHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
     },
     stockName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#2C3E50',
+        marginBottom: 2,
+    },
+    stockCode: {
+        fontSize: 14,
+        color: '#7F8C8D',
+        fontWeight: '500',
     },
     activeBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
     },
     activeText: {
         fontSize: 12,
@@ -290,23 +431,65 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     swingDetails: {
-        gap: 8,
+        gap: 12,
     },
-    detailRow: {
+    swingDetailRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        gap: 8,
+    },
+    swingDetailItem: {
+        flex: 1,
         alignItems: 'center',
     },
     detailLabel: {
-        fontSize: 14,
-        color: '#666',
-        flex: 1,
+        fontSize: 12,
+        color: '#7F8C8D',
+        marginBottom: 4,
+        fontWeight: '500',
+        textAlign: 'center',
     },
     detailValue: {
         fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
+        fontWeight: 'bold',
+        color: '#2C3E50',
+        textAlign: 'center',
+    },
+    profitLossRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#ECF0F1',
+    },
+    profitLossValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
         textAlign: 'right',
+    },
+    additionalInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    additionalInfoItem: {
         flex: 1,
+        alignItems: 'center',
+    },
+    additionalLabel: {
+        fontSize: 11,
+        color: '#95A5A6',
+        marginBottom: 2,
+        fontWeight: '400',
+    },
+    additionalValue: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#34495E',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#ECF0F1',
+        marginVertical: 8,
     },
 });
