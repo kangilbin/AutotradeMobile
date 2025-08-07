@@ -90,7 +90,7 @@ export default function HomeScreen() {
                             <Text 
                                 style={[
                                     styles.profitValue,
-                                    { color: portfolioData.totalProfit >= 0 ? '#E74C3C' : '#3498DB' }
+                                    { color: portfolioData.totalProfit >= 0 ? '#FF6B6B' : '#3498DB' }
                                 ]}
                                 numberOfLines={2}
                                 adjustsFontSizeToFit={true}
@@ -104,7 +104,7 @@ export default function HomeScreen() {
                             <Text 
                                 style={[
                                     styles.profitValue,
-                                    { color: portfolioData.profitRate >= 0 ? '#E74C3C' : '#3498DB' }
+                                    { color: portfolioData.profitRate >= 0 ? '#FF6B6B' : '#3498DB' }
                                 ]}
                                 numberOfLines={2}
                                 adjustsFontSizeToFit={true}
@@ -132,8 +132,10 @@ export default function HomeScreen() {
                                     <Text style={styles.stockName}>{swing.stockName}</Text>
                                     <Text style={styles.stockCode}>{swing.stockCode}</Text>
                                 </View>
-                                <View style={styles.swingStatus}>
-                                    <View style={styles.activeIndicator} />
+                                <View style={[
+                                    styles.activeBadge,
+                                    { backgroundColor: '#4ECDC4' }
+                                ]}>
                                     <Text style={styles.activeText}>활성</Text>
                                 </View>
                             </View>
@@ -157,7 +159,7 @@ export default function HomeScreen() {
                                         <Text 
                                             style={[
                                                 styles.detailValue,
-                                                { color: swing.profitRate >= 0 ? '#E74C3C' : '#3498DB' }
+                                                { color: swing.profitRate >= 0 ? '#FF6B6B' : '#3498DB' }
                                             ]}
                                             numberOfLines={1}
                                             adjustsFontSizeToFit
@@ -172,7 +174,7 @@ export default function HomeScreen() {
                                     <Text 
                                         style={[
                                             styles.profitLossValue,
-                                            { color: swing.profitLoss >= 0 ? '#E74C3C' : '#3498DB' }
+                                            { color: swing.profitLoss >= 0 ? '#FF6B6B' : '#3498DB' }
                                         ]}
                                         numberOfLines={1}
                                         adjustsFontSizeToFit
@@ -202,7 +204,7 @@ export default function HomeScreen() {
                                 <Text style={styles.indexValue}>{index.value}</Text>
                                 <Text style={[
                                     styles.indexChange,
-                                    { color: index.change.startsWith('+') ? '#E74C3C' : '#3498DB' }
+                                    { color: index.change.startsWith('+') ? '#FF6B6B' : '#3498DB' }
                                 ]}>
                                     {index.change} ({index.changeRate})
                                 </Text>
@@ -366,21 +368,16 @@ const styles = StyleSheet.create({
         color: '#666',
         marginTop: 2,
     },
-    swingStatus: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    activeIndicator: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#00C851',
-        marginRight: 6,
+
+    activeBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
     },
     activeText: {
         fontSize: 12,
-        color: '#00C851',
-        fontWeight: '500',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
     },
     swingDetails: {
         flexDirection: 'column',
