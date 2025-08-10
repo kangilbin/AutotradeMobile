@@ -330,3 +330,35 @@ export const getSwingSummary = async (): Promise<SwingSummary | undefined> => {
         return handleApiError(error, '스윙 요약 정보 조회');
     }
 };
+
+// 스윙 상태 변경
+export const updateSwingStatus = async (swingId: number, isActive: boolean): Promise<boolean> => {
+    try {
+        const response = await api.put(`/swing/${swingId}/status`, {
+            is_active: isActive
+        });
+        return response.data.success || false;
+    } catch (error: unknown) {
+        handleApiError(error, '스윙 상태 변경');
+        return false;
+    }
+};
+
+// 스윙 설정 업데이트
+export const updateSwingSettings = async (swingId: number, settings: {
+    swing_type: string;
+    buy_ratio: number;
+    sell_ratio: number;
+    swing_amount: number;
+    short_ma: number;
+    mid_ma: number;
+    long_ma: number;
+}): Promise<boolean> => {
+    try {
+        const response = await api.put(`/swing/${swingId}/settings`, settings);
+        return response.data.success || false;
+    } catch (error: unknown) {
+        handleApiError(error, '스윙 설정 업데이트');
+        return false;
+    }
+};
