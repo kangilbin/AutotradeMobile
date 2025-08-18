@@ -92,24 +92,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'A': return '#4ECDC4';
-            case 'I': return '#E74C3C';
-            case 'P': return '#F39C12';
-            default: return '#95A5A6';
-        }
-    };
-
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'A': return '활성';
-            case 'I': return '비활성';
-            case 'P': return '대기';
-            default: return '알 수 없음';
-        }
-    };
-
     if (!swingData) return null;
 
     return (
@@ -144,9 +126,51 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
 
                 <View style={styles.settingItem}>
                     <Text style={styles.settingLabel}>스윙 유형</Text>
-                    <Text style={styles.settingValue}>
-                        {swingData.SWING_TYPE === 'D' ? '일간' : '주간'}
-                    </Text>
+                    {isEditMode ? (
+                        <View style={styles.radioContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    form.SWING_TYPE === 'D' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'D' }))}
+                            >
+                                <View style={[
+                                    styles.radioButton,
+                                    form.SWING_TYPE === 'D' && styles.radioButtonSelected
+                                ]}>
+                                    {form.SWING_TYPE === 'D' && <View style={styles.radioButtonInner} />}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    form.SWING_TYPE === 'D' && styles.radioTextSelected
+                                ]}>일반</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    form.SWING_TYPE === 'S' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'S' }))}
+                            >
+                                <View style={[
+                                    styles.radioButton,
+                                    form.SWING_TYPE === 'S' && styles.radioButtonSelected
+                                ]}>
+                                    {form.SWING_TYPE === 'S' && <View style={styles.radioButtonInner} />}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    form.SWING_TYPE === 'S' && styles.radioTextSelected
+                                ]}>단기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <Text style={styles.settingValue}>
+                            {form.SWING_TYPE === 'D' ? '일반' : '단기'}
+                        </Text>
+                    )}
                 </View>
 
                 <View style={styles.settingItem}>
@@ -164,7 +188,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                         />
                     ) : (
                         <Text style={styles.settingValue}>
-                            {swingData.SWING_AMOUNT?.toLocaleString()}원
+                            {form.SWING_AMOUNT.toLocaleString()}원
                         </Text>
                     )}
                 </View>
@@ -183,7 +207,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                             placeholder="비율 입력"
                         />
                     ) : (
-                        <Text style={styles.settingValue}>{swingData.BUY_RATIO}%</Text>
+                        <Text style={styles.settingValue}>{form.BUY_RATIO}%</Text>
                     )}
                 </View>
 
@@ -201,43 +225,75 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                             placeholder="비율 입력"
                         />
                     ) : (
-                        <Text style={styles.settingValue}>{swingData.SELL_RATIO}%</Text>
+                        <Text style={styles.settingValue}>{form.SELL_RATIO}%</Text>
                     )}
                 </View>
 
                 <View style={styles.settingItem}>
                     <Text style={styles.settingLabel}>이동평균선</Text>
-                    <Text style={styles.settingValue}>
-                        {swingData.SHORT_MA}일 / {swingData.MID_MA}일 / {swingData.LONG_MA}일
-                    </Text>
-                </View>
-
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>상태</Text>
-                    <View style={[
-                        styles.activeBadge,
-                        { backgroundColor: getStatusColor(swingData.IS_ACTIVE ? 'A' : 'I') }
-                    ]}>
-                        <Text style={styles.activeText}>{getStatusText(swingData.IS_ACTIVE ? 'A' : 'I')}</Text>
-                    </View>
+                    {isEditMode ? (
+                        <View style={styles.maContainer}>
+                            <View style={styles.maItem}>
+                                <Text style={styles.maLabel}>단기 (MA)</Text>
+                                <TextInput
+                                    style={[
+                                        styles.maInput,
+                                        validationErrors.movingAverage && styles.inputError
+                                    ]}
+                                    value={form.SHORT_MA.toString()}
+                                    onChangeText={(text) => setForm(prev => ({ ...prev, SHORT_MA: parseInt(text) || 0 }))}
+                                    keyboardType="numeric"
+                                    placeholder="일수"
+                                />
+                            </View>
+                            <View style={styles.maItem}>
+                                <Text style={styles.maLabel}>중기 (MA)</Text>
+                                <TextInput
+                                    style={[
+                                        styles.maInput,
+                                        validationErrors.movingAverage && styles.inputError
+                                    ]}
+                                    value={form.MID_MA.toString()}
+                                    onChangeText={(text) => setForm(prev => ({ ...prev, MID_MA: parseInt(text) || 0 }))}
+                                    keyboardType="numeric"
+                                    placeholder="일수"
+                                />
+                            </View>
+                            <View style={styles.maItem}>
+                                <Text style={styles.maLabel}>장기 (MA)</Text>
+                                <TextInput
+                                    style={[
+                                        styles.maInput,
+                                        validationErrors.movingAverage && styles.inputError
+                                    ]}
+                                    value={form.LONG_MA.toString()}
+                                    onChangeText={(text) => setForm(prev => ({ ...prev, LONG_MA: parseInt(text) || 0 }))}
+                                    keyboardType="numeric"
+                                    placeholder="일수"
+                                />
+                            </View>
+                        </View>
+                    ) : (
+                        <Text style={styles.settingValue}>
+                            {form.SHORT_MA}일 / {form.MID_MA}일 / {form.LONG_MA}일
+                        </Text>
+                    )}
+                    {validationErrors.movingAverage && (
+                        <Text style={styles.errorText}>
+                            단기 {'<'} 중기 {'<'} 장기 순서로 설정해야 합니다
+                        </Text>
+                    )}
                 </View>
             </View>
-
-            {isEditMode && (
-                <View style={styles.editButtons}>
-                    <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-                        <Text style={styles.cancelBtnTxt}>취소</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.editBtn} onPress={handleSave}>
-                        <Text style={styles.editBtnTxt}>저장</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F8F9FA',
+    },
     tabContent: {
         padding: 20,
     },
@@ -292,6 +348,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 4,
     },
+
     settingItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -336,21 +393,7 @@ const styles = StyleSheet.create({
         borderColor: '#E74C3C',
         backgroundColor: '#FEF2F2',
     },
-    activeBadge: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    activeText: {
-        fontSize: 12,
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-    },
+
     editButtons: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -392,5 +435,120 @@ const styles = StyleSheet.create({
         color: '#666',
         fontSize: 16,
         fontWeight: '600',
+    },
+    bottomActions: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#FFFFFF',
+        padding: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#E8F4F8',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
+        width: '100%',
+    },
+    actionText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 8,
+    },
+    radioContainer: {
+        flexDirection: 'row',
+        gap: 20,
+    },
+    radioOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    radioOptionSelected: {
+        backgroundColor: '#F0FDFF',
+        padding: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#4ECDC4',
+    },
+    radioButton: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    radioButtonSelected: {
+        borderColor: '#4ECDC4',
+        backgroundColor: '#4ECDC4',
+    },
+    radioButtonInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#FFFFFF',
+    },
+    radioText: {
+        fontSize: 14,
+        color: '#475569',
+    },
+    radioTextSelected: {
+        color: '#4ECDC4',
+        fontWeight: '600',
+    },
+    maContainer: {
+        flexDirection: 'column',
+        gap: 12,
+    },
+    maItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    maLabel: {
+        fontSize: 14,
+        color: '#475569',
+        minWidth: 80,
+    },
+    maInput: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#1E293B',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        width: 100,
+        textAlign: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    errorText: {
+        fontSize: 12,
+        color: '#E74C3C',
+        marginTop: 8,
     },
 });
