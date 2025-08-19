@@ -346,13 +346,13 @@ export const updateSwingStatus = async (swingId: number, isActive: boolean): Pro
 
 // 스윙 설정 업데이트
 export const updateSwingSettings = async (swingId: number, settings: {
-    swing_type: string;
-    buy_ratio: number;
-    sell_ratio: number;
-    swing_amount: number;
-    short_ma: number;
-    mid_ma: number;
-    long_ma: number;
+    SWING_TYPE: string;
+    BUY_RATIO: number;
+    SELL_RATIO: number;
+    SWING_AMOUNT: number;
+    SHORT_MA: number;
+    MID_MA: number;
+    LONG_MA: number;
 }): Promise<boolean> => {
     try {
         const response = await api.put(`/swing/${swingId}/settings`, settings);
