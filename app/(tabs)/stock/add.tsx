@@ -23,6 +23,7 @@ export default function AddStockScreen() {
     const longMaRef = useRef<TextInput | null>(null);
     const buyRatioRef = useRef<TextInput | null>(null);
     const sellRatioRef = useRef<TextInput | null>(null);
+    const rsiRef = useRef<TextInput | null>(null);
     const account = useAccountStore((state) => state.account);
 
     const [form, setForm] = useState<AddStockAutoRequest>({
@@ -34,7 +35,8 @@ export default function AddStockScreen() {
         MEDIUM_TERM: 0,
         LONG_TERM: 0,
         BUY_RATIO: 0,
-        SELL_RATIO: 0
+        SELL_RATIO: 0,
+        RSI_PERIOD: 0
     });
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<{[key: string]: boolean}>({});
@@ -45,17 +47,12 @@ export default function AddStockScreen() {
         setFocusedField(fieldName);
     };
 
-    // 입력 필드 스타일 생성
-    const getInputStyle = (fieldName: string) => [
-        styles.input,
-        focusedField === fieldName && styles.inputFocused
-    ];
-
     // 필드명과 섹션명 매핑 함수
     const getSectionByField = (field: string) => {
         if (["SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"].includes(field)) return 'movingAverage';
         if (["buyRatio", "sellRatio"].includes(field)) return 'ratio';
         if (field === 'SWING_AMOUNT' || field === 'swingAmount') return 'swingAmount';
+        if (field === 'RSI_PERIOD' || field === 'rsiPeriod') return 'rsi';
         return '';
     };
 
@@ -90,6 +87,10 @@ export default function AddStockScreen() {
         if (field === 'BUY_RATIO' || field === 'SELL_RATIO') {
             setValidationErrors(prev => ({ ...prev, ratio: false }));
         }
+        // RSI 입력 시
+        if (field === 'RSI_PERIOD') {
+            setValidationErrors(prev => ({ ...prev, rsi: false }));
+        }
     };
 
     /* ─ 주식 오토 설정 저장 ─ */
@@ -105,6 +106,9 @@ export default function AddStockScreen() {
         if (!form.BUY_RATIO || !form.SELL_RATIO) {
             errors.ratio = true;
         }
+        if (!form.RSI_PERIOD) {
+            errors.rsi = true;
+        }
 
         // 에러가 있으면 에러 상태 설정하고 리턴
         if (Object.keys(errors).length > 0) {
@@ -116,6 +120,8 @@ export default function AddStockScreen() {
                 (shortMaRef.current as TextInput)?.focus();
             } else if (errors.ratio) {
                 (buyRatioRef.current as TextInput)?.focus();
+            } else if (errors.rsi) {
+                (rsiRef.current as TextInput)?.focus();
             }
             return;
         }
@@ -129,6 +135,13 @@ export default function AddStockScreen() {
         if (form.SELL_RATIO < 0 || form.SELL_RATIO > 100) {
             setValidationErrors({ratio: true});
             (sellRatioRef.current as TextInput)?.focus();
+            return;
+        }
+
+        // RSI 검증 (1~100 범위의 기간)
+        if (form.RSI_PERIOD < 1 || form.RSI_PERIOD > 100) {
+            setValidationErrors({rsi: true});
+            (rsiRef.current as TextInput)?.focus();
             return;
         }
 
@@ -156,6 +169,7 @@ export default function AddStockScreen() {
                        form.LONG_TERM > 0 && 
                        form.BUY_RATIO > 0 && 
                        form.SELL_RATIO > 0 &&
+                       form.RSI_PERIOD > 0 &&
                        form.SHORT_TERM < form.MEDIUM_TERM && 
                        form.MEDIUM_TERM < form.LONG_TERM;
 
@@ -243,7 +257,7 @@ export default function AddStockScreen() {
                             <Text style={styles.maLabel}>단기</Text>
                             <TextInput
                                 ref={shortMaRef}
-                                style={getInputStyle('shortMa')}
+                                style={styles.input}
                                 placeholder="5"
                                 value={form.SHORT_TERM ? form.SHORT_TERM.toString() : ''}
                                 onChangeText={t => handleChange('SHORT_TERM', parseInt(t) || 0)}
@@ -255,7 +269,7 @@ export default function AddStockScreen() {
                             <Text style={styles.maLabel}>중기</Text>
                             <TextInput
                                 ref={midMaRef}
-                                style={getInputStyle('midMa')}
+                                style={styles.input}
                                 placeholder="20"
                                 value={form.MEDIUM_TERM ? form.MEDIUM_TERM.toString() : ''}
                                 onChangeText={t => handleChange('MEDIUM_TERM', parseInt(t) || 0)}
@@ -267,7 +281,7 @@ export default function AddStockScreen() {
                             <Text style={styles.maLabel}>장기</Text>
                             <TextInput
                                 ref={longMaRef}
-                                style={getInputStyle('longMa')}
+                                style={styles.input}
                                 placeholder="60"
                                 value={form.LONG_TERM ? form.LONG_TERM.toString() : ''}
                                 onChangeText={t => handleChange('LONG_TERM', parseInt(t) || 0)}
@@ -294,7 +308,7 @@ export default function AddStockScreen() {
                             >
                                 <TextInput
                                     ref={buyRatioRef}
-                                    style={getInputStyle('buyRatio')}
+                                    style={styles.input}
                                     placeholder="0~100"
                                     value={form.BUY_RATIO ? form.BUY_RATIO.toString() : ''}
                                     onChangeText={t => {
@@ -320,7 +334,7 @@ export default function AddStockScreen() {
                             >
                                 <TextInput
                                     ref={sellRatioRef}
-                                    style={getInputStyle('sellRatio')}
+                                    style={styles.input}
                                     placeholder="0~100"
                                     value={form.SELL_RATIO ? form.SELL_RATIO.toString() : ''}
                                     onChangeText={t => {
@@ -334,6 +348,34 @@ export default function AddStockScreen() {
                                 <Text style={styles.percentText}>%</Text>
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </View>
+
+                {/* RSI 설정 */}
+                <View style={getSectionStyle('rsi')}>
+                    <Text style={styles.sectionTitle}>RSI 기간</Text>
+                    <View style={styles.rsiContainer}>
+                        <View style={[
+                            styles.rsiInputWrapper,
+                            focusedField === 'rsiPeriod' && styles.rsiInputWrapperFocused,
+                            validationErrors.rsi && styles.rsiInputWrapperError
+                        ]}>
+                            <TextInput
+                                ref={rsiRef}
+                                style={styles.rsiInput}
+                                placeholder="14"
+                                value={form.RSI_PERIOD ? form.RSI_PERIOD.toString() : ''}
+                                onChangeText={t => {
+                                    if (/^[0-9]*$/.test(t)) {
+                                        handleChange('RSI_PERIOD', t === '' ? '' : parseInt(t, 10));
+                                    }
+                                }}
+                                keyboardType="number-pad"
+                                onFocus={() => handleFocus('rsiPeriod')}
+                            />
+                            <Text style={styles.rsiUnit}>일</Text>
+                        </View>
+                        <Text style={styles.rsiInfoText}>일반적으로 14일 사용</Text>
                     </View>
                 </View>
 
@@ -468,15 +510,6 @@ const styles = StyleSheet.create({
         width: 60,
         textAlign: 'center',
     },
-    inputFocused: {
-        borderColor: 'transparent',
-        backgroundColor: 'transparent',
-        shadowColor: 'transparent',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0,
-        shadowRadius: 0,
-        elevation: 0,
-    },
     saveBtn: {
         paddingVertical: 18,
         borderRadius: 16,
@@ -575,6 +608,58 @@ const styles = StyleSheet.create({
         borderColor: '#ff6b6b',
     },
     sectionContainerFocused: {
-        borderColor: '#B5EAD7', // 초록색
+        borderColor: '#B5EAD7',
+    },
+    rsiContainer: {
+        marginTop: 10,
+        alignItems: 'center',
+    },
+    rsiInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#e0e0e0',
+        borderRadius: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: '#fafafa',
+        minWidth: 120,
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    rsiInputWrapperFocused: {
+        borderColor: '#B5EAD7',
+        backgroundColor: '#fff',
+        shadowColor: '#B5EAD7',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    rsiInputWrapperError: {
+        borderColor: '#ff6b6b',
+    },
+    rsiInput: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        borderWidth: 0,
+        backgroundColor: 'transparent',
+        textAlign: 'center',
+        minWidth: 40,
+    },
+    rsiUnit: {
+        fontSize: 16,
+        color: '#666',
+        marginLeft: 8,
+        fontWeight: '500',
+    },
+    rsiInfoText: {
+        fontSize: 12,
+        color: '#999',
+        textAlign: 'center',
+        fontStyle: 'italic',
     },
 });
