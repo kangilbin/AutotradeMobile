@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SwingItem } from '../../types/swing';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -17,60 +17,180 @@ interface TradeData {
     quantity: number;
 }
 
+// 차트 데이터 포인트 타입
+interface ChartDataPoint {
+    label: string;
+    price: number;
+    date: string;
+}
+
 export default function ChartTab({ swingData }: ChartTabProps) {
     const [selectedPoint, setSelectedPoint] = useState<{
         value: number; 
         label: string; 
         isTrade?: boolean;
         tradeType?: '매수' | '매도';
-        x?: number; // 클릭한 점의 X 좌표
+        x?: number;
     } | null>(null);
 
-    // 주식 일일 데이터 (실제로는 API에서 가져올 데이터)
-    const dailyData = [65000, 68000, 72000, 75000, 78000, 82000];
+    // 차트 데이터 상태
+    const [chartData, setChartData] = useState<{
+        labels: string[];
+        datasets: { data: number[]; color: (opacity: number) => string; strokeWidth: number }[];
+    }>({
+        labels: [],
+        datasets: [{ data: [], color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`, strokeWidth: 3 }]
+    });
+
+    // 매수/매도 데이터 상태
+    const [tradeData, setTradeData] = useState<TradeData[]>([]);
+    const [tradePoints, setTradePoints] = useState<any[]>([]);
+
+    // 로딩 상태
+    const [loading, setLoading] = useState(false);
+    const [hasMoreData, setHasMoreData] = useState(true);
+
+    // 데이터 청크 크기
+    const CHUNK_SIZE = 15; // 라벨 겹침을 줄이기 위해 청크 크기 감소
+    const [currentChunk, setCurrentChunk] = useState(0);
     
-    // 매수/매도 데이터 (실제로는 API에서 가져올 데이터)
-    const tradeData: TradeData[] = [
-        { date: '2024-01-15', type: '매수', price: 75000, quantity: 100 },
-        { date: '2024-01-16', type: '매도', price: 78000, quantity: 50 },
-        { date: '2024-01-17', type: '매수', price: 76000, quantity: 50 },
-    ];
+    // 스크롤 위치 상태
+    const [scrollOffset, setScrollOffset] = useState(0);
 
-    // 매수/매도 데이터를 차트 포인트로 변환
-    const tradePoints = tradeData.map(trade => {
-        // 임시로 가격을 기준으로 가장 가까운 차트 포인트 인덱스 찾기
-        const closestIndex = dailyData.reduce((closest, price, index) => {
-            return Math.abs(price - trade.price) < Math.abs(dailyData[closest] - trade.price) ? index : closest;
-        }, 0);
+    // 초기 데이터 생성 (실제로는 API에서 가져올 데이터)
+    const generateInitialData = useCallback(() => {
+        const allData: ChartDataPoint[] = [];
+        const allTrades: TradeData[] = [];
         
-        return {
-            ...trade,
-            chartIndex: closestIndex,
-            chartLabel: ['1월', '2월', '3월', '4월', '5월', '6월'][closestIndex]
-        };
-    });
+        // 1년치 데이터 생성 (365일)
+        for (let i = 0; i < 365; i++) {
+            const date = new Date(2024, 0, 1);
+            date.setDate(date.getDate() + i);
+            
+            // 가격 변동 (실제로는 API 데이터)
+            const basePrice = 65000 + Math.random() * 20000;
+            allData.push({
+                label: `${date.getMonth() + 1}월 ${date.getDate()}일`,
+                price: Math.round(basePrice),
+                date: date.toISOString().split('T')[0]
+            });
 
-    // 매수/매도 데이터를 차트용 배열로 변환 (거래가 없는 날은 0으로 설정)
-    const tradeChartData = dailyData.map((_, index) => {
-        const trade = tradePoints.find(t => t.chartIndex === index);
-        return trade ? trade.price : 0;
-    });
+            // 매수/매도 데이터 (일부 날짜에만)
+            if (Math.random() < 0.1) { // 10% 확률로 거래 발생
+                allTrades.push({
+                    date: date.toISOString().split('T')[0],
+                    type: Math.random() > 0.5 ? '매수' : '매도',
+                    price: Math.round(basePrice),
+                    quantity: Math.floor(Math.random() * 100) + 10
+                });
+            }
+        }
 
-    const chartData = {
-        labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
-        datasets: [
-            {
-                data: dailyData,
-                color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                strokeWidth: 3,
-            },
-            {
-                data: tradeChartData,
-                color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`,
-                strokeWidth: 0, // 선은 그리지 않음
-            },
-        ],
-    };
+        return { allData, allTrades };
+    }, []);
+
+    // 차트 너비 계산 함수
+    const getChartWidth = useCallback(() => {
+        return Math.max(width - 80, chartData.datasets[0].data.length * 50);
+    }, [chartData.datasets[0].data.length]);
+
+    // X축 라벨을 간격을 두고 표시하는 함수
+    const formatLabels = useCallback((labels: string[]) => {
+        if (labels.length <= 20) {
+            return labels; // 20개 이하면 모든 라벨 표시
+        }
+        
+        // 20개 초과시 간격을 두고 라벨 표시
+        const step = Math.ceil(labels.length / 20);
+        return labels.map((label, index) => {
+            if (index % step === 0 || index === labels.length - 1) {
+                return label;
+            }
+            return ''; // 빈 문자열로 설정하여 라벨 숨김
+        });
+    }, []);
+
+    // 데이터 로드 함수
+    const loadData = useCallback(async (chunkIndex: number) => {
+        setLoading(true);
+        
+        try {
+            // 실제로는 API 호출
+            await new Promise(resolve => setTimeout(resolve, 500)); // 로딩 시뮬레이션
+            
+            const { allData, allTrades } = generateInitialData();
+            
+            // 청크 단위로 데이터 로드
+            const startIndex = chunkIndex * CHUNK_SIZE;
+            const endIndex = startIndex + CHUNK_SIZE;
+            const chunkData = allData.slice(startIndex, endIndex);
+            
+            if (chunkIndex === 0) {
+                // 첫 번째 청크
+                setChartData({
+                    labels: formatLabels(chunkData.map(d => d.label)),
+                    datasets: [{
+                        data: chunkData.map(d => d.price),
+                        color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                        strokeWidth: 3
+                    }]
+                });
+                setTradeData(allTrades);
+            } else {
+                // 추가 청크
+                setChartData(prev => ({
+                    labels: formatLabels([...prev.labels, ...chunkData.map(d => d.label)]),
+                    datasets: [{
+                        data: [...prev.datasets[0].data, ...chunkData.map(d => d.price)],
+                        color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                        strokeWidth: 3
+                    }]
+                }));
+            }
+            
+            // 더 로드할 데이터가 있는지 확인
+            setHasMoreData(endIndex < allData.length);
+            setCurrentChunk(chunkIndex);
+            
+        } catch (error) {
+            console.error('데이터 로드 실패:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [generateInitialData, formatLabels]);
+
+    // 더 많은 데이터 로드
+    const loadMoreData = useCallback(() => {
+        if (!loading && hasMoreData) {
+            loadData(currentChunk + 1);
+        }
+    }, [loading, hasMoreData, currentChunk, loadData]);
+
+    // 초기 데이터 로드
+    useEffect(() => {
+        loadData(0);
+    }, [loadData]);
+
+    // 매수/매도 포인트 매핑 업데이트
+    useEffect(() => {
+        if (chartData.labels.length > 0 && tradeData.length > 0) {
+            const newTradePoints = tradeData.map(trade => {
+                // 날짜를 기준으로 가장 가까운 차트 포인트 인덱스 찾기
+                const closestIndex = chartData.labels.findIndex(label => {
+                    // 라벨에서 날짜 추출 (간단한 매칭)
+                    return label.includes(trade.date.split('-')[1]) && label.includes(trade.date.split('-')[2]);
+                });
+                
+                return {
+                    ...trade,
+                    chartIndex: closestIndex >= 0 ? closestIndex : -1,
+                    chartLabel: closestIndex >= 0 ? chartData.labels[closestIndex] : ''
+                };
+            }).filter(t => t.chartIndex >= 0);
+            
+            setTradePoints(newTradePoints);
+        }
+    }, [chartData, tradeData]);
 
     const handleDataPointClick = (data: any) => {
         const index = data.index;
@@ -84,9 +204,9 @@ export default function ChartTab({ swingData }: ChartTabProps) {
         setSelectedPoint({ 
             value, 
             label,
-            isTrade: !!trade, // 거래 시점인지 여부
-            tradeType: trade?.type, // 거래 유형 (매수/매도)
-            x: data.x // 클릭한 점의 X 좌표
+            isTrade: !!trade,
+            tradeType: trade?.type,
+            x: data.x // 클릭한 정확한 X 좌표 사용
         });
     };
 
@@ -95,43 +215,77 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     return (
         <View style={styles.tabContent}>
             <View style={styles.chartSection}>
-                <Text style={styles.chartSubtitle}>6개월 가격 추이</Text>
+                <Text style={styles.chartSubtitle}>주가 추이 (동적 로딩)</Text>
                 
-                <View style={styles.chartWrapper}>
-                    <LineChart
-                        data={chartData}
-                        width={width - 80}
-                        height={200}
-                        chartConfig={{
-                            backgroundColor: '#FFFFFF',
-                            backgroundGradientFrom: '#FFFFFF',
-                            backgroundGradientTo: '#FFFFFF',
-                            decimalPlaces: 0,
-                            color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                            style: {
-                                borderRadius: 16,
-                            },
-                            propsForDots: {
-                                r: '6',
-                                strokeWidth: '2',
-                                stroke: '#4ECDC4',
-                            },
-                        }}
-                        bezier
-                        style={styles.chart}
-                        onDataPointClick={handleDataPointClick}
-                        getDotColor={(dataPoint, index) => {
-                            // 매수/매도 시점인지 확인하여 색상 변경
-                            const trade = tradePoints.find(t => t.chartIndex === index);
-                            if (trade) {
-                                return trade.type === '매수' ? '#E74C3C' : '#3498DB'; // 매수: 빨간색, 매도: 파란색
-                            }
+                {/* 차트 컨테이너 */}
+                <View style={styles.chartContainer}>
+                    <ScrollView 
+                        horizontal={true} 
+                        showsHorizontalScrollIndicator={false}
+                        onScroll={(event) => {
+                            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                            const scrollPosition = contentOffset.x;
+                            const maxScrollPosition = contentSize.width - layoutMeasurement.width;
                             
-                            // 거래가 없는 날은 투명하게 처리
-                            return 'transparent';
+                            // 스크롤 위치 저장
+                            setScrollOffset(scrollPosition);
+                            
+                            // 스크롤이 끝에 가까워지면 (80% 이상) 자동으로 데이터 로드
+                            if (scrollPosition >= maxScrollPosition * 0.8 && hasMoreData && !loading) {
+                                loadMoreData();
+                            }
                         }}
-                    />
+                        scrollEventThrottle={16}
+                    >
+                        <LineChart
+                            data={chartData}
+                            width={getChartWidth()} // 차트 너비 계산 함수 사용
+                            height={200}
+                            chartConfig={{
+                                backgroundColor: '#FFFFFF',
+                                backgroundGradientFrom: '#FFFFFF',
+                                backgroundGradientTo: '#FFFFFF',
+                                decimalPlaces: 0,
+                                color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                                style: {
+                                    borderRadius: 16,
+                                },
+                                propsForDots: {
+                                    r: '4', // 데이터가 많아지므로 점 크기 줄임
+                                    strokeWidth: '2',
+                                    stroke: '#4ECDC4',
+                                },
+                            }}
+                            bezier
+                            style={styles.chart}
+                            onDataPointClick={handleDataPointClick}
+                            getDotColor={(dataPoint, index) => {
+                                // 매수/매도 시점인지 확인하여 색상 변경
+                                const trade = tradePoints.find(t => t.chartIndex === index);
+                                if (trade) {
+                                    return trade.type === '매수' ? '#E74C3C' : '#3498DB';
+                                }
+                                
+                                // 거래가 없는 날은 투명하게 처리
+                                return 'transparent';
+                            }}
+                            // X축 라벨 겹침 방지
+                            xLabelsOffset={10}
+                            yLabelsOffset={10}
+                            segments={4}
+                        />
+                    </ScrollView>
+                    
+                    {/* 로딩 인디케이터 */}
+                    {loading && (
+                        <View style={styles.loadingOverlay}>
+                            <ActivityIndicator size="small" color="#4ECDC4" />
+                            <Text style={styles.loadingText}>데이터 로딩 중...</Text>
+                        </View>
+                    )}
+                    
+
                 </View>
                 
                 {/* 선택된 구간 강조 표시 - 차트 위에 오버레이 */}
@@ -140,8 +294,8 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                         styles.selectedHighlight,
                         {
                             position: 'absolute',
-                            left: selectedPoint.x - 20, // dot를 강조 구간의 정중앙에 배치
-                            top: 60, // 차트 제목 아래
+                            left: 20 + selectedPoint.x - scrollOffset - 20, // 스크롤 위치를 고려한 위치 계산
+                            top: 60,
                             width: 40,
                             height: 200,
                         }
@@ -333,4 +487,39 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         zIndex: 1,
     },
+    chartContainer: {
+        width: '100%',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        zIndex: 1,
+    },
+    loadingText: {
+        marginTop: 10,
+        color: '#4ECDC4',
+        fontSize: 16,
+    },
+    debugText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        padding: 4,
+        borderRadius: 4,
+    },
+    highlightContainer: {
+        position: 'relative',
+        width: '100%',
+        height: 200,
+        marginTop: 20,
+    },
+
 });
