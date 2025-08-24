@@ -272,7 +272,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     return (
         <View style={styles.tabContent}>
             <View style={styles.chartSection}>
-                <Text style={styles.chartSubtitle}>주가 추이 (동적 로딩)</Text>
+                <Text style={styles.chartSubtitle}>주가 추이</Text>
                 
                 {/* 차트 컨테이너 */}
                 <View style={styles.chartContainer}>
@@ -337,7 +337,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                     ) : (
                         <View style={styles.noDataContainer}>
                             <Text style={styles.noDataText}>
-                                {loading ? '데이터 로딩 중...' : '차트 데이터가 없습니다.'}
+                                {loading ? '' : '차트 데이터가 없습니다.'}
                             </Text>
                         </View>
                     )}
