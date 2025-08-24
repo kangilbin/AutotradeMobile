@@ -172,4 +172,75 @@ export type StockPriceOutput2 = {
     vi_cls_code: string;              // VI적용구분코드
 }
 
+// 백트레이딩 응답 타입
+export type BacktestingResponse = {
+    // 기본 정보
+    stCode: string;
+    stockName: string;
+    analysisPeriod: string; // 분석 기간 (예: "2024년 1월 ~ 12월 (1년)")
+    
+    // 수익률 정보
+    totalInvestment: number;    // 총 투자금
+    totalReturn: number;        // 총 수익금
+    profitLoss: number;         // 손익
+    profitRate: number;         // 수익률 (%)
+    
+    // 차트 데이터
+    priceChartData: {
+        labels: string[];        // X축 라벨 (월별)
+        datasets: {
+            data: number[];      // 주가 데이터
+            color: string;
+            strokeWidth: number;
+        }[];
+        movingAverages: {
+            shortTerm: number[]; // 단기 이평선
+            mediumTerm: number[]; // 중기 이평선
+            longTerm: number[];  // 장기 이평선
+        };
+    };
+    
+    // RSI 차트 데이터
+    rsiChartData: {
+        labels: string[];        // X축 라벨
+        datasets: {
+            data: number[];      // RSI 값 (0-100)
+            color: string;
+            strokeWidth: number;
+        }[];
+    };
+    
+    // 매매 내역
+    trades: {
+        date: string;            // 거래 날짜
+        type: 'BUY' | 'SELL';   // 매수/매도
+        price: number;           // 거래 가격
+        quantity: number;        // 거래 수량
+        amount: number;          // 거래 금액
+        reason?: string;         // 매매 이유 (RSI, 이평선 등)
+    }[];
+    
+    // 분석 통계
+    statistics: {
+        totalTrades: number;     // 총 거래 횟수
+        buyCount: number;        // 매수 횟수
+        sellCount: number;       // 매도 횟수
+        averageHoldingPeriod: number; // 평균 보유 기간 (일)
+        maxDrawdown: number;     // 최대 손실률 (%)
+        sharpeRatio?: number;    // 샤프 비율
+        winRate: number;         // 승률 (%)
+    };
+    
+    // 설정값
+    settings: {
+        swingAmount: number;     // 스윙 금액
+        shortTerm: number;       // 단기 이평선
+        mediumTerm: number;      // 중기 이평선
+        longTerm: number;        // 장기 이평선
+        buyRatio: number;        // 매수 비율
+        sellRatio: number;       // 매도 비율
+        rsiPeriod: number;       // RSI 기간
+    };
+}
+
 
