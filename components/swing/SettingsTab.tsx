@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SwingItem } from '../../types/swing';
 import { updateSwingSettings } from '../../contexts/backEndApi';
@@ -20,11 +20,13 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         SHORT_MA: swingData?.SHORT_MA || 5,
         MID_MA: swingData?.MID_MA || 20,
         LONG_MA: swingData?.LONG_MA || 60,
+        RSI_PERIOD: swingData?.RSI_PERIOD || 14,
     });
     const [validationErrors, setValidationErrors] = useState({
         swingAmount: false,
         ratio: false,
         movingAverage: false,
+        rsi: false,
     });
 
     const handleEdit = () => {
@@ -43,11 +45,13 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
             SHORT_MA: swingData?.SHORT_MA || 5,
             MID_MA: swingData?.MID_MA || 20,
             LONG_MA: swingData?.LONG_MA || 60,
+            RSI_PERIOD: swingData?.RSI_PERIOD || 14,
         });
         setValidationErrors({
             swingAmount: false,
             ratio: false,
             movingAverage: false,
+            rsi: false,
         });
     };
 
@@ -56,6 +60,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
             swingAmount: form.SWING_AMOUNT <= 0,
             ratio: form.BUY_RATIO <= 0 || form.SELL_RATIO <= 0,
             movingAverage: form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA,
+            rsi: form.RSI_PERIOD <= 0,
         };
         setValidationErrors(errors);
         return !Object.values(errors).some(error => error);
@@ -82,6 +87,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                 SHORT_MA: form.SHORT_MA,
                 MID_MA: form.MID_MA,
                 LONG_MA: form.LONG_MA,
+                RSI_PERIOD: form.RSI_PERIOD,
             });
             
             Alert.alert('성공', '설정이 저장되었습니다.');
@@ -95,197 +101,222 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
     if (!swingData) return null;
 
     return (
-        <View style={styles.tabContent}>
-            <View style={styles.section}>
-                <View style={styles.editHeader}>
-                    {!isEditMode ? (
-                        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                            <Ionicons name="create-outline" size={16} color="#4ECDC4" />
-                            <Text style={styles.editButtonText}>편집</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={styles.editButtonsContainer}>
-                            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                                <Ionicons name="close-outline" size={16} color="#64748B" />
-                                <Text style={styles.editButtonText}>취소</Text>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <View style={styles.tabContent}>
+                <View style={styles.section}>
+                    <View style={styles.editHeader}>
+                        {!isEditMode ? (
+                            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                                <Ionicons name="create-outline" size={16} color="#4ECDC4" />
+                                <Text style={styles.editButtonText}>편집</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.completeButton} onPress={handleSave}>
-                                <Ionicons name="checkmark-outline" size={16} color="#4ECDC4" />
-                                <Text style={styles.editButtonText}>완료</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </View>
+                        ) : (
+                            <View style={styles.editButtonsContainer}>
+                                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                                    <Ionicons name="close-outline" size={16} color="#64748B" />
+                                    <Text style={styles.editButtonText}>취소</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.completeButton} onPress={handleSave}>
+                                    <Ionicons name="checkmark-outline" size={16} color="#4ECDC4" />
+                                    <Text style={styles.editButtonText}>완료</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
 
-                <Text style={styles.sectionTitle}>기본 정보</Text>
-                
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>종목 코드</Text>
-                    <Text style={styles.settingValue}>{swingData.ST_CODE}</Text>
-                </View>
+                    <Text style={styles.sectionTitle}>기본 정보</Text>
+                    
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>종목 코드</Text>
+                        <Text style={styles.settingValue}>{swingData.ST_CODE}</Text>
+                    </View>
 
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>스윙 유형</Text>
-                    {isEditMode ? (
-                        <View style={styles.radioContainer}>
-                            <TouchableOpacity
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>스윙 유형</Text>
+                        {isEditMode ? (
+                            <View style={styles.radioContainer}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        form.SWING_TYPE === 'D' && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'D' }))}
+                                >
+                                    <View style={[
+                                        styles.radioButton,
+                                        form.SWING_TYPE === 'D' && styles.radioButtonSelected
+                                    ]}>
+                                        {form.SWING_TYPE === 'D' && <View style={styles.radioButtonInner} />}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioText,
+                                        form.SWING_TYPE === 'D' && styles.radioTextSelected
+                                    ]}>일반</Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        form.SWING_TYPE === 'S' && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'S' }))}
+                                >
+                                    <View style={[
+                                        styles.radioButton,
+                                        form.SWING_TYPE === 'S' && styles.radioButtonSelected
+                                    ]}>
+                                        {form.SWING_TYPE === 'S' && <View style={styles.radioButtonInner} />}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioText,
+                                        form.SWING_TYPE === 'S' && styles.radioTextSelected
+                                    ]}>단기</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <Text style={styles.settingValue}>
+                                {form.SWING_TYPE === 'D' ? '일반' : '단기'}
+                            </Text>
+                        )}
+                    </View>
+
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>스윙 금액</Text>
+                        {isEditMode ? (
+                            <TextInput
                                 style={[
-                                    styles.radioOption,
-                                    form.SWING_TYPE === 'D' && styles.radioOptionSelected
+                                    styles.input,
+                                    validationErrors.swingAmount && styles.inputError
                                 ]}
-                                onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'D' }))}
-                            >
-                                <View style={[
-                                    styles.radioButton,
-                                    form.SWING_TYPE === 'D' && styles.radioButtonSelected
-                                ]}>
-                                    {form.SWING_TYPE === 'D' && <View style={styles.radioButtonInner} />}
-                                </View>
-                                <Text style={[
-                                    styles.radioText,
-                                    form.SWING_TYPE === 'D' && styles.radioTextSelected
-                                ]}>일반</Text>
-                            </TouchableOpacity>
-                            
-                            <TouchableOpacity
+                                value={form.SWING_AMOUNT.toString()}
+                                onChangeText={(text) => setForm(prev => ({ ...prev, SWING_AMOUNT: parseInt(text) || 0 }))}
+                                keyboardType="numeric"
+                                placeholder="금액 입력"
+                            />
+                        ) : (
+                            <Text style={styles.settingValue}>
+                                {form.SWING_AMOUNT.toLocaleString()}원
+                            </Text>
+                        )}
+                    </View>
+
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>매수 비율</Text>
+                        {isEditMode ? (
+                            <TextInput
                                 style={[
-                                    styles.radioOption,
-                                    form.SWING_TYPE === 'S' && styles.radioOptionSelected
+                                    styles.input,
+                                    validationErrors.ratio && styles.inputError
                                 ]}
-                                onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'S' }))}
-                            >
-                                <View style={[
-                                    styles.radioButton,
-                                    form.SWING_TYPE === 'S' && styles.radioButtonSelected
-                                ]}>
-                                    {form.SWING_TYPE === 'S' && <View style={styles.radioButtonInner} />}
+                                value={form.BUY_RATIO.toString()}
+                                onChangeText={(text) => setForm(prev => ({ ...prev, BUY_RATIO: parseInt(text) || 0 }))}
+                                keyboardType="numeric"
+                                placeholder="비율 입력"
+                            />
+                        ) : (
+                            <Text style={styles.settingValue}>{form.BUY_RATIO}%</Text>
+                        )}
+                    </View>
+
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>매도 비율</Text>
+                        {isEditMode ? (
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    validationErrors.ratio && styles.inputError
+                                ]}
+                                value={form.SELL_RATIO.toString()}
+                                onChangeText={(text) => setForm(prev => ({ ...prev, SELL_RATIO: parseInt(text) || 0 }))}
+                                keyboardType="numeric"
+                                placeholder="비율 입력"
+                            />
+                        ) : (
+                            <Text style={styles.settingValue}>{form.SELL_RATIO}%</Text>
+                        )}
+                    </View>
+
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>이동평균선</Text>
+                        {isEditMode ? (
+                            <View style={styles.maContainer}>
+                                <View style={styles.maItem}>
+                                    <Text style={styles.maLabel}>단기 (MA)</Text>
+                                    <TextInput
+                                        style={[
+                                            styles.maInput,
+                                            validationErrors.movingAverage && styles.inputError
+                                        ]}
+                                        value={form.SHORT_MA.toString()}
+                                        onChangeText={(text) => setForm(prev => ({ ...prev, SHORT_MA: parseInt(text) || 0 }))}
+                                        keyboardType="numeric"
+                                        placeholder="일수"
+                                    />
                                 </View>
-                                <Text style={[
-                                    styles.radioText,
-                                    form.SWING_TYPE === 'S' && styles.radioTextSelected
-                                ]}>단기</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <Text style={styles.settingValue}>
-                            {form.SWING_TYPE === 'D' ? '일반' : '단기'}
-                        </Text>
-                    )}
-                </View>
-
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>스윙 금액</Text>
-                    {isEditMode ? (
-                        <TextInput
-                            style={[
-                                styles.input,
-                                validationErrors.swingAmount && styles.inputError
-                            ]}
-                            value={form.SWING_AMOUNT.toString()}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, SWING_AMOUNT: parseInt(text) || 0 }))}
-                            keyboardType="numeric"
-                            placeholder="금액 입력"
-                        />
-                    ) : (
-                        <Text style={styles.settingValue}>
-                            {form.SWING_AMOUNT.toLocaleString()}원
-                        </Text>
-                    )}
-                </View>
-
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>매수 비율</Text>
-                    {isEditMode ? (
-                        <TextInput
-                            style={[
-                                styles.input,
-                                validationErrors.ratio && styles.inputError
-                            ]}
-                            value={form.BUY_RATIO.toString()}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, BUY_RATIO: parseInt(text) || 0 }))}
-                            keyboardType="numeric"
-                            placeholder="비율 입력"
-                        />
-                    ) : (
-                        <Text style={styles.settingValue}>{form.BUY_RATIO}%</Text>
-                    )}
-                </View>
-
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>매도 비율</Text>
-                    {isEditMode ? (
-                        <TextInput
-                            style={[
-                                styles.input,
-                                validationErrors.ratio && styles.inputError
-                            ]}
-                            value={form.SELL_RATIO.toString()}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, SELL_RATIO: parseInt(text) || 0 }))}
-                            keyboardType="numeric"
-                            placeholder="비율 입력"
-                        />
-                    ) : (
-                        <Text style={styles.settingValue}>{form.SELL_RATIO}%</Text>
-                    )}
-                </View>
-
-                <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>이동평균선</Text>
-                    {isEditMode ? (
-                        <View style={styles.maContainer}>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>단기 (MA)</Text>
-                                <TextInput
-                                    style={[
-                                        styles.maInput,
-                                        validationErrors.movingAverage && styles.inputError
-                                    ]}
-                                    value={form.SHORT_MA.toString()}
-                                    onChangeText={(text) => setForm(prev => ({ ...prev, SHORT_MA: parseInt(text) || 0 }))}
-                                    keyboardType="numeric"
-                                    placeholder="일수"
-                                />
+                                <View style={styles.maItem}>
+                                    <Text style={styles.maLabel}>중기 (MA)</Text>
+                                    <TextInput
+                                        style={[
+                                            styles.maInput,
+                                            validationErrors.movingAverage && styles.inputError
+                                        ]}
+                                        value={form.MID_MA.toString()}
+                                        onChangeText={(text) => setForm(prev => ({ ...prev, MID_MA: parseInt(text) || 0 }))}
+                                        keyboardType="numeric"
+                                        placeholder="일수"
+                                    />
+                                </View>
+                                <View style={styles.maItem}>
+                                    <Text style={styles.maLabel}>장기 (MA)</Text>
+                                    <TextInput
+                                        style={[
+                                            styles.maInput,
+                                            validationErrors.movingAverage && styles.inputError
+                                        ]}
+                                        value={form.LONG_MA.toString()}
+                                        onChangeText={(text) => setForm(prev => ({ ...prev, LONG_MA: parseInt(text) || 0 }))}
+                                        keyboardType="numeric"
+                                        placeholder="일수"
+                                    />
+                                </View>
                             </View>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>중기 (MA)</Text>
-                                <TextInput
-                                    style={[
-                                        styles.maInput,
-                                        validationErrors.movingAverage && styles.inputError
-                                    ]}
-                                    value={form.MID_MA.toString()}
-                                    onChangeText={(text) => setForm(prev => ({ ...prev, MID_MA: parseInt(text) || 0 }))}
-                                    keyboardType="numeric"
-                                    placeholder="일수"
-                                />
-                            </View>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>장기 (MA)</Text>
-                                <TextInput
-                                    style={[
-                                        styles.maInput,
-                                        validationErrors.movingAverage && styles.inputError
-                                    ]}
-                                    value={form.LONG_MA.toString()}
-                                    onChangeText={(text) => setForm(prev => ({ ...prev, LONG_MA: parseInt(text) || 0 }))}
-                                    keyboardType="numeric"
-                                    placeholder="일수"
-                                />
-                            </View>
-                        </View>
-                    ) : (
-                        <Text style={styles.settingValue}>
-                            {form.SHORT_MA}일 / {form.MID_MA}일 / {form.LONG_MA}일
-                        </Text>
-                    )}
-                    {validationErrors.movingAverage && (
-                        <Text style={styles.errorText}>
-                            단기 {'<'} 중기 {'<'} 장기 순서로 설정해야 합니다
-                        </Text>
-                    )}
+                        ) : (
+                            <Text style={styles.settingValue}>
+                                {form.SHORT_MA}일 / {form.MID_MA}일 / {form.LONG_MA}일
+                            </Text>
+                        )}
+                        {validationErrors.movingAverage && (
+                            <Text style={styles.errorText}>
+                                단기 {'<'} 중기 {'<'} 장기 순서로 설정해야 합니다
+                            </Text>
+                        )}
+                    </View>
+
+                    <View style={styles.settingItem}>
+                        <Text style={styles.settingLabel}>RSI 기간</Text>
+                        {isEditMode ? (
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    validationErrors.rsi && styles.inputError
+                                ]}
+                                value={form.RSI_PERIOD.toString()}
+                                onChangeText={(text) => setForm(prev => ({ ...prev, RSI_PERIOD: parseInt(text) || 0 }))}
+                                keyboardType="numeric"
+                                placeholder="일수"
+                            />
+                        ) : (
+                            <Text style={styles.settingValue}>{form.RSI_PERIOD}일</Text>
+                        )}
+                        {validationErrors.rsi && (
+                            <Text style={styles.errorText}>
+                                RSI 기간은 0보다 큰 숫자여야 합니다
+                            </Text>
+                        )}
+                    </View>
                 </View>
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -296,6 +327,7 @@ const styles = StyleSheet.create({
     },
     tabContent: {
         padding: 20,
+        paddingBottom: 40,
     },
     section: {
         backgroundColor: '#FFFFFF',

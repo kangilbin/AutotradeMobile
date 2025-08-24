@@ -57,6 +57,19 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     // 스크롤 위치 상태
     const [scrollOffset, setScrollOffset] = useState(0);
 
+    // 데이터 유효성 검사 함수
+    const validateChartData = useCallback((data: ChartDataPoint[]) => {
+        return data.filter(point => {
+            // 가격이 유효한 숫자인지 확인
+            return typeof point.price === 'number' && 
+                   !isNaN(point.price) && 
+                   isFinite(point.price) && 
+                   point.price > 0 &&
+                   point.label && 
+                   point.label.trim() !== '';
+        });
+    }, []);
+
     // 초기 데이터 생성 (실제로는 API에서 가져올 데이터)
     const generateInitialData = useCallback(() => {
         const allData: ChartDataPoint[] = [];
@@ -69,20 +82,25 @@ export default function ChartTab({ swingData }: ChartTabProps) {
             
             // 가격 변동 (실제로는 API 데이터)
             const basePrice = 65000 + Math.random() * 20000;
-            allData.push({
-                label: `${date.getMonth() + 1}월 ${date.getDate()}일`,
-                price: Math.round(basePrice),
-                date: date.toISOString().split('T')[0]
-            });
-
-            // 매수/매도 데이터 (일부 날짜에만)
-            if (Math.random() < 0.1) { // 10% 확률로 거래 발생
-                allTrades.push({
-                    date: date.toISOString().split('T')[0],
-                    type: Math.random() > 0.5 ? '매수' : '매도',
-                    price: Math.round(basePrice),
-                    quantity: Math.floor(Math.random() * 100) + 10
+            const validPrice = Math.round(basePrice);
+            
+            // 유효한 가격인지 확인
+            if (validPrice > 0 && isFinite(validPrice)) {
+                allData.push({
+                    label: `${date.getMonth() + 1}월 ${date.getDate()}일`,
+                    price: validPrice,
+                    date: date.toISOString().split('T')[0]
                 });
+
+                // 매수/매도 데이터 (일부 날짜에만)
+                if (Math.random() < 0.1) { // 10% 확률로 거래 발생
+                    allTrades.push({
+                        date: date.toISOString().split('T')[0],
+                        type: Math.random() > 0.5 ? '매수' : '매도',
+                        price: validPrice,
+                        quantity: Math.floor(Math.random() * 100) + 10
+                    });
+                }
             }
         }
 
@@ -91,11 +109,15 @@ export default function ChartTab({ swingData }: ChartTabProps) {
 
     // 차트 너비 계산 함수
     const getChartWidth = useCallback(() => {
-        return Math.max(width - 80, chartData.datasets[0].data.length * 50);
+        const dataLength = chartData.datasets[0].data.length;
+        // 최소 너비 보장 및 유효한 데이터가 있을 때만 동적 너비 계산
+        if (dataLength === 0) return width - 80;
+        return Math.max(width - 80, dataLength * 50);
     }, [chartData.datasets[0].data.length]);
 
     // X축 라벨을 간격을 두고 표시하는 함수
     const formatLabels = useCallback((labels: string[]) => {
+        if (labels.length === 0) return [];
         if (labels.length <= 20) {
             return labels; // 20개 이하면 모든 라벨 표시
         }
@@ -120,36 +142,64 @@ export default function ChartTab({ swingData }: ChartTabProps) {
             
             const { allData, allTrades } = generateInitialData();
             
+            // 데이터 유효성 검사
+            const validData = validateChartData(allData);
+            
+            if (validData.length === 0) {
+                console.warn('유효한 차트 데이터가 없습니다.');
+                setLoading(false);
+                return;
+            }
+            
             // 청크 단위로 데이터 로드
             const startIndex = chunkIndex * CHUNK_SIZE;
             const endIndex = startIndex + CHUNK_SIZE;
-            const chunkData = allData.slice(startIndex, endIndex);
+            const chunkData = validData.slice(startIndex, endIndex);
             
             if (chunkIndex === 0) {
                 // 첫 번째 청크
-                setChartData({
-                    labels: formatLabels(chunkData.map(d => d.label)),
-                    datasets: [{
-                        data: chunkData.map(d => d.price),
-                        color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                        strokeWidth: 3
-                    }]
-                });
-                setTradeData(allTrades);
+                const formattedLabels = formatLabels(chunkData.map(d => d.label));
+                const validPrices = chunkData.map(d => d.price).filter(price => 
+                    typeof price === 'number' && !isNaN(price) && isFinite(price)
+                );
+                
+                if (validPrices.length > 0) {
+                    setChartData({
+                        labels: formattedLabels,
+                        datasets: [{
+                            data: validPrices,
+                            color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                            strokeWidth: 3
+                        }]
+                    });
+                    setTradeData(allTrades);
+                }
             } else {
                 // 추가 청크
-                setChartData(prev => ({
-                    labels: formatLabels([...prev.labels, ...chunkData.map(d => d.label)]),
-                    datasets: [{
-                        data: [...prev.datasets[0].data, ...chunkData.map(d => d.price)],
-                        color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                        strokeWidth: 3
-                    }]
-                }));
+                const newLabels = chunkData.map(d => d.label);
+                const newPrices = chunkData.map(d => d.price).filter(price => 
+                    typeof price === 'number' && !isNaN(price) && isFinite(price)
+                );
+                
+                if (newPrices.length > 0) {
+                    setChartData(prev => {
+                        const combinedLabels = [...prev.labels, ...newLabels];
+                        const combinedPrices = [...prev.datasets[0].data, ...newPrices];
+                        
+                        return {
+                            labels: formatLabels(combinedLabels),
+                            datasets: [{
+                                data: combinedPrices,
+                                color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                                strokeWidth: 3
+                            }]
+                        };
+                    });
+                }
             }
             
             // 더 로드할 데이터가 있는지 확인
-            setHasMoreData(endIndex < allData.length);
+            setHasMoreData(endIndex < validData.length);
             setCurrentChunk(chunkIndex);
             
         } catch (error) {
@@ -157,7 +207,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
         } finally {
             setLoading(false);
         }
-    }, [generateInitialData, formatLabels]);
+    }, [generateInitialData, formatLabels, validateChartData]);
 
     // 더 많은 데이터 로드
     const loadMoreData = useCallback(() => {
@@ -210,6 +260,13 @@ export default function ChartTab({ swingData }: ChartTabProps) {
         });
     };
 
+    // 차트 렌더링 조건 확인
+    const shouldRenderChart = chartData.labels.length > 0 && 
+                             chartData.datasets[0].data.length > 0 &&
+                             chartData.datasets[0].data.every(price => 
+                                 typeof price === 'number' && !isNaN(price) && isFinite(price)
+                             );
+
     if (!swingData) return null;
 
     return (
@@ -219,63 +276,71 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                 
                 {/* 차트 컨테이너 */}
                 <View style={styles.chartContainer}>
-                    <ScrollView 
-                        horizontal={true} 
-                        showsHorizontalScrollIndicator={false}
-                        onScroll={(event) => {
-                            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                            const scrollPosition = contentOffset.x;
-                            const maxScrollPosition = contentSize.width - layoutMeasurement.width;
-                            
-                            // 스크롤 위치 저장
-                            setScrollOffset(scrollPosition);
-                            
-                            // 스크롤이 끝에 가까워지면 (80% 이상) 자동으로 데이터 로드
-                            if (scrollPosition >= maxScrollPosition * 0.8 && hasMoreData && !loading) {
-                                loadMoreData();
-                            }
-                        }}
-                        scrollEventThrottle={16}
-                    >
-                        <LineChart
-                            data={chartData}
-                            width={getChartWidth()} // 차트 너비 계산 함수 사용
-                            height={200}
-                            chartConfig={{
-                                backgroundColor: '#FFFFFF',
-                                backgroundGradientFrom: '#FFFFFF',
-                                backgroundGradientTo: '#FFFFFF',
-                                decimalPlaces: 0,
-                                color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                style: {
-                                    borderRadius: 16,
-                                },
-                                propsForDots: {
-                                    r: '4', // 데이터가 많아지므로 점 크기 줄임
-                                    strokeWidth: '2',
-                                    stroke: '#4ECDC4',
-                                },
-                            }}
-                            bezier
-                            style={styles.chart}
-                            onDataPointClick={handleDataPointClick}
-                            getDotColor={(dataPoint, index) => {
-                                // 매수/매도 시점인지 확인하여 색상 변경
-                                const trade = tradePoints.find(t => t.chartIndex === index);
-                                if (trade) {
-                                    return trade.type === '매수' ? '#E74C3C' : '#3498DB';
-                                }
+                    {shouldRenderChart ? (
+                        <ScrollView 
+                            horizontal={true} 
+                            showsHorizontalScrollIndicator={false}
+                            onScroll={(event) => {
+                                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                                const scrollPosition = contentOffset.x;
+                                const maxScrollPosition = contentSize.width - layoutMeasurement.width;
                                 
-                                // 거래가 없는 날은 투명하게 처리
-                                return 'transparent';
+                                // 스크롤 위치 저장
+                                setScrollOffset(scrollPosition);
+                                
+                                // 스크롤이 끝에 가까워지면 (80% 이상) 자동으로 데이터 로드
+                                if (scrollPosition >= maxScrollPosition * 0.8 && hasMoreData && !loading) {
+                                    loadMoreData();
+                                }
                             }}
-                            // X축 라벨 겹침 방지
-                            xLabelsOffset={10}
-                            yLabelsOffset={10}
-                            segments={4}
-                        />
-                    </ScrollView>
+                            scrollEventThrottle={16}
+                        >
+                            <LineChart
+                                data={chartData}
+                                width={getChartWidth()} // 차트 너비 계산 함수 사용
+                                height={200}
+                                chartConfig={{
+                                    backgroundColor: '#FFFFFF',
+                                    backgroundGradientFrom: '#FFFFFF',
+                                    backgroundGradientTo: '#FFFFFF',
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                                    style: {
+                                        borderRadius: 16,
+                                    },
+                                    propsForDots: {
+                                        r: '4', // 데이터가 많아지므로 점 크기 줄임
+                                        strokeWidth: '2',
+                                        stroke: '#4ECDC4',
+                                    },
+                                }}
+                                bezier
+                                style={styles.chart}
+                                onDataPointClick={handleDataPointClick}
+                                getDotColor={(dataPoint, index) => {
+                                    // 매수/매도 시점인지 확인하여 색상 변경
+                                    const trade = tradePoints.find(t => t.chartIndex === index);
+                                    if (trade) {
+                                        return trade.type === '매수' ? '#E74C3C' : '#3498DB';
+                                    }
+                                    
+                                    // 거래가 없는 날은 투명하게 처리
+                                    return 'transparent';
+                                }}
+                                // X축 라벨 겹침 방지
+                                xLabelsOffset={10}
+                                yLabelsOffset={10}
+                                segments={4}
+                            />
+                        </ScrollView>
+                    ) : (
+                        <View style={styles.noDataContainer}>
+                            <Text style={styles.noDataText}>
+                                {loading ? '데이터 로딩 중...' : '차트 데이터가 없습니다.'}
+                            </Text>
+                        </View>
+                    )}
                     
                     {/* 로딩 인디케이터 */}
                     {loading && (
@@ -520,6 +585,18 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200,
         marginTop: 20,
+    },
+    noDataContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        minHeight: 200,
+    },
+    noDataText: {
+        fontSize: 16,
+        color: '#7F8C8D',
+        textAlign: 'center',
     },
 
 });
