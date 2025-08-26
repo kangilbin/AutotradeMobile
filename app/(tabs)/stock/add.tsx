@@ -155,11 +155,11 @@ export default function AddStockScreen() {
         try {
 
             await addStockAuto(form);
-            Alert.alert('완료', '주식 오토 설정이 추가되었습니다.');
+            Alert.alert('완료', '스윙 설정이 추가되었습니다.');
             router.dismissAll();
             router.replace('/swing');
         } catch (error) {
-            console.error('주식 오토 설정 추가 중 오류:', error);
+            console.error('스윙 설정 추가 중 오류:', error);
         }
     };
 
@@ -375,7 +375,6 @@ export default function AddStockScreen() {
                             />
                             <Text style={styles.rsiUnit}>일</Text>
                         </View>
-                        <Text style={styles.rsiInfoText}>일반적으로 14일 사용</Text>
                     </View>
                 </View>
 
@@ -393,8 +392,13 @@ export default function AddStockScreen() {
                             ]}
                             onPress={() => {
                                 if (isFormValid) {
-                                    // 백트레이딩 기능 구현 예정
-                                    Alert.alert('백트레이딩', '백트레이딩 기능이 준비 중입니다.');
+                                    router.push({
+                                        pathname: '/stock/backtesting',
+                                        params: {
+                                            stCode: stCode,
+                                            stockName: stockName
+                                        }
+                                    });
                                 }
                             }}
                             disabled={!isFormValid}
@@ -684,12 +688,7 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         fontWeight: '500',
     },
-    rsiInfoText: {
-        fontSize: 12,
-        color: '#999',
-        textAlign: 'center',
-        fontStyle: 'italic',
-    },
+   
     backtestingSection: {
         backgroundColor: '#fff',
         borderRadius: 16,
