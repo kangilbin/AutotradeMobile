@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
+import { backtesting } from '../../../contexts/backEndApi';
+import { BacktestingResponse, AddStockAutoRequest } from '../../../types/stock';
+import LoadingIndicator from '../../../components/LoadingIndicator';
 
 interface BacktestingResult {
     totalInvestment: number;
@@ -48,7 +51,10 @@ interface RSIChartData {
 
 export default function BacktestingResultScreen() {
     const router = useRouter();
-    const { stCode, stockName } = useLocalSearchParams();
+    const {stockName, ...formParams } = useLocalSearchParams();
+    
+    // 로딩 상태
+    const [loading, setLoading] = useState(true);
     
     // 백트레이딩 결과 데이터 (실제로는 API에서 받아올 데이터)
     const [result, setResult] = useState<BacktestingResult>({
@@ -97,6 +103,83 @@ export default function BacktestingResultScreen() {
         }
     });
 
+    useEffect(() => {
+        // 백트레이딩 API 호출
+        const performBacktesting = async () => {
+            setLoading(true);
+            try {
+                // formParams를 AddStockAutoRequest 형태로 변환
+                const backtestingParams: AddStockAutoRequest = {
+                    ST_CODE: formParams.ST_CODE as string,
+                    ACCOUNT_NO: formParams.ACCOUNT_NO as string,
+                    SWING_AMOUNT: Number(formParams.SWING_AMOUNT),
+                    SWING_TYPE: formParams.SWING_TYPE as string,
+                    SHORT_TERM: Number(formParams.SHORT_TERM),
+                    MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
+                    LONG_TERM: Number(formParams.LONG_TERM),
+                    BUY_RATIO: Number(formParams.BUY_RATIO),
+                    SELL_RATIO: Number(formParams.SELL_RATIO),
+                    RSI_PERIOD: Number(formParams.RSI_PERIOD)
+                };
+                
+                console.log('백트레이딩 파라미터:', backtestingParams);
+                
+                // 백트레이딩 API 호출
+                const response = await backtesting(backtestingParams);
+                
+                if (response) {
+                    // API 응답을 화면에 표시할 데이터로 변환
+                    setResult({
+                        totalInvestment: response.totalInvestment,
+                        totalReturn: response.totalReturn,
+                        profitLoss: response.profitLoss,
+                        profitRate: response.profitRate,
+                        trades: response.trades,
+                        chartData: {
+                            labels: response.priceChartData.labels,
+                            datasets: [
+                                {
+                                    data: response.priceChartData.datasets[0].data,
+                                    color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                                    strokeWidth: 3
+                                },
+                                {
+                                    data: response.priceChartData.movingAverages.shortTerm,
+                                    color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
+                                    strokeWidth: 2
+                                },
+                                {
+                                    data: response.priceChartData.movingAverages.mediumTerm,
+                                    color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+                                    strokeWidth: 2
+                                },
+                                {
+                                    data: response.priceChartData.movingAverages.longTerm,
+                                    color: (opacity = 1) => `rgba(155, 89, 182, ${opacity})`,
+                                    strokeWidth: 2
+                                }
+                            ]
+                        },
+                        rsiChartData: {
+                            labels: response.rsiChartData.labels,
+                            datasets: [{
+                                data: response.rsiChartData.datasets[0].data,
+                                color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+                                strokeWidth: 2
+                            }]
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('백트레이딩 실패:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        performBacktesting();
+    }, [formParams]);
+
     const formatCurrency = (amount: number) => {
         return amount.toLocaleString('ko-KR') + '원';
     };
@@ -108,15 +191,23 @@ export default function BacktestingResultScreen() {
 
     return (
         <View style={styles.container}>
+            {loading && <LoadingIndicator />}
             {/* 헤더 */}
             <View style={styles.header}>
+                <TouchableOpacity 
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                >
+                    <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>백트레이딩 결과</Text>
+                <View style={styles.placeholder} />
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* 주식 정보 */}
                 <View style={styles.stockInfo}>
-                    <Text style={styles.stockCode}>{stCode}</Text>
+                    <Text style={styles.stockCode}>{formParams.ST_CODE}</Text>
                     <Text style={styles.stockName}>{stockName}</Text>
                 </View>
 
@@ -302,8 +393,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8f9fa',
     },
     header: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 20,
@@ -311,10 +403,25 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
     },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f0f0f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backButtonText: {
+        fontSize: 20,
+        color: '#333',
+    },
     headerTitle: {
         fontSize: 20,
         fontWeight: '600',
         color: '#333',
+    },
+    placeholder: {
+        width: 40,
     },
     content: {
         flex: 1,

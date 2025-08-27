@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
-import {StockResponse, StockPriceResponse, AddStockAutoRequest, StockAutoStatus } from "../types/stock";
+import {StockResponse, StockPriceResponse, AddStockAutoRequest, StockAutoStatus, BacktestingResponse } from "../types/stock";
 import { SwingItem, SwingSummary } from '../types/swing';
 
 // API 로딩 상태
@@ -361,5 +361,15 @@ export const updateSwingSettings = async (swingId: number, settings: {
     } catch (error: unknown) {
         handleApiError(error, '스윙 설정 업데이트');
         return false;
+    }
+};
+
+// 백 트레이딩
+export const backtesting = async (param: AddStockAutoRequest): Promise<BacktestingResponse | undefined> => {
+    try {
+        const response = await api.post('/backtesting', param);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '백 트레이딩');
     }
 };

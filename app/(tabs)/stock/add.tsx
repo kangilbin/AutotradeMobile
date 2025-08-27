@@ -395,8 +395,8 @@ export default function AddStockScreen() {
                                     router.push({
                                         pathname: '/stock/backtesting',
                                         params: {
-                                            stCode: stCode,
-                                            stockName: stockName
+                                            stockName: stockName,
+                                            ...form // form의 모든 설정값을 params로 함께 전달
                                         }
                                     });
                                 }
