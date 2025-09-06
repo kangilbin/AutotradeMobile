@@ -10,17 +10,19 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
-import { updateSwingStatus } from '../../../contexts/backEndApi';
+import { updateSwingStatus, backtesting } from '../../../contexts/backEndApi';
+import { AddStockAutoRequest } from '../../../types/stock';
 import SettingsTab from '../../../components/swing/SettingsTab';
 import ChartTab from '../../../components/swing/ChartTab';
 import HistoryTab from '../../../components/swing/HistoryTab';
+import { useAccountStore } from '../../../stores/useAccountStore';
 
 export default function SwingDetailScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState(0);
     const [swingData, setSwingData] = useState<SwingItem | null>(null);
-    
+    const account = useAccountStore((state) => state.account);
     useEffect(() => {
         // 실제로는 API에서 데이터를 가져와야 함
         // 임시로 params에서 받은 데이터 사용
@@ -88,6 +90,57 @@ export default function SwingDetailScreen() {
                             Alert.alert(
                                 '오류',
                                 '스윙 상태 변경 중 오류가 발생했습니다.',
+                                [{ text: '확인' }]
+                            );
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleBacktesting = async () => {
+        if (!swingData) return;
+        
+        Alert.alert(
+            '백트레이딩 실행',
+            '설정한 조건으로 1년간의 과거 데이터를 분석하여 예상 수익률을 확인하시겠습니까?',
+            [
+                {
+                    text: '취소',
+                    style: 'cancel',
+                },
+                {
+                    text: '실행',
+                    onPress: async () => {
+                        try {
+                            // 스윙 데이터를 백트레이딩 파라미터로 변환
+                            const backtestingParams: AddStockAutoRequest = {
+                                ST_CODE: swingData.ST_CODE,
+                                ACCOUNT_NO: account?.ACCOUNT_NO as string,
+                                SWING_AMOUNT: swingData.SWING_AMOUNT,
+                                SWING_TYPE: swingData.SWING_TYPE,
+                                SHORT_TERM: swingData.SHORT_MA,
+                                MEDIUM_TERM: swingData.MID_MA,
+                                LONG_TERM: swingData.LONG_MA,
+                                BUY_RATIO: swingData.BUY_RATIO,
+                                SELL_RATIO: swingData.SELL_RATIO,
+                                RSI_PERIOD: swingData.RSI_PERIOD // 기본값 또는 스윙 데이터에서 가져오기
+                            };
+                            
+                            // 백트레이딩 결과 화면으로 이동
+                            router.push({
+                                pathname: '/stock/backtesting',
+                                params: {
+                                    stockName: swingData.STOCK_NAME,
+                                    ...backtestingParams
+                                }
+                            });
+                        } catch (error) {
+                            console.error('백트레이딩 실행 오류:', error);
+                            Alert.alert(
+                                '오류',
+                                '백트레이딩 실행 중 오류가 발생했습니다.',
                                 [{ text: '확인' }]
                             );
                         }
@@ -173,9 +226,27 @@ export default function SwingDetailScreen() {
                 {renderTabContent()}
             </ScrollView>
 
-            {/* 설정 탭일 때만 하단에 스윙 활성화/비활성화 버튼 표시 */}
+            {/* 설정 탭일 때만 하단에 액션 버튼들 표시 */}
             {activeTab === 0 && (
                 <View style={styles.bottomActions}>
+                    <TouchableOpacity 
+                        style={[
+                            styles.actionButton,
+                            styles.backtestingButton,
+                            { backgroundColor: '#4A90E2' }
+                        ]}
+                        onPress={handleBacktesting}
+                    >
+                        <Ionicons 
+                            name="analytics-outline" 
+                            size={20} 
+                            color="#FFFFFF" 
+                        />
+                        <Text style={styles.actionText}>
+                            백트레이딩 실행
+                        </Text>
+                    </TouchableOpacity>
+                    
                     <TouchableOpacity 
                         style={[
                             styles.actionButton,
@@ -315,6 +386,10 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 4,
         width: '100%',
+        marginBottom: 12,
+    },
+    backtestingButton: {
+        marginBottom: 12,
     },
     actionText: {
         color: '#FFFFFF',
