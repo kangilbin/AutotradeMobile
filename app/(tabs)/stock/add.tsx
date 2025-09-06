@@ -378,38 +378,6 @@ export default function AddStockScreen() {
                     </View>
                 </View>
 
-                {/* 백트레이딩 기능 */}
-                <View style={styles.backtestingSection}>
-                    <Text style={styles.sectionTitle}>백트레이딩</Text>
-                    <View style={styles.backtestingContainer}>
-                        <Text style={styles.backtestingInfoText}>
-                            설정한 조건으로 1년간의 과거 데이터를 분석하여{'\n'}예상 수익률을 미리 확인해보세요.
-                        </Text>
-                        <TouchableOpacity
-                            style={[
-                                styles.backtestingButton,
-                                isFormValid ? styles.backtestingButtonEnabled : styles.backtestingButtonDisabled
-                            ]}
-                            onPress={() => {
-                                if (isFormValid) {
-                                    router.push({
-                                        pathname: '/stock/backtesting',
-                                        params: {
-                                            stockName: stockName,
-                                            ...form // form의 모든 설정값을 params로 함께 전달
-                                        }
-                                    });
-                                }
-                            }}
-                            disabled={!isFormValid}
-                        >
-                            <Text style={[
-                                styles.backtestingButtonText,
-                                isFormValid ? styles.backtestingButtonTextEnabled : styles.backtestingButtonTextDisabled
-                            ]}>백트레이딩 실행</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
 
                 {/* ⑧ 등록 버튼 */}
                 <TouchableOpacity
@@ -687,59 +655,5 @@ const styles = StyleSheet.create({
         color: '#666',
         marginLeft: 8,
         fontWeight: '500',
-    },
-   
-    backtestingSection: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 3,
-        borderWidth: 1,
-        borderColor: 'transparent',
-    },
-    backtestingContainer: {
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    backtestingInfoText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 16,
-    },
-    backtestingButton: {
-        backgroundColor: '#f0f8ff',
-        borderWidth: 1.5,
-        borderColor: '#4a90e2',
-        borderRadius: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        minWidth: 140,
-        alignItems: 'center',
-    },
-    backtestingButtonText: {
-        color: '#4a90e2',
-        fontSize: 15,
-        fontWeight: '600',
-    },
-    backtestingButtonEnabled: {
-        backgroundColor: '#f0f8ff',
-        borderColor: '#4a90e2',
-    },
-    backtestingButtonDisabled: {
-        backgroundColor: '#f5f5f5',
-        borderColor: '#d0d0d0',
-    },
-    backtestingButtonTextEnabled: {
-        color: '#4a90e2',
-    },
-    backtestingButtonTextDisabled: {
-        color: '#999',
     },
 });

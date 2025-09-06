@@ -10,7 +10,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LineChart } from 'react-native-chart-kit';
 import { backtesting } from '../../../contexts/backEndApi';
-import { BacktestingResponse, AddStockAutoRequest } from '../../../types/stock';
+import { AddStockAutoRequest } from '../../../types/stock';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 
 interface BacktestingResult {
