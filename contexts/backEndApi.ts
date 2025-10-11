@@ -353,7 +353,6 @@ export const updateSwingSettings = async (swingId: number, settings: {
     SHORT_MA: number;
     MID_MA: number;
     LONG_MA: number;
-    RSI_PERIOD: number;
 }): Promise<boolean> => {
     try {
         const response = await api.put(`/swing/${swingId}/settings`, settings);

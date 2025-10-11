@@ -20,7 +20,6 @@ export type AddStockAutoRequest = {
     LONG_TERM: number     // 장기 이평선
     BUY_RATIO: number   // 매수 비율
     SELL_RATIO: number  // 매도 비율
-    RSI_PERIOD: number  // RSI 계산 기간
 }
 
 // 주식 오토 설정 상태 타입

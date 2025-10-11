@@ -20,7 +20,6 @@ export type SwingItem = {
     LONG_MA: number
     BUY_RATIO: number
     SELL_RATIO: number
-    RSI_PERIOD: number  // RSI 계산 기간
     DEL_YN: string
     CREATED_AT: string
 }
