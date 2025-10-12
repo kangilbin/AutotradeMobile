@@ -20,13 +20,11 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         SHORT_MA: swingData?.SHORT_MA || 5,
         MID_MA: swingData?.MID_MA || 20,
         LONG_MA: swingData?.LONG_MA || 60,
-        RSI_PERIOD: swingData?.RSI_PERIOD || 14,
     });
     const [validationErrors, setValidationErrors] = useState({
         swingAmount: false,
         ratio: false,
         movingAverage: false,
-        rsi: false,
     });
 
     const handleEdit = () => {
@@ -45,13 +43,11 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
             SHORT_MA: swingData?.SHORT_MA || 5,
             MID_MA: swingData?.MID_MA || 20,
             LONG_MA: swingData?.LONG_MA || 60,
-            RSI_PERIOD: swingData?.RSI_PERIOD || 14,
         });
         setValidationErrors({
             swingAmount: false,
             ratio: false,
             movingAverage: false,
-            rsi: false,
         });
     };
 
@@ -59,8 +55,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         const errors = {
             swingAmount: form.SWING_AMOUNT <= 0,
             ratio: form.BUY_RATIO <= 0 || form.SELL_RATIO <= 0,
-            movingAverage: form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA,
-            rsi: form.RSI_PERIOD <= 0,
+            movingAverage: form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA
         };
         setValidationErrors(errors);
         return !Object.values(errors).some(error => error);
@@ -87,7 +82,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                 SHORT_MA: form.SHORT_MA,
                 MID_MA: form.MID_MA,
                 LONG_MA: form.LONG_MA,
-                RSI_PERIOD: form.RSI_PERIOD,
             });
             
             Alert.alert('성공', '설정이 저장되었습니다.');
@@ -288,29 +282,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                         {validationErrors.movingAverage && (
                             <Text style={styles.errorText}>
                                 단기 {'<'} 중기 {'<'} 장기 순서로 설정해야 합니다
-                            </Text>
-                        )}
-                    </View>
-
-                    <View style={styles.settingItem}>
-                        <Text style={styles.settingLabel}>RSI 기간</Text>
-                        {isEditMode ? (
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    validationErrors.rsi && styles.inputError
-                                ]}
-                                value={form.RSI_PERIOD.toString()}
-                                onChangeText={(text) => setForm(prev => ({ ...prev, RSI_PERIOD: parseInt(text) || 0 }))}
-                                keyboardType="numeric"
-                                placeholder="일수"
-                            />
-                        ) : (
-                            <Text style={styles.settingValue}>{form.RSI_PERIOD}일</Text>
-                        )}
-                        {validationErrors.rsi && (
-                            <Text style={styles.errorText}>
-                                RSI 기간은 0보다 큰 숫자여야 합니다
                             </Text>
                         )}
                     </View>

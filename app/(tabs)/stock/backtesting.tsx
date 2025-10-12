@@ -119,7 +119,6 @@ export default function BacktestingResultScreen() {
                     LONG_TERM: Number(formParams.LONG_TERM),
                     BUY_RATIO: Number(formParams.BUY_RATIO),
                     SELL_RATIO: Number(formParams.SELL_RATIO),
-                    RSI_PERIOD: Number(formParams.RSI_PERIOD)
                 };
                 
                 console.log('백트레이딩 파라미터:', backtestingParams);

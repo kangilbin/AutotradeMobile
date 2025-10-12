@@ -125,7 +125,6 @@ export default function SwingDetailScreen() {
                                 LONG_TERM: swingData.LONG_MA,
                                 BUY_RATIO: swingData.BUY_RATIO,
                                 SELL_RATIO: swingData.SELL_RATIO,
-                                RSI_PERIOD: swingData.RSI_PERIOD // 기본값 또는 스윙 데이터에서 가져오기
                             };
                             
                             // 백트레이딩 결과 화면으로 이동
