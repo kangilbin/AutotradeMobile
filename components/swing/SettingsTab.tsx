@@ -297,8 +297,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F9FA',
     },
     tabContent: {
-        padding: 20,
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
     section: {
         backgroundColor: '#FFFFFF',

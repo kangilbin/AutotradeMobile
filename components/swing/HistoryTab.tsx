@@ -26,7 +26,7 @@ export default function HistoryTab({ swingData }: HistoryTabProps) {
     ];
 
     return (
-        <View style={styles.tabContent}>
+        <View>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>거래 내역</Text>
                 {mockHistory.map((item) => (
@@ -62,9 +62,6 @@ export default function HistoryTab({ swingData }: HistoryTabProps) {
 }
 
 const styles = StyleSheet.create({
-    tabContent: {
-        padding: 20,
-    },
     section: {
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
