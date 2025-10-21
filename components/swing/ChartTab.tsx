@@ -26,8 +26,8 @@ interface ChartDataPoint {
 
 export default function ChartTab({ swingData }: ChartTabProps) {
     const [selectedPoint, setSelectedPoint] = useState<{
-        value: number; 
-        label: string; 
+        value: number;
+        label: string;
         isTrade?: boolean;
         tradeType?: '매수' | '매도';
         x?: number;
@@ -53,7 +53,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     // 데이터 청크 크기
     const CHUNK_SIZE = 15; // 라벨 겹침을 줄이기 위해 청크 크기 감소
     const [currentChunk, setCurrentChunk] = useState(0);
-    
+
     // 스크롤 위치 상태
     const [scrollOffset, setScrollOffset] = useState(0);
 
@@ -61,11 +61,11 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     const validateChartData = useCallback((data: ChartDataPoint[]) => {
         return data.filter(point => {
             // 가격이 유효한 숫자인지 확인
-            return typeof point.price === 'number' && 
-                   !isNaN(point.price) && 
-                   isFinite(point.price) && 
+            return typeof point.price === 'number' &&
+                   !isNaN(point.price) &&
+                   isFinite(point.price) &&
                    point.price > 0 &&
-                   point.label && 
+                   point.label &&
                    point.label.trim() !== '';
         });
     }, []);
@@ -74,16 +74,16 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     const generateInitialData = useCallback(() => {
         const allData: ChartDataPoint[] = [];
         const allTrades: TradeData[] = [];
-        
+
         // 1년치 데이터 생성 (365일)
         for (let i = 0; i < 365; i++) {
             const date = new Date(2024, 0, 1);
             date.setDate(date.getDate() + i);
-            
+
             // 가격 변동 (실제로는 API 데이터)
             const basePrice = 65000 + Math.random() * 20000;
             const validPrice = Math.round(basePrice);
-            
+
             // 유효한 가격인지 확인
             if (validPrice > 0 && isFinite(validPrice)) {
                 allData.push({
@@ -121,7 +121,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
         if (labels.length <= 20) {
             return labels; // 20개 이하면 모든 라벨 표시
         }
-        
+
         // 20개 초과시 간격을 두고 라벨 표시
         const step = Math.ceil(labels.length / 20);
         return labels.map((label, index) => {
@@ -135,34 +135,34 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     // 데이터 로드 함수
     const loadData = useCallback(async (chunkIndex: number) => {
         setLoading(true);
-        
+
         try {
             // 실제로는 API 호출
             await new Promise(resolve => setTimeout(resolve, 500)); // 로딩 시뮬레이션
-            
+
             const { allData, allTrades } = generateInitialData();
-            
+
             // 데이터 유효성 검사
             const validData = validateChartData(allData);
-            
+
             if (validData.length === 0) {
                 console.warn('유효한 차트 데이터가 없습니다.');
                 setLoading(false);
                 return;
             }
-            
+
             // 청크 단위로 데이터 로드
             const startIndex = chunkIndex * CHUNK_SIZE;
             const endIndex = startIndex + CHUNK_SIZE;
             const chunkData = validData.slice(startIndex, endIndex);
-            
+
             if (chunkIndex === 0) {
                 // 첫 번째 청크
                 const formattedLabels = formatLabels(chunkData.map(d => d.label));
-                const validPrices = chunkData.map(d => d.price).filter(price => 
+                const validPrices = chunkData.map(d => d.price).filter(price =>
                     typeof price === 'number' && !isNaN(price) && isFinite(price)
                 );
-                
+
                 if (validPrices.length > 0) {
                     setChartData({
                         labels: formattedLabels,
@@ -177,15 +177,15 @@ export default function ChartTab({ swingData }: ChartTabProps) {
             } else {
                 // 추가 청크
                 const newLabels = chunkData.map(d => d.label);
-                const newPrices = chunkData.map(d => d.price).filter(price => 
+                const newPrices = chunkData.map(d => d.price).filter(price =>
                     typeof price === 'number' && !isNaN(price) && isFinite(price)
                 );
-                
+
                 if (newPrices.length > 0) {
                     setChartData(prev => {
                         const combinedLabels = [...prev.labels, ...newLabels];
                         const combinedPrices = [...prev.datasets[0].data, ...newPrices];
-                        
+
                         return {
                             labels: formatLabels(combinedLabels),
                             datasets: [{
@@ -197,11 +197,11 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                     });
                 }
             }
-            
+
             // 더 로드할 데이터가 있는지 확인
             setHasMoreData(endIndex < validData.length);
             setCurrentChunk(chunkIndex);
-            
+
         } catch (error) {
             console.error('데이터 로드 실패:', error);
         } finally {
@@ -230,29 +230,29 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                     // 라벨에서 날짜 추출 (간단한 매칭)
                     return label.includes(trade.date.split('-')[1]) && label.includes(trade.date.split('-')[2]);
                 });
-                
+
                 return {
                     ...trade,
                     chartIndex: closestIndex >= 0 ? closestIndex : -1,
                     chartLabel: closestIndex >= 0 ? chartData.labels[closestIndex] : ''
                 };
             }).filter(t => t.chartIndex >= 0);
-            
+
             setTradePoints(newTradePoints);
         }
     }, [chartData, tradeData]);
 
     const handleDataPointClick = (data: any) => {
         const index = data.index;
-        
+
         const value = chartData.datasets[0].data[index];
         const label = chartData.labels[index];
-        
+
         // 매수/매도 시점인지 확인
         const trade = tradePoints.find(t => t.chartIndex === index);
-        
-        setSelectedPoint({ 
-            value, 
+
+        setSelectedPoint({
+            value,
             label,
             isTrade: !!trade,
             tradeType: trade?.type,
@@ -261,33 +261,33 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     };
 
     // 차트 렌더링 조건 확인
-    const shouldRenderChart = chartData.labels.length > 0 && 
+    const shouldRenderChart = chartData.labels.length > 0 &&
                              chartData.datasets[0].data.length > 0 &&
-                             chartData.datasets[0].data.every(price => 
+                             chartData.datasets[0].data.every(price =>
                                  typeof price === 'number' && !isNaN(price) && isFinite(price)
                              );
 
     if (!swingData) return null;
 
     return (
-        <View style={styles.tabContent}>
+        <View>
             <View style={styles.chartSection}>
                 <Text style={styles.chartSubtitle}>주가 추이</Text>
-                
+
                 {/* 차트 컨테이너 */}
                 <View style={styles.chartContainer}>
                     {shouldRenderChart ? (
-                        <ScrollView 
-                            horizontal={true} 
+                        <ScrollView
+                            horizontal={true}
                             showsHorizontalScrollIndicator={false}
                             onScroll={(event) => {
                                 const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
                                 const scrollPosition = contentOffset.x;
                                 const maxScrollPosition = contentSize.width - layoutMeasurement.width;
-                                
+
                                 // 스크롤 위치 저장
                                 setScrollOffset(scrollPosition);
-                                
+
                                 // 스크롤이 끝에 가까워지면 (80% 이상) 자동으로 데이터 로드
                                 if (scrollPosition >= maxScrollPosition * 0.8 && hasMoreData && !loading) {
                                     loadMoreData();
@@ -324,7 +324,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                                     if (trade) {
                                         return trade.type === '매수' ? '#E74C3C' : '#3498DB';
                                     }
-                                    
+
                                     // 거래가 없는 날은 투명하게 처리
                                     return 'transparent';
                                 }}
@@ -341,7 +341,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                             </Text>
                         </View>
                     )}
-                    
+
                     {/* 로딩 인디케이터 */}
                     {loading && (
                         <View style={styles.loadingOverlay}>
@@ -349,10 +349,10 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                             <Text style={styles.loadingText}>데이터 로딩 중...</Text>
                         </View>
                     )}
-                    
+
 
                 </View>
-                
+
                 {/* 선택된 구간 강조 표시 - 차트 위에 오버레이 */}
                 {selectedPoint && selectedPoint.x !== undefined && (
                     <View style={[
@@ -384,13 +384,13 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                                 </View>
                             )}
                         </View>
-                        
+
                         {/* 가격 정보 섹션 */}
                         <View style={styles.priceSection}>
                             <Text style={styles.priceLabel}>종가</Text>
                             <Text style={styles.mainPrice}>{selectedPoint.value.toLocaleString()}원</Text>
                         </View>
-                        
+
                         {/* 매수/매도 시점인 경우 거래 정보 표시 */}
                         {selectedPoint.isTrade && (
                             <View style={styles.tradeDetails}>
@@ -416,9 +416,6 @@ export default function ChartTab({ swingData }: ChartTabProps) {
 }
 
 const styles = StyleSheet.create({
-    tabContent: {
-        padding: 20,
-    },
     chartSection: {
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
