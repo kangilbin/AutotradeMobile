@@ -107,7 +107,7 @@ export default function StockChart({ data }: StockChartProps) {
               horzLines: { color: '#F1F5F9' },
             },
             timeScale: {
-              timeVisible: true,
+              timeVisible: false,
               secondsVisible: false,
               borderColor: '#F1F5F9'
             },
@@ -118,20 +118,11 @@ export default function StockChart({ data }: StockChartProps) {
           });
 
           // 라인 시리즈(환경에 따라 addSeries(type: 'Line')만 제공될 수도 있어 분기)
-          if (typeof chart.addLineSeries === 'function') {
-            lineSeries = chart.addLineSeries({
-              color: '#4ECDC4',
-              lineWidth: 2,
-            });
-          } else if (typeof chart.addSeries === 'function') {
-            lineSeries = chart.addSeries({
-              type: 'Line',
-              color: '#4ECDC4',
-              lineWidth: 2,
-            });
-          } else {
-            console.error('No line series API on chart');
-          }
+          lineSeries = chart.addLineSeries({
+            color: '#4ECDC4',
+            lineWidth: 2,
+          });
+        
 
           window.addEventListener('resize', () => {
             const nel = document.getElementById('chart');
@@ -167,6 +158,7 @@ export default function StockChart({ data }: StockChartProps) {
           var s = document.createElement('script');
           // 안정적인 standalone 빌드 사용
           s.src = 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js';
+
           s.onload = function () {
             try {
               if (!window.LightweightCharts) {
