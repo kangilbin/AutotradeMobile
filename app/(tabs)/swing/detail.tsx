@@ -129,7 +129,7 @@ export default function SwingDetailScreen() {
                             
                             // 백트레이딩 결과 화면으로 이동
                             router.push({
-                                pathname: '/stock/backtesting',
+                                pathname: '/swing/backtesting',
                                 params: {
                                     stockName: swingData.STOCK_NAME,
                                     ...backtestingParams
