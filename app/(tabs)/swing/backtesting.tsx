@@ -5,13 +5,14 @@ import {
     View,
     ScrollView,
     TouchableOpacity,
-    Dimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LineChart } from 'react-native-chart-kit';
+// ... existing code ...
+// import { LineChart } from 'react-native-chart-kit';
 import { backtesting } from '../../../contexts/backEndApi';
 import { AddStockAutoRequest } from '../../../types/stock';
 import LoadingIndicator from '../../../components/LoadingIndicator';
+import StockChart, { CandleData } from '../../../components/StockChart';
 
 interface BacktestingResult {
     totalInvestment: number;
@@ -52,10 +53,10 @@ interface RSIChartData {
 export default function BacktestingResultScreen() {
     const router = useRouter();
     const {stockName, ...formParams } = useLocalSearchParams();
-    
+
     // 로딩 상태
     const [loading, setLoading] = useState(true);
-    
+
     // 백트레이딩 결과 데이터 (실제로는 API에서 받아올 데이터)
     const [result, setResult] = useState<BacktestingResult>({
         totalInvestment: 10000000,
@@ -69,22 +70,22 @@ export default function BacktestingResultScreen() {
         chartData: {
             labels: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
             datasets: [
-                { 
+                {
                     data: [50000, 52000, 54000, 53000, 55000, 56000, 58000, 57000, 59000, 60000, 58000, 56000],
                     color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
                     strokeWidth: 3
                 },
-                { 
+                {
                     data: [51000, 51500, 52500, 53500, 54500, 55500, 56500, 57500, 58500, 59500, 58500, 57500],
                     color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
                     strokeWidth: 2
                 },
-                { 
+                {
                     data: [52000, 53000, 54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 60000, 59000],
                     color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
                     strokeWidth: 2
                 },
-                { 
+                {
                     data: [53000, 54000, 55000, 56000, 57000, 58000, 59000, 60000, 61000, 62000, 61000, 60000],
                     color: (opacity = 1) => `rgba(155, 89, 182, ${opacity})`,
                     strokeWidth: 2
@@ -120,12 +121,12 @@ export default function BacktestingResultScreen() {
                     BUY_RATIO: Number(formParams.BUY_RATIO),
                     SELL_RATIO: Number(formParams.SELL_RATIO),
                 };
-                
+
                 console.log('백트레이딩 파라미터:', backtestingParams);
-                
+
                 // 백트레이딩 API 호출
                 const response = await backtesting(backtestingParams);
-                
+
                 if (response) {
                     // API 응답을 화면에 표시할 데이터로 변환
                     setResult({
@@ -175,7 +176,7 @@ export default function BacktestingResultScreen() {
                 setLoading(false);
             }
         };
-        
+
         performBacktesting();
     }, [formParams]);
 
@@ -188,12 +189,46 @@ export default function BacktestingResultScreen() {
         return `${date.getMonth() + 1}월 ${date.getDate()}일`;
     };
 
+    // 'YYYY-MM-DD' 변환 시도, 실패 시 2024-01-01부터 순차 날짜 생성
+    const labelToDate = (label: string, index: number) => {
+        const d = new Date(label);
+        if (!isNaN(d.getTime())) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+        const base = new Date(Date.UTC(2024, 0, 1));
+        base.setUTCDate(base.getUTCDate() + index);
+        const y = base.getUTCFullYear();
+        const m = String(base.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(base.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
+    // ChartTab 처럼 StockChart에 단순 배열 전달
+    const toCandles = (labels: string[], values: number[]): CandleData[] =>
+        (values || []).map((v, i) => {
+            const time = labelToDate(labels?.[i] ?? '', i);
+            const close = Number(v) || 0;
+            return { time, open: close, high: close, low: close, close };
+        });
+
+    const priceCandles: CandleData[] = toCandles(
+        result.chartData.labels,
+        result.chartData.datasets?.[0]?.data ?? []
+    );
+    const rsiCandles: CandleData[] = toCandles(
+        result.rsiChartData.labels,
+        result.rsiChartData.datasets?.[0]?.data ?? []
+    );
+
     return (
         <View style={styles.container}>
             {loading && <LoadingIndicator />}
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.back()}
                 >
@@ -243,36 +278,11 @@ export default function BacktestingResultScreen() {
                     </View>
                 </View>
 
-                {/* 차트 */}
+                {/* 차트: ChartTab 처럼 간단 사용 */}
                 <View style={styles.chartSection}>
                     <Text style={styles.chartSubtitle}>1년간 주가 변동</Text>
                     <View style={styles.chartContainer}>
-                        <LineChart
-                            data={result.chartData}
-                            width={Dimensions.get('window').width - 80}
-                            height={220}
-                            chartConfig={{
-                                backgroundColor: '#FFFFFF',
-                                backgroundGradientFrom: '#FFFFFF',
-                                backgroundGradientTo: '#FFFFFF',
-                                decimalPlaces: 0,
-                                color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                style: {
-                                    borderRadius: 16,
-                                },
-                                propsForDots: {
-                                    r: '0',
-                                    strokeWidth: '0',
-                                },
-                            }}
-                            getDotColor={(dataPoint, index) => {
-                                // 첫 번째 데이터셋(주가)에만 점 표시
-                                return index === 0 ? '#4ECDC4' : 'transparent';
-                            }}
-                            bezier
-                            style={styles.chart}
-                        />
+                        <StockChart data={priceCandles} />
                     </View>
                     {/* 차트 범례 */}
                     <View style={styles.chartLegend}>
@@ -295,32 +305,11 @@ export default function BacktestingResultScreen() {
                     </View>
                 </View>
 
-                {/* RSI 차트 */}
+                {/* RSI 차트: 동일 방식 재사용 */}
                 <View style={styles.rsiChartSection}>
                     <Text style={styles.chartSubtitle}>RSI 지표</Text>
                     <View style={styles.chartContainer}>
-                        <LineChart
-                            data={result.rsiChartData}
-                            width={Dimensions.get('window').width - 80}
-                            height={150}
-                            chartConfig={{
-                                backgroundColor: '#FFFFFF',
-                                backgroundGradientFrom: '#FFFFFF',
-                                backgroundGradientTo: '#FFFFFF',
-                                decimalPlaces: 0,
-                                color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
-                                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                style: {
-                                    borderRadius: 16,
-                                },
-                                propsForDots: {
-                                    r: '0',
-                                    strokeWidth: '0',
-                                },
-                            }}
-                            bezier
-                            style={styles.chart}
-                        />
+                        <StockChart data={rsiCandles} />
                     </View>
                     {/* RSI 범례 */}
                     <View style={styles.rsiLegend}>
