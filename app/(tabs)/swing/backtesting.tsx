@@ -7,10 +7,6 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-// ... existing code ...
-// import { LineChart } from 'react-native-chart-kit';
-import { backtesting } from '../../../contexts/backEndApi';
-import { AddStockAutoRequest } from '../../../types/stock';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import StockChart, { CandleData } from '../../../components/StockChart';
 
@@ -55,7 +51,7 @@ export default function BacktestingResultScreen() {
     const {stockName, ...formParams } = useLocalSearchParams();
 
     // 로딩 상태
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     // 백트레이딩 결과 데이터 (실제로는 API에서 받아올 데이터)
     const [result, setResult] = useState<BacktestingResult>({
@@ -104,81 +100,81 @@ export default function BacktestingResultScreen() {
         }
     });
 
-    useEffect(() => {
-        // 백트레이딩 API 호출
-        const performBacktesting = async () => {
-            setLoading(true);
-            try {
-                // formParams를 AddStockAutoRequest 형태로 변환
-                const backtestingParams: AddStockAutoRequest = {
-                    ST_CODE: formParams.ST_CODE as string,
-                    ACCOUNT_NO: formParams.ACCOUNT_NO as string,
-                    SWING_AMOUNT: Number(formParams.SWING_AMOUNT),
-                    SWING_TYPE: formParams.SWING_TYPE as string,
-                    SHORT_TERM: Number(formParams.SHORT_TERM),
-                    MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
-                    LONG_TERM: Number(formParams.LONG_TERM),
-                    BUY_RATIO: Number(formParams.BUY_RATIO),
-                    SELL_RATIO: Number(formParams.SELL_RATIO),
-                };
-
-                console.log('백트레이딩 파라미터:', backtestingParams);
-
-                // 백트레이딩 API 호출
-                const response = await backtesting(backtestingParams);
-
-                if (response) {
-                    // API 응답을 화면에 표시할 데이터로 변환
-                    setResult({
-                        totalInvestment: response.totalInvestment,
-                        totalReturn: response.totalReturn,
-                        profitLoss: response.profitLoss,
-                        profitRate: response.profitRate,
-                        trades: response.trades,
-                        chartData: {
-                            labels: response.priceChartData.labels,
-                            datasets: [
-                                {
-                                    data: response.priceChartData.datasets[0].data,
-                                    color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-                                    strokeWidth: 3
-                                },
-                                {
-                                    data: response.priceChartData.movingAverages.shortTerm,
-                                    color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
-                                    strokeWidth: 2
-                                },
-                                {
-                                    data: response.priceChartData.movingAverages.mediumTerm,
-                                    color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
-                                    strokeWidth: 2
-                                },
-                                {
-                                    data: response.priceChartData.movingAverages.longTerm,
-                                    color: (opacity = 1) => `rgba(155, 89, 182, ${opacity})`,
-                                    strokeWidth: 2
-                                }
-                            ]
-                        },
-                        rsiChartData: {
-                            labels: response.rsiChartData.labels,
-                            datasets: [{
-                                data: response.rsiChartData.datasets[0].data,
-                                color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
-                                strokeWidth: 2
-                            }]
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('백트레이딩 실패:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        performBacktesting();
-    }, [formParams]);
+    // useEffect(() => {
+    //     // 백트레이딩 API 호출
+    //     const performBacktesting = async () => {
+    //         setLoading(true);
+    //         try {
+    //             // formParams를 AddStockAutoRequest 형태로 변환
+    //             const backtestingParams: AddStockAutoRequest = {
+    //                 ST_CODE: formParams.ST_CODE as string,
+    //                 ACCOUNT_NO: formParams.ACCOUNT_NO as string,
+    //                 SWING_AMOUNT: Number(formParams.SWING_AMOUNT),
+    //                 SWING_TYPE: formParams.SWING_TYPE as string,
+    //                 SHORT_TERM: Number(formParams.SHORT_TERM),
+    //                 MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
+    //                 LONG_TERM: Number(formParams.LONG_TERM),
+    //                 BUY_RATIO: Number(formParams.BUY_RATIO),
+    //                 SELL_RATIO: Number(formParams.SELL_RATIO),
+    //             };
+    //
+    //             console.log('백트레이딩 파라미터:', backtestingParams);
+    //
+    //             // 백트레이딩 API 호출
+    //             const response = await backtesting(backtestingParams);
+    //
+    //             if (response) {
+    //                 // API 응답을 화면에 표시할 데이터로 변환
+    //                 setResult({
+    //                     totalInvestment: response.totalInvestment,
+    //                     totalReturn: response.totalReturn,
+    //                     profitLoss: response.profitLoss,
+    //                     profitRate: response.profitRate,
+    //                     trades: response.trades,
+    //                     chartData: {
+    //                         labels: response.priceChartData.labels,
+    //                         datasets: [
+    //                             {
+    //                                 data: response.priceChartData.datasets[0].data,
+    //                                 color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+    //                                 strokeWidth: 3
+    //                             },
+    //                             {
+    //                                 data: response.priceChartData.movingAverages.shortTerm,
+    //                                 color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
+    //                                 strokeWidth: 2
+    //                             },
+    //                             {
+    //                                 data: response.priceChartData.movingAverages.mediumTerm,
+    //                                 color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+    //                                 strokeWidth: 2
+    //                             },
+    //                             {
+    //                                 data: response.priceChartData.movingAverages.longTerm,
+    //                                 color: (opacity = 1) => `rgba(155, 89, 182, ${opacity})`,
+    //                                 strokeWidth: 2
+    //                             }
+    //                         ]
+    //                     },
+    //                     rsiChartData: {
+    //                         labels: response.rsiChartData.labels,
+    //                         datasets: [{
+    //                             data: response.rsiChartData.datasets[0].data,
+    //                             color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+    //                             strokeWidth: 2
+    //                         }]
+    //                     }
+    //                 });
+    //             }
+    //         } catch (error) {
+    //             console.error('백트레이딩 실패:', error);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+    //
+    //     performBacktesting();
+    // }, [formParams]);
 
     const formatCurrency = (amount: number) => {
         return amount.toLocaleString('ko-KR') + '원';
@@ -228,14 +224,9 @@ export default function BacktestingResultScreen() {
             {loading && <LoadingIndicator />}
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <Text style={styles.backButtonText}>←</Text>
-                </TouchableOpacity>
+                <View style={styles.placeholder}/>
                 <Text style={styles.headerTitle}>백트레이딩 결과</Text>
-                <View style={styles.placeholder} />
+                <View style={styles.placeholder}/>
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -277,50 +268,13 @@ export default function BacktestingResultScreen() {
                         </View>
                     </View>
                 </View>
-
-                {/* 차트: ChartTab 처럼 간단 사용 */}
-                <View style={styles.chartSection}>
-                    <Text style={styles.chartSubtitle}>1년간 주가 변동</Text>
-                    <View style={styles.chartContainer}>
-                        <StockChart data={priceCandles} />
-                    </View>
-                    {/* 차트 범례 */}
-                    <View style={styles.chartLegend}>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendColor, { backgroundColor: '#4ECDC4' }]} />
-                            <Text style={styles.legendText}>주가</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendColor, { backgroundColor: '#FFC107' }]} />
-                            <Text style={styles.legendText}>단기</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendColor, { backgroundColor: '#FF6B6B' }]} />
-                            <Text style={styles.legendText}>중기</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendColor, { backgroundColor: '#9B59B6' }]} />
-                            <Text style={styles.legendText}>장기</Text>
-                        </View>
-                    </View>
-                </View>
-
                 {/* RSI 차트: 동일 방식 재사용 */}
                 <View style={styles.rsiChartSection}>
-                    <Text style={styles.chartSubtitle}>RSI 지표</Text>
+                    <Text style={styles.chartSubtitle}>1년간 주가 변동</Text>
                     <View style={styles.chartContainer}>
                         <StockChart data={rsiCandles} />
                     </View>
                     {/* RSI 범례 */}
-                    <View style={styles.rsiLegend}>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendColor, { backgroundColor: '#FF6B6B' }]} />
-                            <Text style={styles.legendText}>RSI</Text>
-                        </View>
-                        <View style={styles.rsiInfo}>
-                            <Text style={styles.rsiInfoText}>과매수: 70 이상, 과매도: 30 이하</Text>
-                        </View>
-                    </View>
                 </View>
 
                 {/* 매매 내역 */}
