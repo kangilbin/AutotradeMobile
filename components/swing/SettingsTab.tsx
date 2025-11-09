@@ -13,7 +13,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
     const [isEditMode, setIsEditMode] = useState(false);
     const [form, setForm] = useState({
         ST_CODE: swingData?.ST_CODE || '',
-        SWING_TYPE: swingData?.SWING_TYPE || 'D',
+        SWING_TYPE: swingData?.SWING_TYPE || 'A',
         SWING_AMOUNT: swingData?.SWING_AMOUNT || 0,
         BUY_RATIO: swingData?.BUY_RATIO || 0,
         SELL_RATIO: swingData?.SELL_RATIO || 0,
@@ -36,7 +36,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         // 폼을 원래 값으로 초기화
         setForm({
             ST_CODE: swingData?.ST_CODE || '',
-            SWING_TYPE: swingData?.SWING_TYPE || 'D',
+            SWING_TYPE: swingData?.SWING_TYPE || 'A',
             SWING_AMOUNT: swingData?.SWING_AMOUNT || 0,
             BUY_RATIO: swingData?.BUY_RATIO || 0,
             SELL_RATIO: swingData?.SELL_RATIO || 0,
@@ -132,44 +132,44 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                                 <TouchableOpacity
                                     style={[
                                         styles.radioOption,
-                                        form.SWING_TYPE === 'D' && styles.radioOptionSelected
+                                        form.SWING_TYPE === 'A' && styles.radioOptionSelected
                                     ]}
-                                    onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'D' }))}
+                                    onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'A' }))}
                                 >
                                     <View style={[
                                         styles.radioButton,
-                                        form.SWING_TYPE === 'D' && styles.radioButtonSelected
+                                        form.SWING_TYPE === 'A' && styles.radioButtonSelected
                                     ]}>
-                                        {form.SWING_TYPE === 'D' && <View style={styles.radioButtonInner} />}
+                                        {form.SWING_TYPE === 'A' && <View style={styles.radioButtonInner} />}
                                     </View>
                                     <Text style={[
                                         styles.radioText,
-                                        form.SWING_TYPE === 'D' && styles.radioTextSelected
-                                    ]}>일반</Text>
+                                        form.SWING_TYPE === 'A' && styles.radioTextSelected
+                                    ]}>이동평균선</Text>
                                 </TouchableOpacity>
                                 
                                 <TouchableOpacity
                                     style={[
                                         styles.radioOption,
-                                        form.SWING_TYPE === 'S' && styles.radioOptionSelected
+                                        form.SWING_TYPE === 'B' && styles.radioOptionSelected
                                     ]}
-                                    onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'S' }))}
+                                    onPress={() => setForm(prev => ({ ...prev, SWING_TYPE: 'B' }))}
                                 >
                                     <View style={[
                                         styles.radioButton,
-                                        form.SWING_TYPE === 'S' && styles.radioButtonSelected
+                                        form.SWING_TYPE === 'B' && styles.radioButtonSelected
                                     ]}>
-                                        {form.SWING_TYPE === 'S' && <View style={styles.radioButtonInner} />}
+                                        {form.SWING_TYPE === 'B' && <View style={styles.radioButtonInner} />}
                                     </View>
                                     <Text style={[
                                         styles.radioText,
-                                        form.SWING_TYPE === 'S' && styles.radioTextSelected
-                                    ]}>단기</Text>
+                                        form.SWING_TYPE === 'B' && styles.radioTextSelected
+                                    ]}>일목균형표</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
                             <Text style={styles.settingValue}>
-                                {form.SWING_TYPE === 'D' ? '일반' : '단기'}
+                                {form.SWING_TYPE === 'A' ? '이동평균선' : '일목균형표'}
                             </Text>
                         )}
                     </View>
@@ -229,62 +229,64 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                             <Text style={styles.settingValue}>{form.SELL_RATIO}%</Text>
                         )}
                     </View>
-
-                    <View style={styles.settingItem}>
-                        <Text style={styles.settingLabel}>이동평균선</Text>
-                        {isEditMode ? (
-                            <View style={styles.maContainer}>
-                                <View style={styles.maItem}>
-                                    <Text style={styles.maLabel}>단기 (MA)</Text>
-                                    <TextInput
-                                        style={[
-                                            styles.maInput,
-                                            validationErrors.movingAverage && styles.inputError
-                                        ]}
-                                        value={form.SHORT_MA.toString()}
-                                        onChangeText={(text) => setForm(prev => ({ ...prev, SHORT_MA: parseInt(text) || 0 }))}
-                                        keyboardType="numeric"
-                                        placeholder="일수"
-                                    />
-                                </View>
-                                <View style={styles.maItem}>
-                                    <Text style={styles.maLabel}>중기 (MA)</Text>
-                                    <TextInput
-                                        style={[
-                                            styles.maInput,
-                                            validationErrors.movingAverage && styles.inputError
-                                        ]}
-                                        value={form.MID_MA.toString()}
-                                        onChangeText={(text) => setForm(prev => ({ ...prev, MID_MA: parseInt(text) || 0 }))}
-                                        keyboardType="numeric"
-                                        placeholder="일수"
-                                    />
-                                </View>
-                                <View style={styles.maItem}>
-                                    <Text style={styles.maLabel}>장기 (MA)</Text>
-                                    <TextInput
-                                        style={[
-                                            styles.maInput,
-                                            validationErrors.movingAverage && styles.inputError
-                                        ]}
-                                        value={form.LONG_MA.toString()}
-                                        onChangeText={(text) => setForm(prev => ({ ...prev, LONG_MA: parseInt(text) || 0 }))}
-                                        keyboardType="numeric"
-                                        placeholder="일수"
-                                    />
-                                </View>
+                    {form.SWING_TYPE === 'A' &&
+                        (
+                            <View style={styles.settingItem}>
+                                <Text style={styles.settingLabel}>이동평균선</Text>
+                                {isEditMode ? (
+                                    <View style={styles.maContainer}>
+                                        <View style={styles.maItem}>
+                                            <Text style={styles.maLabel}>단기 (MA)</Text>
+                                            <TextInput
+                                                style={[
+                                                    styles.maInput,
+                                                    validationErrors.movingAverage && styles.inputError
+                                                ]}
+                                                value={form.SHORT_MA.toString()}
+                                                onChangeText={(text) => setForm(prev => ({ ...prev, SHORT_MA: parseInt(text) || 0 }))}
+                                                keyboardType="numeric"
+                                                placeholder="일수"
+                                            />
+                                        </View>
+                                        <View style={styles.maItem}>
+                                            <Text style={styles.maLabel}>중기 (MA)</Text>
+                                            <TextInput
+                                                style={[
+                                                    styles.maInput,
+                                                    validationErrors.movingAverage && styles.inputError
+                                                ]}
+                                                value={form.MID_MA.toString()}
+                                                onChangeText={(text) => setForm(prev => ({ ...prev, MID_MA: parseInt(text) || 0 }))}
+                                                keyboardType="numeric"
+                                                placeholder="일수"
+                                            />
+                                        </View>
+                                        <View style={styles.maItem}>
+                                            <Text style={styles.maLabel}>장기 (MA)</Text>
+                                            <TextInput
+                                                style={[
+                                                    styles.maInput,
+                                                    validationErrors.movingAverage && styles.inputError
+                                                ]}
+                                                value={form.LONG_MA.toString()}
+                                                onChangeText={(text) => setForm(prev => ({ ...prev, LONG_MA: parseInt(text) || 0 }))}
+                                                keyboardType="numeric"
+                                                placeholder="일수"
+                                            />
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.settingValue}>
+                                        {form.SHORT_MA}일 / {form.MID_MA}일 / {form.LONG_MA}일
+                                    </Text>
+                                )}
+                                {validationErrors.movingAverage && (
+                                    <Text style={styles.errorText}>
+                                        단기 {'<'} 중기 {'<'} 장기 순서로 설정해야 합니다
+                                    </Text>
+                                )}
                             </View>
-                        ) : (
-                            <Text style={styles.settingValue}>
-                                {form.SHORT_MA}일 / {form.MID_MA}일 / {form.LONG_MA}일
-                            </Text>
                         )}
-                        {validationErrors.movingAverage && (
-                            <Text style={styles.errorText}>
-                                단기 {'<'} 중기 {'<'} 장기 순서로 설정해야 합니다
-                            </Text>
-                        )}
-                    </View>
                 </View>
             </View>
         </ScrollView>
