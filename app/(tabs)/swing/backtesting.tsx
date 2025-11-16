@@ -9,6 +9,8 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import StockChart, { CandleData } from '../../../components/StockChart';
+import {AddStockAutoRequest} from "../../../types/stock";
+import {backtesting} from "../../../contexts/backEndApi";
 
 interface BacktestingResult {
     totalInvestment: number;
@@ -17,7 +19,6 @@ interface BacktestingResult {
     profitRate: number;
     trades: Trade[];
     chartData: ChartData;
-    rsiChartData: RSIChartData;
 }
 
 interface Trade {
@@ -37,19 +38,8 @@ interface ChartData {
     }[];
 }
 
-interface RSIChartData {
-    labels: string[];
-    datasets: {
-        data: number[];
-        color?: (opacity: number) => string;
-        strokeWidth?: number;
-    }[];
-}
-
 export default function BacktestingResultScreen() {
-    const router = useRouter();
     const {stockName, ...formParams } = useLocalSearchParams();
-
     // 로딩 상태
     const [loading, setLoading] = useState(false);
 
@@ -88,93 +78,74 @@ export default function BacktestingResultScreen() {
                 }
             ]
         },
-        rsiChartData: {
-            labels: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
-            datasets: [
-                {
-                    data: [65, 58, 72, 45, 38, 25, 35, 42, 55, 68, 75, 62],
-                    color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
-                    strokeWidth: 2
-                }
-            ]
-        }
     });
 
-    // useEffect(() => {
-    //     // 백트레이딩 API 호출
-    //     const performBacktesting = async () => {
-    //         setLoading(true);
-    //         try {
-    //             // formParams를 AddStockAutoRequest 형태로 변환
-    //             const backtestingParams: AddStockAutoRequest = {
-    //                 ST_CODE: formParams.ST_CODE as string,
-    //                 ACCOUNT_NO: formParams.ACCOUNT_NO as string,
-    //                 SWING_AMOUNT: Number(formParams.SWING_AMOUNT),
-    //                 SWING_TYPE: formParams.SWING_TYPE as string,
-    //                 SHORT_TERM: Number(formParams.SHORT_TERM),
-    //                 MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
-    //                 LONG_TERM: Number(formParams.LONG_TERM),
-    //                 BUY_RATIO: Number(formParams.BUY_RATIO),
-    //                 SELL_RATIO: Number(formParams.SELL_RATIO),
-    //             };
-    //
-    //             console.log('백트레이딩 파라미터:', backtestingParams);
-    //
-    //             // 백트레이딩 API 호출
-    //             const response = await backtesting(backtestingParams);
-    //
-    //             if (response) {
-    //                 // API 응답을 화면에 표시할 데이터로 변환
-    //                 setResult({
-    //                     totalInvestment: response.totalInvestment,
-    //                     totalReturn: response.totalReturn,
-    //                     profitLoss: response.profitLoss,
-    //                     profitRate: response.profitRate,
-    //                     trades: response.trades,
-    //                     chartData: {
-    //                         labels: response.priceChartData.labels,
-    //                         datasets: [
-    //                             {
-    //                                 data: response.priceChartData.datasets[0].data,
-    //                                 color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-    //                                 strokeWidth: 3
-    //                             },
-    //                             {
-    //                                 data: response.priceChartData.movingAverages.shortTerm,
-    //                                 color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
-    //                                 strokeWidth: 2
-    //                             },
-    //                             {
-    //                                 data: response.priceChartData.movingAverages.mediumTerm,
-    //                                 color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
-    //                                 strokeWidth: 2
-    //                             },
-    //                             {
-    //                                 data: response.priceChartData.movingAverages.longTerm,
-    //                                 color: (opacity = 1) => `rgba(155, 89, 182, ${opacity})`,
-    //                                 strokeWidth: 2
-    //                             }
-    //                         ]
-    //                     },
-    //                     rsiChartData: {
-    //                         labels: response.rsiChartData.labels,
-    //                         datasets: [{
-    //                             data: response.rsiChartData.datasets[0].data,
-    //                             color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
-    //                             strokeWidth: 2
-    //                         }]
-    //                     }
-    //                 });
-    //             }
-    //         } catch (error) {
-    //             console.error('백트레이딩 실패:', error);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-    //
-    //     performBacktesting();
-    // }, [formParams]);
+    useEffect(() => {
+        // 백트레이딩 API 호출
+        const performBacktesting = async () => {
+            setLoading(true);
+            try {
+                // formParams를 AddStockAutoRequest 형태로 변환
+                const backtestingParams: AddStockAutoRequest = {
+                    ST_CODE: formParams.ST_CODE as string,
+                    ACCOUNT_NO: formParams.ACCOUNT_NO as string,
+                    SWING_AMOUNT: Number(formParams.SWING_AMOUNT),
+                    SWING_TYPE: formParams.SWING_TYPE as string,
+                    SHORT_TERM: Number(formParams.SHORT_TERM),
+                    MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
+                    LONG_TERM: Number(formParams.LONG_TERM),
+                    BUY_RATIO: Number(formParams.BUY_RATIO),
+                    SELL_RATIO: Number(formParams.SELL_RATIO),
+                };
+                console.log('백트레이딩 파라미터:', backtestingParams);
+
+                // 백트레이딩 API 호출
+                const response = await backtesting(backtestingParams);
+
+                if (response) {
+                    // API 응답을 화면에 표시할 데이터로 변환
+                    setResult({
+                        totalInvestment: response.totalInvestment,
+                        totalReturn: response.totalReturn,
+                        profitLoss: response.profitLoss,
+                        profitRate: response.profitRate,
+                        trades: response.trades,
+                        chartData: {
+                            labels: response.priceChartData.labels,
+                            datasets: [
+                                {
+                                    data: response.priceChartData.datasets[0].data,
+                                    color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
+                                    strokeWidth: 3
+                                },
+                                {
+                                    data: response.priceChartData.movingAverages.shortTerm,
+                                    color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
+                                    strokeWidth: 2
+                                },
+                                {
+                                    data: response.priceChartData.movingAverages.mediumTerm,
+                                    color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+                                    strokeWidth: 2
+                                },
+                                {
+                                    data: response.priceChartData.movingAverages.longTerm,
+                                    color: (opacity = 1) => `rgba(155, 89, 182, ${opacity})`,
+                                    strokeWidth: 2
+                                }
+                            ]
+                        },
+                    });
+                }
+            } catch (error) {
+                console.error('백트레이딩 실패:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        performBacktesting();
+    }, [formParams]);
 
     const formatCurrency = (amount: number) => {
         return amount.toLocaleString('ko-KR') + '원';
@@ -214,10 +185,7 @@ export default function BacktestingResultScreen() {
         result.chartData.labels,
         result.chartData.datasets?.[0]?.data ?? []
     );
-    const rsiCandles: CandleData[] = toCandles(
-        result.rsiChartData.labels,
-        result.rsiChartData.datasets?.[0]?.data ?? []
-    );
+
 
     return (
         <View style={styles.container}>
@@ -268,13 +236,11 @@ export default function BacktestingResultScreen() {
                         </View>
                     </View>
                 </View>
-                {/* RSI 차트: 동일 방식 재사용 */}
-                <View style={styles.rsiChartSection}>
+                <View style={styles.chartSection}>
                     <Text style={styles.chartSubtitle}>1년간 주가 변동</Text>
                     <View style={styles.chartContainer}>
-                        <StockChart data={rsiCandles} />
+                        <StockChart data={priceCandles}/>
                     </View>
-                    {/* RSI 범례 */}
                 </View>
 
                 {/* 매매 내역 */}
@@ -480,20 +446,6 @@ const styles = StyleSheet.create({
     chart: {
         marginVertical: 8,
         borderRadius: 16,
-    },
-    rsiChartSection: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 20,
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-        alignItems: 'center',
     },
     rsiLegend: {
         flexDirection: 'row',
