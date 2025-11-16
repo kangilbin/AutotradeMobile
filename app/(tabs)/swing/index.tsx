@@ -16,13 +16,13 @@ const mockSwingList: SwingItem[] = [
         EVALUATION_PROFIT_LOSS: 2500000,
         EVALUATION_PROFIT_LOSS_RATE: 20.5,
         HOLDING_QUANTITY: 100,
-        SWING_TYPE: 'D',
+        SWING_TYPE: 'B',
         SWING_AMOUNT: 12500000,
         SHORT_MA: 5,
         MID_MA: 20,
         LONG_MA: 60,
-        BUY_RATIO: 0.8,
-        SELL_RATIO: 0.2,
+        BUY_RATIO: 80,
+        SELL_RATIO: 20,
         DEL_YN: 'N',
         CREATED_AT: '2024-01-15'
     },
@@ -35,13 +35,13 @@ const mockSwingList: SwingItem[] = [
         EVALUATION_PROFIT_LOSS: -500000,
         EVALUATION_PROFIT_LOSS_RATE: -5.5,
         HOLDING_QUANTITY: 50,
-        SWING_TYPE: 'M',
+        SWING_TYPE: 'A',
         SWING_AMOUNT: 9000000,
         SHORT_MA: 5,
         MID_MA: 30,
         LONG_MA: 60,
-        BUY_RATIO: 0.7,
-        SELL_RATIO: 0.3,
+        BUY_RATIO: 70,
+        SELL_RATIO: 30,
         DEL_YN: 'N',
         CREATED_AT: '2024-01-20'
     },
@@ -54,13 +54,13 @@ const mockSwingList: SwingItem[] = [
         EVALUATION_PROFIT_LOSS: 1800000,
         EVALUATION_PROFIT_LOSS_RATE: 17.8,
         HOLDING_QUANTITY: 80,
-        SWING_TYPE: 'D',
+        SWING_TYPE: 'A',
         SWING_AMOUNT: 10200000,
         SHORT_MA: 5,
         MID_MA: 30,
         LONG_MA: 60,
-        BUY_RATIO: 0.6,
-        SELL_RATIO: 0.4,
+        BUY_RATIO: 60,
+        SELL_RATIO: 40,
         DEL_YN: 'N',
         CREATED_AT: '2024-01-10'
     },
@@ -73,13 +73,13 @@ const mockSwingList: SwingItem[] = [
         EVALUATION_PROFIT_LOSS: 1200000,
         EVALUATION_PROFIT_LOSS_RATE: 14.5,
         HOLDING_QUANTITY: 60,
-        SWING_TYPE: 'M',
+        SWING_TYPE: 'B',
         SWING_AMOUNT: 8300000,
         SHORT_MA: 5,
         MID_MA: 30,
         LONG_MA: 60,
-        BUY_RATIO: 0.75,
-        SELL_RATIO: 0.25,
+        BUY_RATIO: 75,
+        SELL_RATIO: 25,
         DEL_YN: 'N',
         CREATED_AT: '2024-01-25'
     },
@@ -92,13 +92,13 @@ const mockSwingList: SwingItem[] = [
         EVALUATION_PROFIT_LOSS: -320000,
         EVALUATION_PROFIT_LOSS_RATE: -4.5,
         HOLDING_QUANTITY: 40,
-        SWING_TYPE: 'D',
+        SWING_TYPE: 'A',
         SWING_AMOUNT: 7120000,
         SHORT_MA: 5,
         MID_MA: 30,
         LONG_MA: 60,
-        BUY_RATIO: 0.65,
-        SELL_RATIO: 0.35,
+        BUY_RATIO: 65,
+        SELL_RATIO: 35,
         DEL_YN: 'N',
         CREATED_AT: '2024-01-30'
     }
@@ -274,13 +274,13 @@ export default function SwingScreen() {
                                     <View style={styles.additionalInfoItem}>
                                         <Text style={styles.additionalLabel}>매수비율</Text>
                                         <Text style={styles.additionalValue}>
-                                            {(item.BUY_RATIO * 100).toFixed(0)}%
+                                            {item.BUY_RATIO}%
                                         </Text>
                                     </View>
                                     <View style={styles.additionalInfoItem}>
                                         <Text style={styles.additionalLabel}>매도비율</Text>
                                         <Text style={styles.additionalValue}>
-                                            {(item.SELL_RATIO * 100).toFixed(0)}%
+                                            {item.SELL_RATIO}%
                                         </Text>
                                     </View>
                                 </View>
