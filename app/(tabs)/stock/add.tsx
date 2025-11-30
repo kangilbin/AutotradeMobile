@@ -94,7 +94,7 @@ export default function AddStockScreen() {
         if (!form.SWING_AMOUNT) {
             errors.swingAmount = true;
         }
-        if (!form.SHORT_TERM || !form.MEDIUM_TERM || !form.LONG_TERM) {
+        if (form.SWING_TYPE ==='A' && (!form.SHORT_TERM || !form.MEDIUM_TERM || !form.LONG_TERM)) {
             errors.movingAverage = true;
         }
         if (!form.BUY_RATIO || !form.SELL_RATIO) {
@@ -130,7 +130,7 @@ export default function AddStockScreen() {
         }
 
         // 이평선 검증
-        if (form.SHORT_TERM >= form.MEDIUM_TERM || form.MEDIUM_TERM >= form.LONG_TERM) {
+        if (form.SWING_TYPE === 'A' && (form.SHORT_TERM >= form.MEDIUM_TERM || form.MEDIUM_TERM >= form.LONG_TERM)) {
             setValidationErrors({movingAverage: true});
             (shortMaRef.current as TextInput)?.focus();
             return;
@@ -148,10 +148,7 @@ export default function AddStockScreen() {
     };
 
     const isFormValid = form.SWING_AMOUNT > 0 &&
-                       form.SHORT_TERM > 0 && 
-                       form.MEDIUM_TERM > 0 && 
-                       form.LONG_TERM > 0 && 
-                       form.BUY_RATIO > 0 && 
+                       form.BUY_RATIO > 0 &&
                        form.SELL_RATIO > 0 &&
                         (form.SWING_TYPE === 'A' ? form.SHORT_TERM < form.MEDIUM_TERM &&
                         form.MEDIUM_TERM < form.LONG_TERM : true);
