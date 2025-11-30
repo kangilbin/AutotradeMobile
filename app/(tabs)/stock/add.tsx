@@ -139,7 +139,6 @@ export default function AddStockScreen() {
         try {
 
             await addStockAuto(form);
-            Alert.alert('완료', '스윙 설정이 추가되었습니다.');
             router.dismissAll();
             router.replace('/swing');
         } catch (error) {
