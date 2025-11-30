@@ -153,9 +153,8 @@ export default function AddStockScreen() {
                        form.LONG_TERM > 0 && 
                        form.BUY_RATIO > 0 && 
                        form.SELL_RATIO > 0 &&
-                       form.SHORT_TERM < form.MEDIUM_TERM &&
-                       form.MEDIUM_TERM < form.LONG_TERM;
-
+                        (form.SWING_TYPE === 'A' ? form.SHORT_TERM < form.MEDIUM_TERM &&
+                        form.MEDIUM_TERM < form.LONG_TERM : true);
     return (
         <DismissKeyboardView style={styles.mainContainer}>
             {loading && <LoadingIndicator />}
