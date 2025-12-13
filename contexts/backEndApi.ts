@@ -295,6 +295,7 @@ export const getStockPrice = async (st_code: string): Promise<StockPriceResponse
 export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | undefined> => {
     try {
         const response = await api.post('/swing', param);
+        Alert.alert('완료', '스윙 설정이 추가되었습니다.');
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 오토 설정 추가');
