@@ -13,7 +13,7 @@ export type StockResponse = {
 export type AddStockAutoRequest = {
     ST_CODE: string
     ACCOUNT_NO: string
-    SWING_AMOUNT: number
+    INIT_AMOUNT: number
     SWING_TYPE: string  // 'D' 또는 'M'
     SHORT_TERM: number    // 단기 이평선
     MEDIUM_TERM: number      // 중기 이평선
