@@ -350,7 +350,7 @@ export const updateSwingSettings = async (swingId: number, settings: {
     SWING_TYPE: string;
     BUY_RATIO: number;
     SELL_RATIO: number;
-    SWING_AMOUNT: number;
+    INIT_AMOUNT: number;
     SHORT_MA: number;
     MID_MA: number;
     LONG_MA: number;

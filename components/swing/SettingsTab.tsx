@@ -14,7 +14,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
     const [form, setForm] = useState({
         ST_CODE: swingData?.ST_CODE || '',
         SWING_TYPE: swingData?.SWING_TYPE || 'A',
-        SWING_AMOUNT: swingData?.SWING_AMOUNT || 0,
+        INIT_AMOUNT: swingData?.INIT_AMOUNT || 0,
         BUY_RATIO: swingData?.BUY_RATIO || 0,
         SELL_RATIO: swingData?.SELL_RATIO || 0,
         SHORT_MA: swingData?.SHORT_MA || 5,
@@ -37,7 +37,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         setForm({
             ST_CODE: swingData?.ST_CODE || '',
             SWING_TYPE: swingData?.SWING_TYPE || 'A',
-            SWING_AMOUNT: swingData?.SWING_AMOUNT || 0,
+            INIT_AMOUNT: swingData?.INIT_AMOUNT || 0,
             BUY_RATIO: swingData?.BUY_RATIO || 0,
             SELL_RATIO: swingData?.SELL_RATIO || 0,
             SHORT_MA: swingData?.SHORT_MA || 5,
@@ -53,7 +53,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
 
     const validateForm = () => {
         const errors = {
-            swingAmount: form.SWING_AMOUNT <= 0,
+            swingAmount: form.INIT_AMOUNT <= 0,
             ratio: form.BUY_RATIO <= 0 || form.SELL_RATIO <= 0,
             movingAverage: form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA
         };
@@ -78,7 +78,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                 SWING_TYPE: form.SWING_TYPE,
                 BUY_RATIO: form.BUY_RATIO,
                 SELL_RATIO: form.SELL_RATIO,
-                SWING_AMOUNT: form.SWING_AMOUNT,
+                INIT_AMOUNT: form.INIT_AMOUNT,
                 SHORT_MA: form.SHORT_MA,
                 MID_MA: form.MID_MA,
                 LONG_MA: form.LONG_MA,
@@ -182,14 +182,14 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                                     styles.input,
                                     validationErrors.swingAmount && styles.inputError
                                 ]}
-                                value={form.SWING_AMOUNT.toString()}
-                                onChangeText={(text) => setForm(prev => ({ ...prev, SWING_AMOUNT: parseInt(text) || 0 }))}
+                                value={form.INIT_AMOUNT.toString()}
+                                onChangeText={(text) => setForm(prev => ({ ...prev, INIT_AMOUNT: parseInt(text) || 0 }))}
                                 keyboardType="numeric"
                                 placeholder="금액 입력"
                             />
                         ) : (
                             <Text style={styles.settingValue}>
-                                {form.SWING_AMOUNT.toLocaleString()}원
+                                {form.INIT_AMOUNT.toLocaleString()}원
                             </Text>
                         )}
                     </View>

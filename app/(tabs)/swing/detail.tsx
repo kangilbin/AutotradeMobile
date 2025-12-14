@@ -118,7 +118,7 @@ export default function SwingDetailScreen() {
                             const backtestingParams: AddStockAutoRequest = {
                                 ST_CODE: swingData.ST_CODE,
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
-                                SWING_AMOUNT: swingData.SWING_AMOUNT,
+                                INIT_AMOUNT: swingData.INIT_AMOUNT,
                                 SWING_TYPE: swingData.SWING_TYPE,
                                 SHORT_TERM: swingData.SHORT_MA,
                                 MEDIUM_TERM: swingData.MID_MA,

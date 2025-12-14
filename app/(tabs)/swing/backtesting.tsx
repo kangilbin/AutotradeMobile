@@ -89,7 +89,7 @@ export default function BacktestingResultScreen() {
                 const backtestingParams: AddStockAutoRequest = {
                     ST_CODE: formParams.ST_CODE as string,
                     ACCOUNT_NO: formParams.ACCOUNT_NO as string,
-                    SWING_AMOUNT: Number(formParams.SWING_AMOUNT),
+                    INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
                     SWING_TYPE: formParams.SWING_TYPE as string,
                     SHORT_TERM: Number(formParams.SHORT_TERM),
                     MEDIUM_TERM: Number(formParams.MEDIUM_TERM),

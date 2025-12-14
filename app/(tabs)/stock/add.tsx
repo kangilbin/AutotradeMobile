@@ -29,7 +29,7 @@ export default function AddStockScreen() {
     const [form, setForm] = useState<AddStockAutoRequest>({
         ST_CODE: stCode as string || '',
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
-        SWING_AMOUNT: 0,
+        INIT_AMOUNT: 0,
         SWING_TYPE: 'A',
         SHORT_TERM: 0,
         MEDIUM_TERM: 0,
@@ -50,7 +50,7 @@ export default function AddStockScreen() {
     const getSectionByField = (field: string) => {
         if (["SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"].includes(field)) return 'movingAverage';
         if (["buyRatio", "sellRatio"].includes(field)) return 'ratio';
-        if (field === 'SWING_AMOUNT' || field === 'swingAmount') return 'swingAmount';
+        if (field === 'INIT_AMOUNT' || field === 'swingAmount') return 'swingAmount';
         return '';
     };
 
@@ -74,7 +74,7 @@ export default function AddStockScreen() {
         }
         
         // 스윙 금액 입력 시
-        if (field === 'SWING_AMOUNT') {
+        if (field === 'INIT_AMOUNT') {
             setValidationErrors(prev => ({ ...prev, swingAmount: false }));
         }
         // 이평선 입력 시
@@ -91,7 +91,7 @@ export default function AddStockScreen() {
     const handleSave = async () => {
         const errors: {[key: string]: boolean} = {};
 
-        if (!form.SWING_AMOUNT) {
+        if (!form.INIT_AMOUNT) {
             errors.swingAmount = true;
         }
         if (form.SWING_TYPE ==='A' && (!form.SHORT_TERM || !form.MEDIUM_TERM || !form.LONG_TERM)) {
@@ -146,7 +146,7 @@ export default function AddStockScreen() {
         }
     };
 
-    const isFormValid = form.SWING_AMOUNT > 0 &&
+    const isFormValid = form.INIT_AMOUNT > 0 &&
                        form.BUY_RATIO > 0 &&
                        form.SELL_RATIO > 0 &&
                         (form.SWING_TYPE === 'A' ? form.SHORT_TERM < form.MEDIUM_TERM &&
@@ -213,12 +213,12 @@ export default function AddStockScreen() {
                             ref={swingAmountRef}
                             style={styles.amountInput}
                             placeholder="1,000,000"
-                            value={form.SWING_AMOUNT ? form.SWING_AMOUNT.toLocaleString() : ''}
+                            value={form.INIT_AMOUNT ? form.INIT_AMOUNT.toLocaleString() : ''}
                             onChangeText={(text) => {
                                 // 쉼표 제거 후 숫자만 추출
                                 const numericValue = text.replace(/,/g, '');
                                 const number = parseInt(numericValue) || 0;
-                                handleChange('SWING_AMOUNT', number);
+                                handleChange('INIT_AMOUNT', number);
                             }}
                             keyboardType="number-pad"
                             onFocus={() => handleFocus('swingAmount')}

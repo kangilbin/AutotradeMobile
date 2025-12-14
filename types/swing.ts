@@ -9,7 +9,7 @@ export type SwingItem = {
     ST_CODE: string
     STOCK_NAME: string
     SWING_TYPE: string  // 'D' 또는 'M'
-    SWING_AMOUNT: number  // 원금
+    INIT_AMOUNT: number  // 원금
     EVALUATION_AMOUNT: number  // 평가금액
     EVALUATION_PROFIT_LOSS: number  // 평가손익금액
     EVALUATION_PROFIT_LOSS_RATE: number  // 평가손익율
