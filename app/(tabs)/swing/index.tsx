@@ -4,6 +4,7 @@ import { getSwingList, getSwingSummary } from '../../../contexts/backEndApi';
 import { SwingItem, SwingSummary } from '../../../types/swing';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import { useRouter, useFocusEffect } from 'expo-router';
+import {useAccountStore} from "../../../stores/useAccountStore";
 
 // 임시 데이터
 const mockSwingList: SwingItem[] = [
@@ -118,6 +119,7 @@ export default function SwingScreen() {
     const [summary, setSummary] = useState<SwingSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const account = useAccountStore((state) => state.account);
 
     const loadData = async () => {
         try {
@@ -127,10 +129,10 @@ export default function SwingScreen() {
             //     getSwingList(),
             //     getSwingSummary()
             // ]);
-            
+            const listData = await getSwingList(account?.ACCOUNT_NO as string);
             // 임시 데이터로 설정
-            setSwingList(mockSwingList);
-            setSummary(mockSummary);
+            // setSwingList(mockSwingList);
+            // setSummary(mockSummary);
         } catch (error) {
             console.error('스윙 데이터 로드 실패:', error);
         } finally {
