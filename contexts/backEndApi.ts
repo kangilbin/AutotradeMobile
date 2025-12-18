@@ -313,9 +313,9 @@ export const getStockAutoList = async (): Promise<StockAutoStatus[] | undefined>
 };
 
 // 스윙 목록 조회
-export const getSwingList = async (): Promise<SwingItem[] | undefined> => {
+export const getSwingList = async (account_no: string): Promise<SwingItem[] | undefined> => {
     try {
-        const response = await api.get('/swing/list');
+        const response = await api.get('/swing/list', { params: { account_no }});
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '스윙 목록 조회');
