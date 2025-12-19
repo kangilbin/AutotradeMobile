@@ -1,15 +1,17 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAccountStore } from "../stores/useAccountStore";
-import * as SecureStore from "expo-secure-store";
-import { jwtDecode } from "jwt-decode";
-import { useEffect, useState } from "react";
-import { JwtPayload } from "../types/auth";
-import {router} from "expo-router";
+import { useAccountStore } from '../stores/useAccountStore';
+import * as SecureStore from 'expo-secure-store';
+import { jwtDecode } from 'jwt-decode';
+import { useEffect, useState, useCallback } from 'react';
+import { JwtPayload } from '../types/auth';
+import { router } from 'expo-router';
+import { Colors, FontSizes, Spacing, BorderRadius } from '../constants/theme';
 
 export default function TopHeader() {
     const account = useAccountStore((state) => state.account);
     const [userName, setUserName] = useState<string>('');
+
     useEffect(() => {
         const fetchAccessToken = async () => {
             const accessToken = await SecureStore.getItemAsync('access_token');
@@ -20,15 +22,16 @@ export default function TopHeader() {
         };
         fetchAccessToken();
     }, []);
+
     useEffect(() => {
         if (!account) {
             router.push('account');
         }
-    },[]);
+    }, [account]);
 
-    const handleAccountPress = () => {
+    const handleAccountPress = useCallback(() => {
         router.push('account');
-    }
+    }, []);
 
     return (
         <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -43,7 +46,9 @@ export default function TopHeader() {
                 </View>
                 <TouchableOpacity style={styles.rightSection} onPress={handleAccountPress}>
                     <Text style={styles.accountLabel}>계좌번호</Text>
-                    <Text style={styles.accountNo}>{account?.ACCOUNT_NO.slice(0, -2)}-{account?.ACCOUNT_NO.slice(-2) }</Text>
+                    <Text style={styles.accountNo}>
+                        {account?.ACCOUNT_NO.slice(0, -2)}-{account?.ACCOUNT_NO.slice(-2)}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -52,17 +57,17 @@ export default function TopHeader() {
 
 const styles = StyleSheet.create({
     safeArea: {
-        backgroundColor: '#FFFFFF'
+        backgroundColor: Colors.cardBackground,
     },
     container: {
         height: 70,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        backgroundColor: '#FFFFFF',
+        paddingHorizontal: Spacing.xl,
+        backgroundColor: Colors.cardBackground,
         borderBottomWidth: 1,
-        borderBottomColor: '#DDE0E3',
+        borderBottomColor: Colors.border,
     },
     leftSection: {
         flexDirection: 'column',
@@ -72,31 +77,32 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modeBadge: {
-        backgroundColor: '#5CB8A1',
-        color: '#ffffff',
-        fontSize: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 10,
-        marginRight: 10,
+        backgroundColor: Colors.primary,
+        color: Colors.textWhite,
+        fontSize: FontSizes.sm,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.sm + 2,
+        marginRight: Spacing.sm + 2,
         fontWeight: '600',
+        overflow: 'hidden',
     },
     userName: {
-        fontSize: 18,
+        fontSize: FontSizes.xl,
         fontWeight: '600',
-        color: '#2F3E46',
+        color: Colors.textPrimary,
     },
     rightSection: {
         alignItems: 'flex-end',
     },
     accountLabel: {
-        fontSize: 12,
-        color: '#6C757D',
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
         marginBottom: 2,
     },
     accountNo: {
-        fontSize: 16,
+        fontSize: FontSizes.lg,
         fontWeight: 'bold',
-        color: '#5CB8A1',
+        color: Colors.primary,
     },
 });

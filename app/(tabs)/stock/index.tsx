@@ -1,62 +1,63 @@
-import React, {useEffect, useState} from "react";
-import {StyleSheet, TextInput, View, FlatList, Text, TouchableOpacity} from "react-native";
-import {router} from "expo-router";
-import {searchStock} from "../../../contexts/backEndApi";
-import {StockStatus} from "../../../types/stock";
-
+import React, { useCallback } from 'react';
+import { StyleSheet, TextInput, View, FlatList, Text, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
+import { StockStatus } from '../../../types/stock';
+import { useStockSearch } from '../../../hooks/useStockSearch';
+import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
+import StockListItem from '../../../components/stock/StockListItem';
 
 export default function SearchStockScreen() {
-    const [searchQuery, setSearchQuery] = useState("");
-    const [stocks, setStocks] = useState<StockStatus[]>();
-    useEffect(() => {
-        const fetchStockList = async () => {
-            const response = await searchStock(searchQuery);
-            setStocks(response?.data || []);
-        };
-        if (searchQuery.length !== 0){
-            fetchStockList();
-        }
-    }, [searchQuery]);
+    const { searchQuery, setSearchQuery, stocks, isSearching } = useStockSearch(300);
 
-    const handleStockPress = (stockName: string, stCode: string) => {
+    const handleStockPress = useCallback((stockName: string, stCode: string) => {
         router.push({
-            pathname: "stock/price",
+            pathname: 'stock/price',
             params: { stockName, stCode },
         });
-    };
+    }, []);
+
+    const renderItem = useCallback(({ item }: { item: StockStatus }) => (
+        <StockListItem item={item} onPress={handleStockPress} />
+    ), [handleStockPress]);
+
+    const keyExtractor = useCallback((item: StockStatus) => item.ST_CODE, []);
+
+    const ListEmptyComponent = useCallback(() => {
+        if (isSearching) {
+            return (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                    <Text style={styles.searchingText}>검색 중...</Text>
+                </View>
+            );
+        }
+        if (searchQuery.trim()) {
+            return <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>;
+        }
+        return <Text style={styles.emptyText}>종목명 또는 코드를 입력하세요.</Text>;
+    }, [isSearching, searchQuery]);
 
     return (
         <View style={styles.container}>
-            {/* Search Input */}
             <View style={styles.searchContainer}>
                 <TextInput
                     style={styles.searchInput}
-                    placeholder="Search stock..."
+                    placeholder="종목명 또는 코드 검색..."
+                    placeholderTextColor={Colors.textMuted}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
+                    autoCorrect={false}
+                    autoCapitalize="none"
                 />
             </View>
 
-            {/* Filtered Stock List */}
             <FlatList
                 data={stocks}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.stockItem}
-                        onPress={() => handleStockPress(item.NAME, item.ST_CODE)}
-                    >
-                        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 8 }}>
-                            <View style={[styles.stockCodeText, { marginRight: 12 }]}>
-                                <Text>{item.ST_CODE}</Text>
-                            </View>
-                            <Text style={[styles.stockText, { flex: 1 }]}>{item.NAME}</Text>
-                        </View>
-                    </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                    <Text style={styles.emptyText}>No stocks found.</Text>
-                }
+                keyExtractor={keyExtractor}
+                renderItem={renderItem}
+                ListEmptyComponent={ListEmptyComponent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
             />
         </View>
     );
@@ -65,52 +66,34 @@ export default function SearchStockScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f9f9f9",
-        padding: 16,
+        backgroundColor: Colors.background,
+        padding: Spacing.lg,
     },
     searchContainer: {
-        marginBottom: 16,
+        marginBottom: Spacing.lg,
     },
     searchInput: {
         height: 40,
         borderWidth: 1,
-        borderColor: "#ddd",
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        backgroundColor: "#fff",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        borderColor: Colors.border,
+        borderRadius: BorderRadius.sm,
+        paddingHorizontal: Spacing.sm + 2,
+        backgroundColor: Colors.cardBackground,
+        color: Colors.textPrimary,
+        ...Shadows.small,
     },
-    stockItem: {
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#ddd",
+    centerContainer: {
+        alignItems: 'center',
+        paddingVertical: Spacing.xl,
     },
-    stockText: {
-        fontSize: 16,
-        color: "#333",
-    },
-    stockCodeText: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#333333", // Neutral dark gray for text
-        backgroundColor: "#F5F5F5", // Light gray background
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        textAlign: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
+    searchingText: {
+        marginTop: Spacing.sm,
+        color: Colors.textSecondary,
+        fontSize: FontSizes.md,
     },
     emptyText: {
-        textAlign: "center",
-        color: "#999",
-        marginTop: 20,
+        textAlign: 'center',
+        color: Colors.textMuted,
+        marginTop: Spacing.xl,
     },
 });
