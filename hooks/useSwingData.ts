@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getSwingList, getSwingSummary } from '../contexts/backEndApi';
+import { getSwingList } from '../contexts/backEndApi';
 import { SwingItem, SwingSummary } from '../types/swing';
 
 interface UseSwingDataReturn {
@@ -29,16 +29,13 @@ export const useSwingData = (accountNo: string | undefined): UseSwingDataReturn 
 
         try {
             setLoading(true);
-            const [listData, summaryData] = await Promise.all([
+            const [listData] = await Promise.all([
                 getSwingList(accountNo),
-                getSwingSummary()
+                // getSwingSummary()
             ]);
 
             if (listData) {
                 setSwingList(listData);
-            }
-            if (summaryData) {
-                setSummary(summaryData);
             }
         } catch (error) {
             console.error('스윙 데이터 로드 실패:', error);

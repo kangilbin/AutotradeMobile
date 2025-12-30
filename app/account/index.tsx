@@ -16,7 +16,7 @@ export default function AccountListScreen() {
     useEffect(() => {
         const fetchAccountList = async () => {
             const response = await getAccountList();
-            setAccounts(response?.data || []);
+            setAccounts(response || []);
         };
         fetchAccountList();
     }, []);

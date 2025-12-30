@@ -28,7 +28,7 @@ export const useStockSearch = (debounceMs: number = 300): UseStockSearchReturn =
         setIsSearching(true);
         try {
             const response = await searchStock(query);
-            setStocks(response?.data || []);
+            setStocks(response || []);
         } catch (error) {
             console.error('주식 검색 실패:', error);
             setStocks([]);
