@@ -297,7 +297,7 @@ export const searchStock = async (query: string): Promise<StockStatus[] | undefi
 // 주식 호가 조회
 export const getStockPrice = async (st_code: string): Promise<StockPriceResponse | undefined> => {
     try {
-        const response = await api.get('/stock/price', { params: { st_code } });
+        const response = await api.get('/stocks/price', { params: { st_code } });
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 시세 조회');

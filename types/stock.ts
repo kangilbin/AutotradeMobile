@@ -14,10 +14,7 @@ export type AddStockAutoRequest = {
     ST_CODE: string
     ACCOUNT_NO: string
     INIT_AMOUNT: number
-    SWING_TYPE: string  // 'D' 또는 'M'
-    SHORT_TERM: number    // 단기 이평선
-    MEDIUM_TERM: number      // 중기 이평선
-    LONG_TERM: number     // 장기 이평선
+    SWING_TYPE: string  // 'S' 단일 이평선, 'B' 일목균형표
     BUY_RATIO: number   // 매수 비율
     SELL_RATIO: number  // 매도 비율
 }
