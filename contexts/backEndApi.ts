@@ -4,9 +4,16 @@ import {Alert} from "react-native";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
-import {AccountResponse, AccountStatus, ChooseAccountRequest} from "../types/account";
+import { AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
-import {StockResponse, StockPriceResponse, AddStockAutoRequest, StockAutoStatus, BacktestingResponse } from "../types/stock";
+import {
+    StockResponse,
+    StockPriceResponse,
+    AddStockAutoRequest,
+    StockAutoStatus,
+    BacktestingResponse,
+    StockStatus
+} from "../types/stock";
 import { SwingItem, SwingSummary } from '../types/swing';
 
 // API 로딩 상태
@@ -94,7 +101,7 @@ api.interceptors.response.use(
         const originalRequest: any = error.config;
 
         // 제외 url
-        const excludedUrls = ['/login', '/signup', '/check_id', '/refresh'];
+        const excludedUrls = ['/users/login', '/users/signup', '/users/check', '/users/refresh'];
         // 리프레시 토큰을 사용하는 요청이 아니거나, 제외된 URL인 경우
         if (excludedUrls.includes(originalRequest.url) || !originalRequest.url?.startsWith('/')) {
             return Promise.reject(error);
@@ -200,7 +207,7 @@ export const login = async (param: LoginRequest): Promise<LoginResponse | undefi
 // 중복 ID 체크
 export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean } | undefined>  => {
     try {
-        const response = await api.get('/check_id', { params: { user_id } });
+        const response = await api.get(`/check/${user_id}`);
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '중복 체크');
@@ -266,7 +273,7 @@ export const chooseAuth = async (param: ChooseAccountRequest): Promise<AuthStatu
 }
 
 // 계좌 목록 조회
-export const getAccountList = async (): Promise<AccountResponse | undefined> => {
+export const getAccountList = async (): Promise<AccountStatus[] | undefined> => {
     try {
         const response = await api.get('/accounts');
         return response.data;
@@ -277,9 +284,9 @@ export const getAccountList = async (): Promise<AccountResponse | undefined> => 
 
 
 // 주식 검색
-export const searchStock = async (query: string): Promise<StockResponse | undefined> => {
+export const searchStock = async (query: string): Promise<StockStatus[] | undefined> => {
     try {
-        const response = await api.get('/stock', { params: { query } });
+        const response = await api.get('/stocks', { params: { query } });
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 검색');
@@ -329,14 +336,14 @@ export const getSwingList = async (account_no: string): Promise<SwingItem[] | un
 };
 
 // 스윙 요약 정보 조회
-export const getSwingSummary = async (): Promise<SwingSummary | undefined> => {
-    try {
-        const response = await api.get('/swing/summary');
-        return response.data;
-    } catch (error: unknown) {
-        return handleApiError(error, '스윙 요약 정보 조회');
-    }
-};
+// export const getSwingSummary = async (): Promise<SwingSummary | undefined> => {
+//     try {
+//         const response = await api.get('/swing/summary');
+//         return response.data;
+//     } catch (error: unknown) {
+//         return handleApiError(error, '스윙 요약 정보 조회');
+//     }
+// };
 
 // 스윙 상태 변경
 export const updateSwingStatus = async (swingId: number, isActive: boolean): Promise<boolean> => {
