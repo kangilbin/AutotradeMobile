@@ -19,8 +19,6 @@ export default function AddStockScreen() {
     const { stCode, stockName } = useLocalSearchParams();
     const swingAmountRef = useRef<TextInput | null>(null);
     const shortMaRef = useRef<TextInput | null>(null);
-    const midMaRef = useRef<TextInput | null>(null);
-    const longMaRef = useRef<TextInput | null>(null);
     const buyRatioRef = useRef<TextInput | null>(null);
     const sellRatioRef = useRef<TextInput | null>(null);
     const rsiRef = useRef<TextInput | null>(null);
@@ -30,10 +28,7 @@ export default function AddStockScreen() {
         ST_CODE: stCode as string || '',
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
-        SWING_TYPE: 'A',
-        SHORT_TERM: 0,
-        MEDIUM_TERM: 0,
-        LONG_TERM: 0,
+        SWING_TYPE: 'S',
         BUY_RATIO: 0,
         SELL_RATIO: 0
     });
@@ -77,10 +72,6 @@ export default function AddStockScreen() {
         if (field === 'INIT_AMOUNT') {
             setValidationErrors(prev => ({ ...prev, swingAmount: false }));
         }
-        // 이평선 입력 시
-        if (field === 'SHORT_TERM' || field === 'MEDIUM_TERM' || field === 'LONG_TERM') {
-            setValidationErrors(prev => ({ ...prev, movingAverage: false }));
-        }
         // 매수/매도 비율 입력 시
         if (field === 'BUY_RATIO' || field === 'SELL_RATIO') {
             setValidationErrors(prev => ({ ...prev, ratio: false }));
@@ -93,9 +84,6 @@ export default function AddStockScreen() {
 
         if (!form.INIT_AMOUNT) {
             errors.swingAmount = true;
-        }
-        if (form.SWING_TYPE ==='A' && (!form.SHORT_TERM || !form.MEDIUM_TERM || !form.LONG_TERM)) {
-            errors.movingAverage = true;
         }
         if (!form.BUY_RATIO || !form.SELL_RATIO) {
             errors.ratio = true;
@@ -129,13 +117,6 @@ export default function AddStockScreen() {
             return;
         }
 
-        // 이평선 검증
-        if (form.SWING_TYPE === 'A' && (form.SHORT_TERM >= form.MEDIUM_TERM || form.MEDIUM_TERM >= form.LONG_TERM)) {
-            setValidationErrors({movingAverage: true});
-            (shortMaRef.current as TextInput)?.focus();
-            return;
-        }
-
         try {
 
             await addStockAuto(form);
@@ -148,9 +129,9 @@ export default function AddStockScreen() {
 
     const isFormValid = form.INIT_AMOUNT > 0 &&
                        form.BUY_RATIO > 0 &&
-                       form.SELL_RATIO > 0 &&
-                        (form.SWING_TYPE === 'A' ? form.SHORT_TERM < form.MEDIUM_TERM &&
-                        form.MEDIUM_TERM < form.LONG_TERM : true);
+                       form.SELL_RATIO > 0
+
+
     return (
         <DismissKeyboardView style={styles.mainContainer}>
             {loading && <LoadingIndicator />}
@@ -170,19 +151,19 @@ export default function AddStockScreen() {
                         <TouchableOpacity 
                             style={styles.radioOption} 
                             onPress={() => {
-                                handleChange('SWING_TYPE', 'A')
+                                handleChange('SWING_TYPE', 'S')
                             }}
                         >
                             <View style={[
                                 styles.radioButton, 
-                                form.SWING_TYPE === 'A' && styles.radioButtonSelected
+                                form.SWING_TYPE === 'S' && styles.radioButtonSelected
                             ]}>
-                                {form.SWING_TYPE === 'A' && <View style={styles.radioButtonInner} />}
+                                {form.SWING_TYPE === 'S' && <View style={styles.radioButtonInner} />}
                             </View>
                             <Text style={[
                                 styles.radioText, 
-                                form.SWING_TYPE === 'A' && styles.radioTextSelected
-                            ]}>이평선</Text>
+                                form.SWING_TYPE === 'S' && styles.radioTextSelected
+                            ]}>단일 이평선</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
@@ -226,54 +207,9 @@ export default function AddStockScreen() {
                         <Text style={styles.amountText}>원</Text>
                     </View>
                 </View>
-
-                {/* 이평선 설정 */}
-                {form.SWING_TYPE === 'A' && (
-                    <View style={getSectionStyle('movingAverage')}>
-                        <Text style={styles.sectionTitle}>이평선 설정</Text>
-                        <View style={styles.maContainer}>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>단기</Text>
-                                <TextInput
-                                    ref={shortMaRef}
-                                    style={styles.input}
-                                    placeholder="5"
-                                    value={form.SHORT_TERM ? form.SHORT_TERM.toString() : ''}
-                                    onChangeText={t => handleChange('SHORT_TERM', parseInt(t) || 0)}
-                                    keyboardType="number-pad"
-                                    onFocus={() => handleFocus('SHORT_TERM')}
-                                />
-                            </View>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>중기</Text>
-                                <TextInput
-                                    ref={midMaRef}
-                                    style={styles.input}
-                                    placeholder="20"
-                                    value={form.MEDIUM_TERM ? form.MEDIUM_TERM.toString() : ''}
-                                    onChangeText={t => handleChange('MEDIUM_TERM', parseInt(t) || 0)}
-                                    keyboardType="number-pad"
-                                    onFocus={() => handleFocus('MEDIUM_TERM')}
-                                />
-                            </View>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>장기</Text>
-                                <TextInput
-                                    ref={longMaRef}
-                                    style={styles.input}
-                                    placeholder="60"
-                                    value={form.LONG_TERM ? form.LONG_TERM.toString() : ''}
-                                    onChangeText={t => handleChange('LONG_TERM', parseInt(t) || 0)}
-                                    keyboardType="number-pad"
-                                    onFocus={() => handleFocus('LONG_TERM')}
-                                />
-                            </View>
-                        </View>
-                    </View>
-                )}
-                {/* 매수/매도 비율 설정 */}
+                {/* 분할 비율 설정 */}
                 <View style={getSectionStyle('ratio')}>
-                    <Text style={styles.sectionTitle}>매수/매도 비율</Text>
+                    <Text style={styles.sectionTitle}>분할 비율</Text>
                     <View style={styles.ratioContainer}>
                         <View style={styles.ratioItem}>
                             <Text style={styles.ratioLabel}>매수</Text>
