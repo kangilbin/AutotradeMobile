@@ -22,7 +22,7 @@ export type AddStockAutoRequest = {
 // 주식 오토 설정 상태 타입
 export type StockAutoStatus = {
     AUTO_ID: number
-    STOCK_NAME: string
+    ST_NM: string
     SWING_TYPE: string
     SHORT_MA: number
     MID_MA: number

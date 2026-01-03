@@ -7,7 +7,7 @@ export type SwingListResponse = {
 export type SwingItem = {
     AUTO_ID: number
     ST_CODE: string
-    STOCK_NAME: string
+    ST_NM: string
     SWING_TYPE: string  // 'D' 또는 'M'
     INIT_AMOUNT: number  // 원금
     EVALUATION_AMOUNT: number  // 평가금액
