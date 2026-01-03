@@ -24,7 +24,7 @@ function SwingCard({ item, onPress }: SwingCardProps) {
             {/* 헤더 */}
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.stockName}>{item.STOCK_NAME}</Text>
+                    <Text style={styles.stockName}>{item.ST_NM}</Text>
                     <Text style={styles.stockCode}>{item.ST_CODE}</Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: getActiveBadgeColor(item.IS_ACTIVE) }]}>

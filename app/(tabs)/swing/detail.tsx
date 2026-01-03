@@ -120,9 +120,9 @@ export default function SwingDetailScreen() {
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
                                 INIT_AMOUNT: swingData.INIT_AMOUNT,
                                 SWING_TYPE: swingData.SWING_TYPE,
-                                SHORT_TERM: swingData.SHORT_MA,
-                                MEDIUM_TERM: swingData.MID_MA,
-                                LONG_TERM: swingData.LONG_MA,
+                                // SHORT_TERM: swingData.SHORT_MA,
+                                // MEDIUM_TERM: swingData.MID_MA,
+                                // LONG_TERM: swingData.LONG_MA,
                                 BUY_RATIO: swingData.BUY_RATIO,
                                 SELL_RATIO: swingData.SELL_RATIO,
                             };
@@ -131,7 +131,7 @@ export default function SwingDetailScreen() {
                             router.push({
                                 pathname: '/swing/backtesting',
                                 params: {
-                                    stockName: swingData.STOCK_NAME,
+                                    stockName: swingData.ST_NM,
                                     ...backtestingParams
                                 }
                             });
@@ -181,7 +181,7 @@ export default function SwingDetailScreen() {
                     <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.stockName}>{swingData.STOCK_NAME}</Text>
+                    <Text style={styles.stockName}>{swingData.ST_NM}</Text>
                     <Text style={styles.stockCode}>{swingData.ST_CODE}</Text>
                 </View>
                 <View style={[
