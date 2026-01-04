@@ -4,6 +4,7 @@ import {Alert} from "react-native";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
+import { getDeviceId } from '../utils/device';
 import { AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
 import {
@@ -73,6 +74,12 @@ api.interceptors.request.use(
         const accessToken = await SecureStore.getItemAsync('access_token');
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`; // Add Authorization header
+        }
+
+        // 디바이스 ID 헤더 추가
+        const deviceId = await getDeviceId();
+        if (deviceId) {
+            config.headers['X-Device-ID'] = deviceId;
         }
 
         return config;
