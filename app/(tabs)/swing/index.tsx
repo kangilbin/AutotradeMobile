@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
@@ -21,10 +21,6 @@ export default function SwingScreen() {
         loadData,
         onRefresh
     } = useSwingData(account?.ACCOUNT_NO);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
 
     useFocusEffect(
         useCallback(() => {
