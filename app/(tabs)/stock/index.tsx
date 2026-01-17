@@ -2,8 +2,8 @@ import React, { useCallback } from 'react';
 import { StyleSheet, TextInput, View, FlatList, Text, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { StockStatus } from '../../../types/stock';
-import { useStockSearch } from '../../../hooks/useStockSearch';
-import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
+import { useStockSearch } from '../../../hooks';
+import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants';
 import StockListItem from '../../../components/stock/StockListItem';
 
 export default function SearchStockScreen() {
