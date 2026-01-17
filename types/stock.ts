@@ -1,7 +1,7 @@
 export type StockStatus = {
     ST_CODE: string
     SD_CODE: string
-    NAME: string
+    ST_NM: string
     DEL_YN: string
 }
 
