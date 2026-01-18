@@ -53,8 +53,8 @@ export default function SwingDetailScreen() {
     const handleSwingActivation = async () => {
         if (!swingData) return;
         
-        const action = swingData.IS_ACTIVE ? '비활성화' : '활성화';
-        const newStatus = !swingData.IS_ACTIVE;
+        const action = swingData.USE_YN ? '비활성화' : '활성화';
+        const newStatus = !swingData.USE_YN;
         
         Alert.alert(
             '스윙 상태 변경',
@@ -68,10 +68,10 @@ export default function SwingDetailScreen() {
                     text: '확인',
                     onPress: async () => {
                         try {
-                            const success = await updateSwingStatus(swingData.AUTO_ID, newStatus);
+                            const success = await updateSwingStatus(swingData.SWING_ID, newStatus);
                             if (success) {
                                 // 로컬 상태 업데이트
-                                setSwingData(prev => prev ? { ...prev, IS_ACTIVE: newStatus } : null);
+                                setSwingData(prev => prev ? { ...prev, USE_YN: newStatus } : null);
                                 
                                 // 성공 알림
                                 Alert.alert(
@@ -186,10 +186,10 @@ export default function SwingDetailScreen() {
                 </View>
                 <View style={[
                     styles.activeBadge,
-                    { backgroundColor: swingData.IS_ACTIVE ? '#4ECDC4' : '#95A5A6' }
+                    { backgroundColor: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
                 ]}>
                     <Text style={styles.activeText}>
-                        {swingData.IS_ACTIVE ? '활성' : '비활성'}
+                        {swingData.USE_YN ? '활성' : '비활성'}
                     </Text>
                 </View>
             </View>
@@ -249,17 +249,17 @@ export default function SwingDetailScreen() {
                     <TouchableOpacity 
                         style={[
                             styles.actionButton,
-                            { backgroundColor: swingData.IS_ACTIVE ? '#E74C3C' : '#4ECDC4' }
+                            { backgroundColor: swingData.USE_YN ? '#E74C3C' : '#4ECDC4' }
                         ]}
                         onPress={handleSwingActivation}
                     >
                         <Ionicons 
-                            name={swingData.IS_ACTIVE ? 'pause-circle' : 'play-circle'} 
+                            name={swingData.USE_YN ? 'pause-circle' : 'play-circle'}
                             size={20} 
                             color="#FFFFFF" 
                         />
                         <Text style={styles.actionText}>
-                            {swingData.IS_ACTIVE ? '스윙 비활성화' : '스윙 활성화'}
+                            {swingData.USE_YN ? '스윙 비활성화' : '스윙 활성화'}
                         </Text>
                     </TouchableOpacity>
                 </View>

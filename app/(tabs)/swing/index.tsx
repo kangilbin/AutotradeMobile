@@ -39,7 +39,7 @@ export default function SwingScreen() {
         <SwingCard item={item} onPress={handleSwingPress} />
     ), [handleSwingPress]);
 
-    const keyExtractor = useCallback((item: SwingItem) => item.AUTO_ID.toString(), []);
+    const keyExtractor = useCallback((item: SwingItem) => item.SWING_ID.toString(), []);
 
     const ListEmptyComponent = useCallback(() => (
         <View style={styles.emptyContainer}>

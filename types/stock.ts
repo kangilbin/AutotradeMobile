@@ -30,7 +30,6 @@ export type StockAutoStatus = {
     BUY_RATIO: number
     SELL_RATIO: number
     DEL_YN: string
-    CREATED_AT: string
 }
 
 // 주식 시세 API 응답 타입

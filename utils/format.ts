@@ -18,7 +18,8 @@ export const formatCurrency = (num: number): string => {
  * @param num 포맷팅할 숫자
  * @returns 포맷팅된 문자열
  */
-export const formatNumber = (num: number): string => {
+export const formatNumber = (num: number | undefined | null): string => {
+    if (num === undefined || num === null) return '0';
     return num.toLocaleString('ko-KR');
 };
 
@@ -27,8 +28,8 @@ export const formatNumber = (num: number): string => {
  * @param amount 금액
  * @returns 색상 코드 (양수: 빨강, 음수: 파랑)
  */
-export const getProfitLossColor = (amount: number): string => {
-    return amount >= 0 ? Colors.profit : Colors.loss;
+export const getProfitLossColor = (amount: number | undefined | null): string => {
+    return (amount ?? 0) >= 0 ? Colors.profit : Colors.loss;
 };
 
 /**
@@ -36,18 +37,24 @@ export const getProfitLossColor = (amount: number): string => {
  * @param rate 수익률
  * @returns 포맷팅된 문자열 (예: "+5.00%", "-3.50%")
  */
-export const formatProfitRate = (rate: number): string => {
-    const sign = rate >= 0 ? '+' : '';
-    return `${sign}${rate.toFixed(2)}%`;
+export const formatProfitRate = (rate: number | undefined | null): string => {
+    const value = rate ?? 0;
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${value.toFixed(2)}%`;
 };
 
 /**
  * 스윙 타입 텍스트 변환
- * @param type 스윙 타입 코드 ('D' | 'M')
+ * @param type 스윙 타입 코드 ('A' | 'S' | 'B')
  * @returns 표시용 텍스트
  */
 export const getSwingTypeText = (type: string): string => {
-    return type === 'D' ? 'Day' : 'Minute';
+    switch (type) {
+        case 'A': return '이평선';
+        case 'S': return '단일이평선';
+        case 'B': return '일목균형표';
+        default: return type;
+    }
 };
 
 /**

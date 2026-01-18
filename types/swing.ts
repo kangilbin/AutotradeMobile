@@ -5,23 +5,23 @@ export type SwingListResponse = {
 
 // 스윙 아이템 타입
 export type SwingItem = {
-    AUTO_ID: number
+    SWING_ID: number
     ST_CODE: string
     ST_NM: string
-    SWING_TYPE: string  // 'D' 또는 'M'
+    SWING_TYPE: string
     INIT_AMOUNT: number  // 원금
-    EVALUATION_AMOUNT: number  // 평가금액
-    EVALUATION_PROFIT_LOSS: number  // 평가손익금액
-    EVALUATION_PROFIT_LOSS_RATE: number  // 평가손익율
-    HOLDING_QUANTITY: number  // 보유수량
-    IS_ACTIVE: boolean  // 스윙 활성화 여부
-    SHORT_MA: number
-    MID_MA: number
-    LONG_MA: number
+    // CUR_AMOUNT: number
+    EVLU_AMT: number  // 평가금액
+    EVLU_PFLS_AMT: number  // 평가손익금액
+    EVLU_PFLS_RT: number  // 평가손익율
+    HLDG_QTY: number  // 보유수량
+    USE_YN: boolean  // 스윙 활성화 여부
+    // SHORT_MA: number
+    // MID_MA: number
+    // LONG_MA: number
     BUY_RATIO: number
     SELL_RATIO: number
-    DEL_YN: string
-    CREATED_AT: string
+    // DEL_YN: string
 }
 
 // 스윙 요약 정보 타입

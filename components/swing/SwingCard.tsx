@@ -27,9 +27,9 @@ function SwingCard({ item, onPress }: SwingCardProps) {
                     <Text style={styles.stockName}>{item.ST_NM}</Text>
                     <Text style={styles.stockCode}>{item.ST_CODE}</Text>
                 </View>
-                <View style={[styles.badge, { backgroundColor: getActiveBadgeColor(item.IS_ACTIVE) }]}>
+                <View style={[styles.badge, { backgroundColor: getActiveBadgeColor(item.USE_YN) }]}>
                     <Text style={styles.badgeText}>
-                        {item.IS_ACTIVE ? '활성' : '비활성'}
+                        {item.USE_YN ? '활성' : '비활성'}
                     </Text>
                 </View>
             </View>
@@ -45,21 +45,21 @@ function SwingCard({ item, onPress }: SwingCardProps) {
 
             {/* 평가 정보 */}
             <View style={styles.infoRow}>
-                <InfoItem label="평가금액" value={`${formatNumber(item.EVALUATION_AMOUNT)}원`} />
-                <InfoItem label="보유수량" value={`${formatNumber(item.HOLDING_QUANTITY)}주`} />
+                <InfoItem label="평가금액" value={`${formatNumber(item.EVLU_AMT)}원`} />
+                <InfoItem label="보유수량" value={`${formatNumber(item.HLDG_QTY)}주`} />
                 <InfoItem
                     label="수익률"
-                    value={formatProfitRate(item.EVALUATION_PROFIT_LOSS_RATE)}
-                    valueColor={getProfitLossColor(item.EVALUATION_PROFIT_LOSS_RATE)}
+                    value={formatProfitRate(item.EVLU_PFLS_RT)}
+                    valueColor={getProfitLossColor(item.EVLU_PFLS_RT)}
                 />
             </View>
 
             {/* 평가손익 */}
             <View style={styles.profitLossRow}>
                 <Text style={styles.label}>평가손익</Text>
-                <Text style={[styles.profitLossValue, { color: getProfitLossColor(item.EVALUATION_PROFIT_LOSS) }]}>
-                    {item.EVALUATION_PROFIT_LOSS >= 0 ? '+' : ''}
-                    {formatNumber(item.EVALUATION_PROFIT_LOSS)}원
+                <Text style={[styles.profitLossValue, { color: getProfitLossColor(item.EVLU_PFLS_AMT) }]}>
+                    {item.EVLU_PFLS_AMT >= 0 ? '+' : ''}
+                    {formatNumber(item.EVLU_PFLS_AMT)}원
                 </Text>
             </View>
         </TouchableOpacity>
