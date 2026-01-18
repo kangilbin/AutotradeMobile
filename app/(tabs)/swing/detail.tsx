@@ -177,18 +177,22 @@ export default function SwingDetailScreen() {
         <View style={styles.container}>
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
-                </TouchableOpacity>
-                <View style={styles.headerInfo}>
+                <View style={styles.headerLeft}>
                     <Text style={styles.stockName}>{swingData.ST_NM}</Text>
                     <Text style={styles.stockCode}>{swingData.ST_CODE}</Text>
                 </View>
                 <View style={[
-                    styles.activeBadge,
-                    { backgroundColor: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                    styles.statusBadge,
+                    swingData.USE_YN ? styles.statusActive : styles.statusInactive
                 ]}>
-                    <Text style={styles.activeText}>
+                    <View style={[
+                        styles.statusDot,
+                        { backgroundColor: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                    ]} />
+                    <Text style={[
+                        styles.statusText,
+                        { color: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                    ]}>
                         {swingData.USE_YN ? '활성' : '비활성'}
                     </Text>
                 </View>
@@ -228,38 +232,34 @@ export default function SwingDetailScreen() {
             {/* 설정 탭일 때만 하단에 액션 버튼들 표시 */}
             {activeTab === 0 && (
                 <View style={styles.bottomActions}>
-                    <TouchableOpacity 
-                        style={[
-                            styles.actionButton,
-                            styles.backtestingButton,
-                            { backgroundColor: '#4A90E2' }
-                        ]}
+                    <TouchableOpacity
+                        style={styles.secondaryButton}
                         onPress={handleBacktesting}
                     >
-                        <Ionicons 
-                            name="analytics-outline" 
-                            size={20} 
-                            color="#FFFFFF" 
+                        <Ionicons
+                            name="analytics-outline"
+                            size={18}
+                            color="#4A90E2"
                         />
-                        <Text style={styles.actionText}>
-                            백트레이딩 실행
+                        <Text style={styles.secondaryButtonText}>
+                            백테스트
                         </Text>
                     </TouchableOpacity>
-                    
-                    <TouchableOpacity 
+
+                    <TouchableOpacity
                         style={[
-                            styles.actionButton,
+                            styles.primaryButton,
                             { backgroundColor: swingData.USE_YN ? '#E74C3C' : '#4ECDC4' }
                         ]}
                         onPress={handleSwingActivation}
                     >
-                        <Ionicons 
+                        <Ionicons
                             name={swingData.USE_YN ? 'pause-circle' : 'play-circle'}
-                            size={20} 
-                            color="#FFFFFF" 
+                            size={18}
+                            color="#FFFFFF"
                         />
-                        <Text style={styles.actionText}>
-                            {swingData.USE_YN ? '스윙 비활성화' : '스윙 활성화'}
+                        <Text style={styles.primaryButtonText}>
+                            {swingData.USE_YN ? '비활성화' : '활성화'}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -280,48 +280,49 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 20,
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#E8F4F8',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 4,
     },
-    backButton: {
-        padding: 8,
-        marginRight: 12,
-    },
-    headerInfo: {
+    headerLeft: {
         flex: 1,
     },
     stockName: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '700',
         color: '#1A202C',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     stockCode: {
-        fontSize: 15,
-        color: '#4A5568',
-        fontWeight: '600',
+        fontSize: 13,
+        color: '#64748B',
+        fontWeight: '500',
     },
-    activeBadge: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
     },
-    activeText: {
+    statusActive: {
+        backgroundColor: 'rgba(78, 205, 196, 0.12)',
+    },
+    statusInactive: {
+        backgroundColor: 'rgba(149, 165, 166, 0.12)',
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    statusText: {
         fontSize: 12,
-        color: '#FFFFFF',
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     tabContainer: {
         flexDirection: 'row',
@@ -362,8 +363,11 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
+        flexDirection: 'row',
+        gap: 12,
         backgroundColor: '#FFFFFF',
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
         borderTopWidth: 1,
         borderTopColor: '#E8F4F8',
         shadowColor: '#000',
@@ -372,29 +376,40 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
     },
-    actionButton: {
+    secondaryButton: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 6,
         paddingVertical: 14,
-        paddingHorizontal: 20,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#4A90E2',
+        backgroundColor: '#FFFFFF',
+    },
+    secondaryButtonText: {
+        color: '#4A90E2',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    primaryButton: {
+        flex: 1.5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 14,
         borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 4,
-        width: '100%',
-        marginBottom: 12,
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 3,
     },
-    backtestingButton: {
-        marginBottom: 12,
-    },
-    actionText: {
+    primaryButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
-        marginLeft: 8,
     },
-
 }); 

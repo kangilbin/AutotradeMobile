@@ -371,9 +371,9 @@ export const updateSwingSettings = async (swingId: number, settings: {
     BUY_RATIO: number;
     SELL_RATIO: number;
     INIT_AMOUNT: number;
-    SHORT_MA: number;
-    MID_MA: number;
-    LONG_MA: number;
+    // SHORT_MA: number;
+    // MID_MA: number;
+    // LONG_MA: number;
 }): Promise<boolean> => {
     try {
         const response = await api.put(`/swing/${swingId}/settings`, settings);
