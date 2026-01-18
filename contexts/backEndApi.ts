@@ -384,6 +384,17 @@ export const updateSwingSettings = async (swingId: number, settings: {
     }
 };
 
+// 스윙 삭제
+export const deleteSwing = async (swingId: number): Promise<boolean> => {
+    try {
+        const response = await api.delete(`/swing/${swingId}`);
+        return response.data.success || true;
+    } catch (error: unknown) {
+        handleApiError(error, '스윙 삭제');
+        return false;
+    }
+};
+
 // 백 트레이딩
 export const backtesting = async (param: AddStockAutoRequest): Promise<BacktestingResponse | undefined> => {
     try {

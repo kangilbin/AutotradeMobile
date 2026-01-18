@@ -6,7 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import StockChart, { CandleData } from '../../../components/StockChart';
 import {AddStockAutoRequest} from "../../../types/stock";
@@ -91,9 +91,9 @@ export default function BacktestingResultScreen() {
                     ACCOUNT_NO: formParams.ACCOUNT_NO as string,
                     INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
                     SWING_TYPE: formParams.SWING_TYPE as string,
-                    SHORT_TERM: Number(formParams.SHORT_TERM),
-                    MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
-                    LONG_TERM: Number(formParams.LONG_TERM),
+                    // SHORT_TERM: Number(formParams.SHORT_TERM),
+                    // MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
+                    // LONG_TERM: Number(formParams.LONG_TERM),
                     BUY_RATIO: Number(formParams.BUY_RATIO),
                     SELL_RATIO: Number(formParams.SELL_RATIO),
                 };
@@ -145,7 +145,7 @@ export default function BacktestingResultScreen() {
         };
 
         performBacktesting();
-    }, [formParams]);
+    }, []);
 
     const formatCurrency = (amount: number) => {
         return amount.toLocaleString('ko-KR') + '원';
