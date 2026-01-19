@@ -211,7 +211,7 @@ const styles = {
 // types/ 폴더에 모든 타입 정의
 export type StockItem = {
   ST_CODE: string;
-  NAME: string;
+  ST_NM: string;
   PRICE: number;
 };
 

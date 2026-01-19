@@ -15,13 +15,13 @@ function StockListItem({ item, onPress }: StockListItemProps) {
     return (
         <TouchableOpacity
             style={styles.container}
-            onPress={() => onPress(item.NAME, item.ST_CODE)}
+            onPress={() => onPress(item.ST_NM, item.ST_CODE)}
         >
             <View style={styles.row}>
                 <View style={styles.codeBadge}>
                     <Text style={styles.codeText}>{item.ST_CODE}</Text>
                 </View>
-                <Text style={styles.nameText}>{item.NAME}</Text>
+                <Text style={styles.nameText}>{item.ST_NM}</Text>
             </View>
         </TouchableOpacity>
     );
