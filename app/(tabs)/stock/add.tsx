@@ -14,42 +14,66 @@ import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import { useAccountStore } from '../../../stores/useAccountStore';
 
+// 스윙 타입 상수
+const SWING_TYPES = {
+    SINGLE_MA: 'S',      // 단일 이동평균선
+    MULTI_MA: 'A',       // 이동평균선 (단기/중기/장기)
+    ICHIMOKU: 'B',       // 일목균형표
+} as const;
+
+type SwingTypeValue = typeof SWING_TYPES[keyof typeof SWING_TYPES];
+
+const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string }[] = [
+    { value: SWING_TYPES.SINGLE_MA, label: '단일 이평선' },
+    { value: SWING_TYPES.MULTI_MA, label: '이동평균선' },
+    { value: SWING_TYPES.ICHIMOKU, label: '일목균형표' },
+];
+
+interface FormState extends AddStockAutoRequest {
+    SHORT_MA?: number;
+    MID_MA?: number;
+    LONG_MA?: number;
+}
+
 export default function AddStockScreen() {
     const router = useRouter();
     const { stCode, stockName } = useLocalSearchParams();
     const swingAmountRef = useRef<TextInput | null>(null);
     const shortMaRef = useRef<TextInput | null>(null);
+    const midMaRef = useRef<TextInput | null>(null);
+    const longMaRef = useRef<TextInput | null>(null);
     const buyRatioRef = useRef<TextInput | null>(null);
     const sellRatioRef = useRef<TextInput | null>(null);
-    const rsiRef = useRef<TextInput | null>(null);
     const account = useAccountStore((state) => state.account);
 
-    const [form, setForm] = useState<AddStockAutoRequest>({
+    const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
-        SWING_TYPE: 'S',
+        SWING_TYPE: SWING_TYPES.SINGLE_MA,
         BUY_RATIO: 0,
-        SELL_RATIO: 0
+        SELL_RATIO: 0,
+        SHORT_MA: 5,
+        MID_MA: 20,
+        LONG_MA: 60,
     });
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<{[key: string]: boolean}>({});
     const loading = useApiLoading();
 
-    // 포커스 핸들러
+    const isMultiMA = form.SWING_TYPE === SWING_TYPES.MULTI_MA;
+
     const handleFocus = (fieldName: string) => {
         setFocusedField(fieldName);
     };
 
-    // 필드명과 섹션명 매핑 함수
     const getSectionByField = (field: string) => {
-        if (["SHORT_TERM", "MEDIUM_TERM", "LONG_TERM"].includes(field)) return 'movingAverage';
+        if (["SHORT_MA", "MID_MA", "LONG_MA"].includes(field)) return 'movingAverage';
         if (["buyRatio", "sellRatio"].includes(field)) return 'ratio';
         if (field === 'INIT_AMOUNT' || field === 'swingAmount') return 'swingAmount';
         return '';
     };
 
-    // 섹션 컨테이너 스타일 생성 (포커스/에러/기본)
     const getSectionStyle = (sectionName: string) => {
         if (validationErrors[sectionName]) {
             return [styles.sectionContainer, styles.sectionContainerError];
@@ -60,25 +84,23 @@ export default function AddStockScreen() {
         return [styles.sectionContainer];
     };
 
-    // handleChange에서 에러 해제도 섹션 단위로
-    const handleChange = (field: keyof AddStockAutoRequest, value: string | number) => {
+    const handleChange = (field: keyof FormState, value: string | number) => {
         setForm(prev => ({ ...prev, [field]: value }));
-        // 스윙 타입 선택 시
+
         if (field === 'SWING_TYPE') {
             setValidationErrors(prev => ({ ...prev, swingType: false }));
         }
-        
-        // 스윙 금액 입력 시
         if (field === 'INIT_AMOUNT') {
             setValidationErrors(prev => ({ ...prev, swingAmount: false }));
         }
-        // 매수/매도 비율 입력 시
         if (field === 'BUY_RATIO' || field === 'SELL_RATIO') {
             setValidationErrors(prev => ({ ...prev, ratio: false }));
         }
+        if (field === 'SHORT_MA' || field === 'MID_MA' || field === 'LONG_MA') {
+            setValidationErrors(prev => ({ ...prev, movingAverage: false }));
+        }
     };
 
-    /* ─ 주식 오토 설정 저장 ─ */
     const handleSave = async () => {
         const errors: {[key: string]: boolean} = {};
 
@@ -89,18 +111,24 @@ export default function AddStockScreen() {
             errors.ratio = true;
         }
 
-        // 에러가 있으면 에러 상태 설정하고 리턴
+        // 이동평균선 타입일 때 MA 검증
+        if (isMultiMA) {
+            const short = form.SHORT_MA || 0;
+            const mid = form.MID_MA || 0;
+            const long = form.LONG_MA || 0;
+            if (short >= mid || mid >= long) {
+                errors.movingAverage = true;
+            }
+        }
+
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors);
-            // 첫 번째 에러 필드로 포커스 이동
             if (errors.swingAmount) {
-                (swingAmountRef.current as TextInput)?.focus();
+                swingAmountRef.current?.focus();
             } else if (errors.movingAverage) {
-                (shortMaRef.current as TextInput)?.focus();
+                shortMaRef.current?.focus();
             } else if (errors.ratio) {
-                (buyRatioRef.current as TextInput)?.focus();
-            } else if (errors.rsi) {
-                (rsiRef.current as TextInput)?.focus();
+                buyRatioRef.current?.focus();
             }
             return;
         }
@@ -108,18 +136,33 @@ export default function AddStockScreen() {
         // 비율 검증
         if (form.BUY_RATIO < 0 || form.BUY_RATIO > 100) {
             setValidationErrors({ratio: true});
-            (buyRatioRef.current as TextInput)?.focus();
+            buyRatioRef.current?.focus();
             return;
         }
         if (form.SELL_RATIO < 0 || form.SELL_RATIO > 100) {
             setValidationErrors({ratio: true});
-            (sellRatioRef.current as TextInput)?.focus();
+            sellRatioRef.current?.focus();
             return;
         }
 
         try {
+            const requestData: AddStockAutoRequest = {
+                ST_CODE: form.ST_CODE,
+                ACCOUNT_NO: form.ACCOUNT_NO,
+                INIT_AMOUNT: form.INIT_AMOUNT,
+                SWING_TYPE: form.SWING_TYPE,
+                BUY_RATIO: form.BUY_RATIO,
+                SELL_RATIO: form.SELL_RATIO,
+            };
 
-            await addStockAuto(form);
+            // 이동평균선 타입일 때만 MA 값 추가
+            if (isMultiMA) {
+                (requestData as any).SHORT_MA = form.SHORT_MA;
+                (requestData as any).MID_MA = form.MID_MA;
+                (requestData as any).LONG_MA = form.LONG_MA;
+            }
+
+            await addStockAuto(requestData);
             router.dismissAll();
             router.replace('/swing');
         } catch (error) {
@@ -127,10 +170,18 @@ export default function AddStockScreen() {
         }
     };
 
-    const isFormValid = form.INIT_AMOUNT > 0 &&
-                       form.BUY_RATIO > 0 &&
-                       form.SELL_RATIO > 0
+    const isFormValid = () => {
+        const baseValid = form.INIT_AMOUNT > 0 && form.BUY_RATIO > 0 && form.SELL_RATIO > 0;
 
+        if (isMultiMA) {
+            const short = form.SHORT_MA || 0;
+            const mid = form.MID_MA || 0;
+            const long = form.LONG_MA || 0;
+            return baseValid && short < mid && mid < long;
+        }
+
+        return baseValid;
+    };
 
     return (
         <DismissKeyboardView style={styles.mainContainer}>
@@ -144,47 +195,114 @@ export default function AddStockScreen() {
                     <Text style={styles.stockNameText}>{stockName}</Text>
                 </View>
 
-                {/* ② 스윙 타입 선택 */}
+                {/* 스윙 타입 선택 */}
                 <View style={getSectionStyle('swingType')}>
-                    <Text style={styles.sectionTitle}>스윙</Text>
+                    <Text style={styles.sectionTitle}>스윙 전략</Text>
                     <View style={styles.radioContainer}>
-                        <TouchableOpacity 
-                            style={styles.radioOption} 
-                            onPress={() => {
-                                handleChange('SWING_TYPE', 'S')
-                            }}
-                        >
-                            <View style={[
-                                styles.radioButton, 
-                                form.SWING_TYPE === 'S' && styles.radioButtonSelected
-                            ]}>
-                                {form.SWING_TYPE === 'S' && <View style={styles.radioButtonInner} />}
-                            </View>
-                            <Text style={[
-                                styles.radioText, 
-                                form.SWING_TYPE === 'S' && styles.radioTextSelected
-                            ]}>단일 이평선</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                            style={styles.radioOption} 
-                            onPress={() => {
-                                handleChange('SWING_TYPE', 'B');
-                            }}
-                        >
-                            <View style={[
-                                styles.radioButton, 
-                                form.SWING_TYPE === 'B' && styles.radioButtonSelected
-                            ]}>
-                                {form.SWING_TYPE === 'B' && <View style={styles.radioButtonInner} />}
-                            </View>
-                            <Text style={[
-                                styles.radioText, 
-                                form.SWING_TYPE === 'B' && styles.radioTextSelected
-                            ]}>일목균형표</Text>
-                        </TouchableOpacity>
+                        {SWING_TYPE_OPTIONS.map((option) => (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[
+                                    styles.radioOption,
+                                    form.SWING_TYPE === option.value && styles.radioOptionSelected
+                                ]}
+                                onPress={() => handleChange('SWING_TYPE', option.value)}
+                            >
+                                <View style={[
+                                    styles.radioButton,
+                                    form.SWING_TYPE === option.value && styles.radioButtonSelected
+                                ]}>
+                                    {form.SWING_TYPE === option.value && (
+                                        <View style={styles.radioButtonInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    form.SWING_TYPE === option.value && styles.radioTextSelected
+                                ]}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
                 </View>
+
+                {/* 이동평균선 설정 - 이동평균선(A) 타입일 때만 표시 */}
+                {isMultiMA && (
+                    <View style={getSectionStyle('movingAverage')}>
+                        <Text style={styles.sectionTitle}>이동평균선 설정</Text>
+                        <View style={styles.maContainer}>
+                            <View style={styles.maItem}>
+                                <Text style={styles.maLabel}>단기</Text>
+                                <View style={styles.maInputWrapper}>
+                                    <TextInput
+                                        ref={shortMaRef}
+                                        style={[
+                                            styles.maInput,
+                                            validationErrors.movingAverage && styles.inputError
+                                        ]}
+                                        value={form.SHORT_MA?.toString() || ''}
+                                        onChangeText={(t) => {
+                                            if (/^[0-9]*$/.test(t)) {
+                                                handleChange('SHORT_MA', t === '' ? 0 : parseInt(t, 10));
+                                            }
+                                        }}
+                                        keyboardType="number-pad"
+                                        onFocus={() => handleFocus('SHORT_MA')}
+                                    />
+                                    <Text style={styles.maUnit}>일</Text>
+                                </View>
+                            </View>
+                            <View style={styles.maItem}>
+                                <Text style={styles.maLabel}>중기</Text>
+                                <View style={styles.maInputWrapper}>
+                                    <TextInput
+                                        ref={midMaRef}
+                                        style={[
+                                            styles.maInput,
+                                            validationErrors.movingAverage && styles.inputError
+                                        ]}
+                                        value={form.MID_MA?.toString() || ''}
+                                        onChangeText={(t) => {
+                                            if (/^[0-9]*$/.test(t)) {
+                                                handleChange('MID_MA', t === '' ? 0 : parseInt(t, 10));
+                                            }
+                                        }}
+                                        keyboardType="number-pad"
+                                        onFocus={() => handleFocus('MID_MA')}
+                                    />
+                                    <Text style={styles.maUnit}>일</Text>
+                                </View>
+                            </View>
+                            <View style={styles.maItem}>
+                                <Text style={styles.maLabel}>장기</Text>
+                                <View style={styles.maInputWrapper}>
+                                    <TextInput
+                                        ref={longMaRef}
+                                        style={[
+                                            styles.maInput,
+                                            validationErrors.movingAverage && styles.inputError
+                                        ]}
+                                        value={form.LONG_MA?.toString() || ''}
+                                        onChangeText={(t) => {
+                                            if (/^[0-9]*$/.test(t)) {
+                                                handleChange('LONG_MA', t === '' ? 0 : parseInt(t, 10));
+                                            }
+                                        }}
+                                        keyboardType="number-pad"
+                                        onFocus={() => handleFocus('LONG_MA')}
+                                    />
+                                    <Text style={styles.maUnit}>일</Text>
+                                </View>
+                            </View>
+                        </View>
+                        {validationErrors.movingAverage && (
+                            <Text style={styles.errorText}>
+                                단기 {'<'} 중기 {'<'} 장기 순서로 설정해주세요
+                            </Text>
+                        )}
+                    </View>
+                )}
 
                 {/* 투자금액 설정 */}
                 <View style={getSectionStyle('swingAmount')}>
@@ -196,7 +314,6 @@ export default function AddStockScreen() {
                             placeholder="1,000,000"
                             value={form.INIT_AMOUNT ? form.INIT_AMOUNT.toLocaleString() : ''}
                             onChangeText={(text) => {
-                                // 쉼표 제거 후 숫자만 추출
                                 const numericValue = text.replace(/,/g, '');
                                 const number = parseInt(numericValue) || 0;
                                 handleChange('INIT_AMOUNT', number);
@@ -207,13 +324,14 @@ export default function AddStockScreen() {
                         <Text style={styles.amountText}>원</Text>
                     </View>
                 </View>
+
                 {/* 분할 비율 설정 */}
                 <View style={getSectionStyle('ratio')}>
                     <Text style={styles.sectionTitle}>분할 비율</Text>
                     <View style={styles.ratioContainer}>
                         <View style={styles.ratioItem}>
                             <Text style={styles.ratioLabel}>매수</Text>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[
                                     styles.ratioInputContainer,
                                     focusedField === 'buyRatio' && styles.ratioInputContainerFocused
@@ -228,7 +346,7 @@ export default function AddStockScreen() {
                                     value={form.BUY_RATIO ? form.BUY_RATIO.toString() : ''}
                                     onChangeText={t => {
                                         if (/^[0-9]*$/.test(t)) {
-                                            handleChange('BUY_RATIO', t === '' ? '' : parseInt(t, 10));
+                                            handleChange('BUY_RATIO', t === '' ? 0 : parseInt(t, 10));
                                         }
                                     }}
                                     keyboardType="number-pad"
@@ -239,7 +357,7 @@ export default function AddStockScreen() {
                         </View>
                         <View style={styles.ratioItem}>
                             <Text style={styles.ratioLabel}>매도</Text>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[
                                     styles.ratioInputContainer,
                                     focusedField === 'sellRatio' && styles.ratioInputContainerFocused
@@ -254,7 +372,7 @@ export default function AddStockScreen() {
                                     value={form.SELL_RATIO ? form.SELL_RATIO.toString() : ''}
                                     onChangeText={t => {
                                         if (/^[0-9]*$/.test(t)) {
-                                            handleChange('SELL_RATIO', t === '' ? '' : parseInt(t, 10));
+                                            handleChange('SELL_RATIO', t === '' ? 0 : parseInt(t, 10));
                                         }
                                     }}
                                     keyboardType="number-pad"
@@ -265,13 +383,15 @@ export default function AddStockScreen() {
                         </View>
                     </View>
                 </View>
-                {/* ⑧ 등록 버튼 */}
+
+                {/* 등록 버튼 */}
                 <TouchableOpacity
                     style={[
                         styles.saveBtn,
-                        isFormValid ? styles.saveEnabled : styles.saveDisabled,
+                        isFormValid() ? styles.saveEnabled : styles.saveDisabled,
                     ]}
                     onPress={handleSave}
+                    disabled={!isFormValid()}
                 >
                     <Text style={styles.saveTxt}>등록</Text>
                 </TouchableOpacity>
@@ -280,7 +400,6 @@ export default function AddStockScreen() {
     );
 }
 
-/* ─ 스타일 ─ */
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
@@ -293,15 +412,12 @@ const styles = StyleSheet.create({
     stockHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 25,
+        marginBottom: 20,
         backgroundColor: '#fff',
         borderRadius: 16,
         padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 5,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     stockCodeContainer: {
         backgroundColor: '#e3f2fd',
@@ -326,157 +442,130 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 20,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 3,
         borderWidth: 1,
-        borderColor: 'transparent', // 기본은 투명
+        borderColor: '#F1F5F9',
+    },
+    sectionContainerError: {
+        borderColor: '#ff6b6b',
+    },
+    sectionContainerFocused: {
+        borderColor: '#4ECDC4',
     },
     sectionTitle: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#666',
-        marginBottom: 8,
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748B',
+        marginBottom: 12,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
+
+    // 라디오 버튼
     radioContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        flexWrap: 'wrap',
+        gap: 10,
     },
     radioOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        backgroundColor: '#f8f9fa',
-        minWidth: 120,
-        justifyContent: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 10,
+        backgroundColor: '#F8FAFC',
+    },
+    radioOptionSelected: {
+        backgroundColor: 'rgba(78, 205, 196, 0.1)',
     },
     radioButton: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
         borderWidth: 2,
-        borderColor: '#ddd',
+        borderColor: '#CBD5E1',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 8,
     },
     radioButtonSelected: {
-        borderColor: '#B5EAD7',
-        backgroundColor: '#B5EAD7',
+        borderColor: '#4ECDC4',
     },
     radioButtonInner: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#fff',
+        backgroundColor: '#4ECDC4',
     },
     radioText: {
-        fontSize: 15,
-        color: '#666',
+        fontSize: 14,
+        color: '#64748B',
         fontWeight: '500',
     },
     radioTextSelected: {
-        fontWeight: 'bold',
-        color: '#B5EAD7',
+        fontWeight: '600',
+        color: '#4ECDC4',
     },
-    input: {
-        borderWidth: 0,
-        borderRadius: 0,
-        paddingVertical: 0,
-        paddingHorizontal: 0,
-        fontSize: 16,
-        backgroundColor: 'transparent',
-        color: '#333',
-        width: 60,
-        textAlign: 'center',
-    },
-    saveBtn: {
-        paddingVertical: 18,
-        borderRadius: 16,
-        alignItems: 'center',
-        marginTop: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    saveEnabled: {
-        backgroundColor: '#B5EAD7',
-    },
-    saveDisabled: {
-        backgroundColor: '#e0e0e0',
-    },
-    saveTxt: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 18,
-    },
+
+    // 이동평균선 입력
     maContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
+        justifyContent: 'space-between',
+        gap: 12,
     },
     maItem: {
+        flex: 1,
         alignItems: 'center',
     },
     maLabel: {
         fontSize: 12,
-        color: '#666',
-        marginBottom: 5,
+        color: '#64748B',
+        marginBottom: 8,
+        fontWeight: '500',
     },
-    ratioContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
-    },
-    ratioItem: {
-        alignItems: 'center',
-    },
-    ratioLabel: {
-        fontSize: 12,
-        color: '#666',
-        marginBottom: 5,
-    },
-    ratioInputContainer: {
+    maInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: '#e0e0e0',
-        borderRadius: 8,
+        gap: 4,
+    },
+    maInput: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1E293B',
         paddingVertical: 10,
         paddingHorizontal: 12,
-        backgroundColor: '#fafafa',
-    },
-    ratioInputContainerFocused: {
-        borderColor: '#B5EAD7',
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
         backgroundColor: '#fff',
-        shadowColor: '#B5EAD7',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 2,
+        width: 60,
+        textAlign: 'center',
     },
-    percentText: {
-        fontSize: 16,
-        color: '#333',
-        marginLeft: 5,
+    maUnit: {
+        fontSize: 14,
+        color: '#64748B',
+        fontWeight: '500',
     },
+    inputError: {
+        borderColor: '#E74C3C',
+        backgroundColor: '#FEF2F2',
+    },
+    errorText: {
+        fontSize: 12,
+        color: '#E74C3C',
+        marginTop: 10,
+        textAlign: 'center',
+    },
+
+    // 금액 입력
     amountContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 10,
+        justifyContent: 'flex-end',
     },
     amountInput: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#1E293B',
         paddingVertical: 0,
         paddingHorizontal: 0,
         width: 200,
@@ -486,14 +575,74 @@ const styles = StyleSheet.create({
     },
     amountText: {
         fontSize: 18,
-        color: '#333',
+        color: '#64748B',
         marginLeft: 8,
         fontWeight: '500',
     },
-    sectionContainerError: {
-        borderColor: '#ff6b6b',
+
+    // 비율 입력
+    ratioContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
     },
-    sectionContainerFocused: {
-        borderColor: '#B5EAD7',
+    ratioItem: {
+        alignItems: 'center',
+    },
+    ratioLabel: {
+        fontSize: 12,
+        color: '#64748B',
+        marginBottom: 8,
+        fontWeight: '500',
+    },
+    ratioInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        backgroundColor: '#F8FAFC',
+    },
+    ratioInputContainerFocused: {
+        borderColor: '#4ECDC4',
+        backgroundColor: '#fff',
+    },
+    input: {
+        borderWidth: 0,
+        borderRadius: 0,
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        fontSize: 16,
+        fontWeight: '600',
+        backgroundColor: 'transparent',
+        color: '#1E293B',
+        width: 50,
+        textAlign: 'center',
+    },
+    percentText: {
+        fontSize: 14,
+        color: '#64748B',
+        marginLeft: 4,
+        fontWeight: '500',
+    },
+
+    // 등록 버튼
+    saveBtn: {
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 24,
+    },
+    saveEnabled: {
+        backgroundColor: '#4ECDC4',
+    },
+    saveDisabled: {
+        backgroundColor: '#CBD5E1',
+    },
+    saveTxt: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: 16,
     },
 });
