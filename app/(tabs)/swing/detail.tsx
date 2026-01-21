@@ -10,7 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
-import { updateSwingStatus, backtesting } from '../../../contexts/backEndApi';
+import { updateSwingStatus, deleteSwing } from '../../../contexts/backEndApi';
 import { AddStockAutoRequest } from '../../../types/stock';
 import SettingsTab from '../../../components/swing/SettingsTab';
 import ChartTab from '../../../components/swing/ChartTab';
@@ -99,9 +99,47 @@ export default function SwingDetailScreen() {
         );
     };
 
+    const handleDeleteSwing = () => {
+        if (!swingData) return;
+
+        Alert.alert(
+            '스윙 삭제',
+            `${swingData.ST_NM} 스윙을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.`,
+            [
+                {
+                    text: '취소',
+                    style: 'cancel',
+                },
+                {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const success = await deleteSwing(swingData.SWING_ID);
+                            if (success) {
+                                Alert.alert(
+                                    '삭제 완료',
+                                    '스윙이 삭제되었습니다.',
+                                    [{
+                                        text: '확인',
+                                        onPress: () => {
+                                            router.back();
+                                        }
+                                    }]
+                                );
+                            }
+                        } catch (error) {
+                            Alert.alert('오류', '스윙 삭제 중 오류가 발생했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const handleBacktesting = async () => {
         if (!swingData) return;
-        
+
         Alert.alert(
             '백트레이딩 실행',
             '설정한 조건으로 1년간의 과거 데이터를 분석하여 예상 수익률을 확인하시겠습니까?',
@@ -181,20 +219,28 @@ export default function SwingDetailScreen() {
                     <Text style={styles.stockName}>{swingData.ST_NM}</Text>
                     <Text style={styles.stockCode}>{swingData.ST_CODE}</Text>
                 </View>
-                <View style={[
-                    styles.statusBadge,
-                    swingData.USE_YN ? styles.statusActive : styles.statusInactive
-                ]}>
+                <View style={styles.headerRight}>
                     <View style={[
-                        styles.statusDot,
-                        { backgroundColor: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
-                    ]} />
-                    <Text style={[
-                        styles.statusText,
-                        { color: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                        styles.statusBadge,
+                        swingData.USE_YN ? styles.statusActive : styles.statusInactive
                     ]}>
-                        {swingData.USE_YN ? '활성' : '비활성'}
-                    </Text>
+                        <View style={[
+                            styles.statusDot,
+                            { backgroundColor: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                        ]} />
+                        <Text style={[
+                            styles.statusText,
+                            { color: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                        ]}>
+                            {swingData.USE_YN ? '활성' : '비활성'}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={handleDeleteSwing}
+                    >
+                        <Ionicons name="trash-outline" size={20} color="#E74C3C" />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -289,6 +335,14 @@ const styles = StyleSheet.create({
     },
     headerLeft: {
         flex: 1,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    deleteButton: {
+        padding: 8,
     },
     stockName: {
         fontSize: 18,
