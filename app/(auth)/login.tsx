@@ -68,9 +68,10 @@ export default function LoginScreen () {
     const isLoginEnabled = form.USER_ID.length > 0 && form.PASSWORD.length > 0;
 
     return (
-        <KeyboardScrollable>
+        <View style={{ flex: 1 }}>
             {loading && <LoadingIndicator />}
-            <Image
+            <KeyboardScrollable>
+                <Image
                 style={styles.logo}
                 source={require('../../assets/main.png')}
                 resizeMode="contain"
@@ -110,7 +111,8 @@ export default function LoginScreen () {
             >
                 <Text style={styles.buttonText}>회원 가입</Text>
             </TouchableOpacity>
-        </KeyboardScrollable>
+            </KeyboardScrollable>
+        </View>
     );
 };
 
