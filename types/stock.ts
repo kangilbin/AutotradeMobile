@@ -1,4 +1,5 @@
 export type StockStatus = {
+    MRKT_CODE: string
     ST_CODE: string
     SD_CODE: string
     ST_NM: string
@@ -12,6 +13,7 @@ export type StockResponse = {
 // 주식 오토 설정 등록 요청 타입
 export type AddStockAutoRequest = {
     ST_CODE: string
+    MRKT_CODE: string   // 시장 코드
     ACCOUNT_NO: string
     INIT_AMOUNT: number
     SWING_TYPE: string  // 'S' 단일 이평선, 'B' 일목균형표

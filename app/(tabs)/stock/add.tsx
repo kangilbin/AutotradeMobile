@@ -1,6 +1,5 @@
 import React, {useRef, useState} from 'react';
 import {
-    Alert,
     StyleSheet,
     Text,
     TextInput,
@@ -37,7 +36,7 @@ interface FormState extends AddStockAutoRequest {
 
 export default function AddStockScreen() {
     const router = useRouter();
-    const { stCode, stockName } = useLocalSearchParams();
+    const { stCode, stockName, mrktCode } = useLocalSearchParams();
     const swingAmountRef = useRef<TextInput | null>(null);
     const shortMaRef = useRef<TextInput | null>(null);
     const midMaRef = useRef<TextInput | null>(null);
@@ -48,6 +47,7 @@ export default function AddStockScreen() {
 
     const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
+        MRKT_CODE: mrktCode as string || '',
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
@@ -148,6 +148,7 @@ export default function AddStockScreen() {
         try {
             const requestData: AddStockAutoRequest = {
                 ST_CODE: form.ST_CODE,
+                MRKT_CODE: form.MRKT_CODE,
                 ACCOUNT_NO: form.ACCOUNT_NO,
                 INIT_AMOUNT: form.INIT_AMOUNT,
                 SWING_TYPE: form.SWING_TYPE,
