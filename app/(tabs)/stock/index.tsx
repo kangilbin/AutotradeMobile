@@ -9,10 +9,10 @@ import StockListItem from '../../../components/stock/StockListItem';
 export default function SearchStockScreen() {
     const { searchQuery, setSearchQuery, stocks, isSearching } = useStockSearch(300);
 
-    const handleStockPress = useCallback((stockName: string, stCode: string) => {
+    const handleStockPress = useCallback((stockName: string, stCode: string, mrktCode: string) => {
         router.push({
             pathname: 'stock/price',
-            params: { stockName, stCode },
+            params: { stockName, stCode, mrktCode },
         });
     }, []);
 

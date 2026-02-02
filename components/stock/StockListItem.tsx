@@ -5,7 +5,7 @@ import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constan
 
 interface StockListItemProps {
     item: StockStatus;
-    onPress: (stockName: string, stCode: string) => void;
+    onPress: (stockName: string, stCode: string, mrktCode: string) => void;
 }
 
 /**
@@ -15,7 +15,7 @@ function StockListItem({ item, onPress }: StockListItemProps) {
     return (
         <TouchableOpacity
             style={styles.container}
-            onPress={() => onPress(item.ST_NM, item.ST_CODE)}
+            onPress={() => onPress(item.ST_NM, item.ST_CODE, item.MRKT_CODE)}
         >
             <View style={styles.row}>
                 <View style={styles.codeBadge}>

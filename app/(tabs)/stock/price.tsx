@@ -9,7 +9,7 @@ import { StockPriceResponse } from "../../../types/stock";
 
 
 export default function PriceScreen() {
-    const { stockName, stCode } = useLocalSearchParams();
+    const { stockName, stCode, mrktCode } = useLocalSearchParams();
     const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
     const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 160 });
     
@@ -236,9 +236,10 @@ export default function PriceScreen() {
                 style={styles.floatingButton}
                 onPress={() => router.push({
                     pathname: '/stock/add',
-                    params: { 
+                    params: {
                         stCode: stCode as string,
-                        stockName: stockName as string 
+                        stockName: stockName as string,
+                        mrktCode: mrktCode as string
                     }
                 })}
                 activeOpacity={0.8}
