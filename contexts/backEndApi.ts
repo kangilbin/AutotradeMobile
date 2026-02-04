@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import { getDeviceId } from '../utils/device';
 import { AccountStatus, ChooseAccountRequest} from "../types/account";
-import {AddAuthRequest, AuthStatus, GoogleLoginRequest, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
+import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
 import {
     StockResponse,
     StockPriceResponse,
@@ -46,6 +46,45 @@ export const useApiLoading = () => {
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
+
+// Google 클라이언트 ID (토큰 갱신에 사용)
+const GOOGLE_WEB_CLIENT_ID = '824816114114-fqi4gsfbetegd68racm1qd6i4dfpletj.apps.googleusercontent.com';
+
+// Google refresh_token으로 새 access_token 발급
+const refreshGoogleAccessToken = async (): Promise<string | null> => {
+    try {
+        const googleRefreshToken = await SecureStore.getItemAsync('google_refresh_token');
+        if (!googleRefreshToken) {
+            console.log('Google refresh_token 없음');
+            return null;
+        }
+
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: GOOGLE_WEB_CLIENT_ID,
+                refresh_token: googleRefreshToken,
+                grant_type: 'refresh_token',
+            }).toString(),
+        });
+
+        const data = await response.json();
+
+        if (data.access_token) {
+            console.log('Google access_token 갱신 성공');
+            return data.access_token;
+        } else {
+            console.error('Google 토큰 갱신 실패:', data);
+            return null;
+        }
+    } catch (error) {
+        console.error('Google 토큰 갱신 에러:', error);
+        return null;
+    }
+};
 
 function processQueue(error: any, token: string | null) {
     failedQueue.forEach(prom => {
@@ -108,7 +147,7 @@ api.interceptors.response.use(
         const originalRequest: any = error.config;
 
         // 제외 url
-        const excludedUrls = ['/users/login', '/users/signup', '/users/check', '/users/refresh', '/oauth/google/login'];
+        const excludedUrls = ['/users/login', '/users/signup', '/users/check', '/users/refresh', '/oauth/google/login', '/oauth/google/token'];
         // 리프레시 토큰을 사용하는 요청이 아니거나, 제외된 URL인 경우
         if (excludedUrls.includes(originalRequest.url) || !originalRequest.url?.startsWith('/')) {
             return Promise.reject(error);
@@ -153,6 +192,35 @@ api.interceptors.response.use(
                 return Promise.reject(err);
             } finally {
                 isRefreshing = false;
+            }
+        }
+
+        // Google 토큰 만료 처리 (error_code: "token_expired")
+        const errorData = error.response?.data as ApiErrorResponse | undefined;
+        if (errorData?.error_code === 'token_expired' && !originalRequest._googleRetry) {
+            originalRequest._googleRetry = true;
+
+            console.log('Google 토큰 만료 감지, 갱신 시도...');
+
+            try {
+                // Google refresh_token으로 새 access_token 발급
+                const newGoogleAccessToken = await refreshGoogleAccessToken();
+                if (!newGoogleAccessToken) {
+                    throw new Error('Google 토큰 갱신 실패');
+                }
+
+                // 백엔드에 새 Google 토큰 저장
+                await api.post('/oauth/google/token', {
+                    access_token: newGoogleAccessToken,
+                });
+
+                console.log('Google 토큰 갱신 완료, 재요청...');
+                return api(originalRequest); // 원래 요청 재시도
+            } catch (err) {
+                console.error('Google 토큰 갱신 처리 실패:', err);
+                Alert.alert('Google 인증 만료', '다시 로그인해주세요.');
+                router.replace('/(auth)/login');
+                return Promise.reject(err);
             }
         }
 
@@ -218,6 +286,16 @@ export const googleLogin = async (param: GoogleLoginRequest): Promise<LoginRespo
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, 'Google 로그인');
+    }
+};
+
+// Google 토큰 갱신 (백엔드에 새 토큰 저장)
+export const updateGoogleToken = async (param: GoogleTokenRefreshRequest): Promise<{ success: boolean } | undefined> => {
+    try {
+        const response = await api.post('/oauth/google/token', param);
+        return response.data;
+    } catch (error: unknown) {
+        return handleApiError(error, 'Google 토큰 갱신');
     }
 };
 
