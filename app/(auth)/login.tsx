@@ -4,15 +4,17 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import {login, useApiLoading} from '../../contexts/backEndApi';
-import LoadingIndicator from "../../components/LoadingIndicator"; // 로그인 API 호출 함수
+import LoadingIndicator from "../../components/LoadingIndicator";
 import { router } from 'expo-router';
 import KeyboardScrollable from "../../components/DismissKeyboardView";
 import { LoginRequest } from '../../types/auth';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 
 
 
 export default function LoginScreen () {
     const loading = useApiLoading();
+    const { handleGoogleLogin, isReady: isGoogleReady } = useGoogleAuth();
     const [form, setForm] = useState<LoginRequest>({
         USER_ID: '',
         PASSWORD: '',
@@ -57,9 +59,6 @@ export default function LoginScreen () {
         }
     };
 
-    const handleKakaoLogin = () => {
-        Alert.alert('Kakao login initiated');
-    };
 
     const handleSignup = () => {
         router.push('signup');
@@ -101,9 +100,13 @@ export default function LoginScreen () {
                 <Text style={styles.dividerText}>또는</Text>
                 <View style={styles.dividerLine} />
             </View>
-            <TouchableOpacity style={styles.socialButton} onPress={handleKakaoLogin}>
-                <MaterialCommunityIcons name="chat" size={20} color="#3C1E1E" style={styles.socialIcon} />
-                <Text style={styles.socialButtonText}>Kakao 계정으로 로그인</Text>
+            <TouchableOpacity
+                style={[styles.socialButton, !isGoogleReady && styles.buttonDisabled]}
+                onPress={handleGoogleLogin}
+                disabled={!isGoogleReady}
+            >
+                <MaterialCommunityIcons name="google" size={20} color="#4285F4" style={styles.socialIcon} />
+                <Text style={styles.socialButtonText}>Google 계정으로 로그인</Text>
             </TouchableOpacity>
             <TouchableOpacity
                 style={[styles.button, styles.buttonEnabled]}

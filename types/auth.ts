@@ -37,3 +37,9 @@ export type JwtPayload = {
         USER_NAME?: string;
     };
 };
+
+export type GoogleLoginRequest = {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+};

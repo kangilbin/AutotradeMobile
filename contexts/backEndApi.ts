@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import { getDeviceId } from '../utils/device';
 import { AccountStatus, ChooseAccountRequest} from "../types/account";
-import {AddAuthRequest, AuthStatus, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
+import {AddAuthRequest, AuthStatus, GoogleLoginRequest, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
 import {
     StockResponse,
     StockPriceResponse,
@@ -108,7 +108,7 @@ api.interceptors.response.use(
         const originalRequest: any = error.config;
 
         // 제외 url
-        const excludedUrls = ['/users/login', '/users/signup', '/users/check', '/users/refresh'];
+        const excludedUrls = ['/users/login', '/users/signup', '/users/check', '/users/refresh', '/oauth/google/login'];
         // 리프레시 토큰을 사용하는 요청이 아니거나, 제외된 URL인 경우
         if (excludedUrls.includes(originalRequest.url) || !originalRequest.url?.startsWith('/')) {
             return Promise.reject(error);
@@ -208,6 +208,16 @@ export const login = async (param: LoginRequest): Promise<LoginResponse | undefi
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '로그인');
+    }
+};
+
+// Google OAuth 로그인
+export const googleLogin = async (param: GoogleLoginRequest): Promise<LoginResponse | undefined> => {
+    try {
+        const response = await api.post('/oauth/google/login', param);
+        return response.data;
+    } catch (error: unknown) {
+        return handleApiError(error, 'Google 로그인');
     }
 };
 
