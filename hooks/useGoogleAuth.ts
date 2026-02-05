@@ -63,10 +63,14 @@ export const useGoogleAuth = () => {
                 });
 
                 if (result?.access_token) {
-                    // JWT 토큰 저장
+                    // 백엔드 JWT 토큰 저장
                     await SecureStore.setItemAsync('access_token', result.access_token);
                     if (result.refresh_token) {
                         await SecureStore.setItemAsync('refresh_token', result.refresh_token);
+                    }
+                    // Google refresh_token 저장 (나중에 Google API 사용 시 필요)
+                    if (authentication.refreshToken) {
+                        await SecureStore.setItemAsync('google_refresh_token', authentication.refreshToken);
                     }
                     // 홈 화면으로 이동
                     router.replace('home');
