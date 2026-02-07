@@ -88,12 +88,10 @@ export default function BacktestingResultScreen() {
                 // formParams를 AddStockAutoRequest 형태로 변환
                 const backtestingParams: AddStockAutoRequest = {
                     ST_CODE: formParams.ST_CODE as string,
+                    MRKT_CODE: formParams.MRKT_CODE as string || '',
                     ACCOUNT_NO: formParams.ACCOUNT_NO as string,
                     INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
                     SWING_TYPE: formParams.SWING_TYPE as string,
-                    // SHORT_TERM: Number(formParams.SHORT_TERM),
-                    // MEDIUM_TERM: Number(formParams.MEDIUM_TERM),
-                    // LONG_TERM: Number(formParams.LONG_TERM),
                     BUY_RATIO: Number(formParams.BUY_RATIO),
                     SELL_RATIO: Number(formParams.SELL_RATIO),
                 };

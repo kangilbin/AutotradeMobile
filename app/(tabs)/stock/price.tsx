@@ -128,7 +128,7 @@ export default function PriceScreen() {
                     </View>
                     <Text style={[styles.stockText, { flex: 1 }]}>{stockName}</Text>
                 </View>
-                <AntDesign name="search1" size={24} color="black" />
+                <AntDesign name="search" size={24} color="black" />
             </TouchableOpacity>
             
             {/* 연결 상태 표시 */}
