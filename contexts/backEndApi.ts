@@ -304,7 +304,7 @@ export type AddAccountRequest = {
 // 계좌 추가
 export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus | undefined> => {
     try {
-        const response = await api.post('/account', param);
+        const response = await api.post('/accounts', param);
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '계좌 추가');
@@ -315,7 +315,7 @@ export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus
 // 권한 추가
 export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undefined> => {
     try {
-        const response = await api.post('/auth', param);
+        const response = await api.post('/auths', param);
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '권한 추가');
@@ -335,7 +335,7 @@ export const getAuthList = async (): Promise<AuthStatus[] | undefined> => {
 // 권한 선택
 export const chooseAuth = async (param: ChooseAccountRequest): Promise<AuthStatus | undefined> => {
     try {
-        const response = await api.post('/auth/choice', param);
+        const response = await api.post('/auths/choice', param);
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '권한 선택');
@@ -388,7 +388,7 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
 // 주식 오토 설정 목록 조회
 export const getStockAutoList = async (): Promise<StockAutoStatus[] | undefined> => {
     try {
-        const response = await api.get('/stock/auto');
+        const response = await api.get('/stocks/auto');
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 오토 설정 목록 조회');
@@ -404,16 +404,6 @@ export const getSwingList = async (account_no: string): Promise<SwingItem[] | un
         return handleApiError(error, '스윙 목록 조회');
     }
 };
-
-// 스윙 요약 정보 조회
-// export const getSwingSummary = async (): Promise<SwingSummary | undefined> => {
-//     try {
-//         const response = await api.get('/swing/summary');
-//         return response.data;
-//     } catch (error: unknown) {
-//         return handleApiError(error, '스윙 요약 정보 조회');
-//     }
-// };
 
 // 스윙 상태 변경
 export const updateSwingStatus = async (swingId: number, isActive: boolean): Promise<boolean> => {

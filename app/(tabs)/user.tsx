@@ -94,7 +94,7 @@ export default function UserScreen() {
                     <Ionicons 
                         name={icon} 
                         size={20} 
-                        color={danger ? "#FF6B6B" : "#5CB8A1"} 
+                        color={danger ? "#FF6B6B" : "#4ECDC4"} 
                     />
                 </View>
                 <View style={styles.menuTextContainer}>
@@ -120,10 +120,10 @@ export default function UserScreen() {
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>
                         <View style={styles.profileImage}>
-                            <Ionicons name="person" size={40} color="#5CB8A1" />
+                            <Ionicons name="person" size={40} color="#4ECDC4" />
                         </View>
                         <TouchableOpacity style={styles.editImageButton}>
-                            <Ionicons name="camera" size={16} color="#5CB8A1" />
+                            <Ionicons name="camera" size={16} color="#4ECDC4" />
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.userName}>{userName}</Text>
@@ -136,7 +136,7 @@ export default function UserScreen() {
                 {/* Account Info Card */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="card" size={20} color="#5CB8A1" />
+                        <Ionicons name="card" size={20} color="#4ECDC4" />
                         <Text style={styles.cardTitle}>계좌 정보</Text>
                     </View>
                     <View style={styles.accountInfo}>
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 3,
-        borderColor: "#5CB8A1",
+        borderColor: "#4ECDC4",
     },
     editImageButton: {
         position: "absolute",
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 2,
-        borderColor: "#5CB8A1",
+        borderColor: "#4ECDC4",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
