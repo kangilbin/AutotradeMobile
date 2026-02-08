@@ -1,197 +1,108 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import {login, useApiLoading} from '../../contexts/backEndApi';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
+import { useApiLoading } from '../../contexts/backEndApi';
 import LoadingIndicator from "../../components/LoadingIndicator";
-import { router } from 'expo-router';
-import KeyboardScrollable from "../../components/DismissKeyboardView";
-import { LoginRequest } from '../../types/auth';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 
-
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function LoginScreen () {
     const loading = useApiLoading();
     const { handleGoogleLogin, isReady: isGoogleReady } = useGoogleAuth();
-    const [form, setForm] = useState<LoginRequest>({
-        USER_ID: '',
-        PASSWORD: '',
-    });
-
-    const handleBiometricLogin = async (token: string) => {
-        try {
-            const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Face ID로 로그인',
-                fallbackLabel: '비밀번호 입력',
-            });
-            if (result.success) {
-                Alert.alert('로그인 성공', '자동 로그인 완료!');
-                // 해당 토큰을 서버로 보내 인증
-            } else {
-                Alert.alert('로그인 실패', '다시 시도하세요.');
-                }
-        } catch (error) {
-            console.error('생체 인식 로그인 실패', error);
-        }
-    };
-
-    const handleInputChange = (field: keyof LoginRequest, value: string | boolean) => {
-        setForm((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
-    };
-
-    const handleLogin = async () => {
-        try {
-            const response = await login({USER_ID: form.USER_ID, PASSWORD: form.PASSWORD});
-            if (response?.access_token) {
-                await SecureStore.setItemAsync('access_token', response.access_token);
-                await SecureStore.setItemAsync('refresh_token', response.refresh_token!);
-
-                // account ? router.replace('home') : router.replace('account');
-                router.replace('home');
-            }
-        } catch (error) {
-            Alert.alert('Signup Failed', 'An error occurred during signup.');
-        }
-    };
-
-
-    const handleSignup = () => {
-        router.push('signup');
-    };
-
-    const isLoginEnabled = form.USER_ID.length > 0 && form.PASSWORD.length > 0;
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={styles.container}>
             {loading && <LoadingIndicator />}
-            <KeyboardScrollable>
+
+            {/* 상단 로고 영역 - 화면의 대부분을 차지 */}
+            <View style={styles.heroSection}>
                 <Image
-                style={styles.logo}
-                source={require('../../assets/main.png')}
-                resizeMode="contain"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="아이디"
-                value={form.USER_ID}
-                onChangeText={(text) => handleInputChange('USER_ID', text)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
-                value={form.PASSWORD}
-                onChangeText={(text) => handleInputChange('PASSWORD', text)}
-                secureTextEntry
-            />
-            <TouchableOpacity
-                style={[styles.button, isLoginEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
-                onPress={handleLogin}
-                disabled={!isLoginEnabled}
-            >
-                <Text style={styles.buttonText}>로그인</Text>
-            </TouchableOpacity>
-            <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>또는</Text>
-                <View style={styles.dividerLine} />
+                    style={styles.logo}
+                    source={require('../../assets/main.png')}
+                    resizeMode="contain"
+                />
+                <Text style={styles.tagline}>스마트한 자동 스윙 트레이딩</Text>
             </View>
-            <TouchableOpacity
-                style={[styles.socialButton, !isGoogleReady && styles.buttonDisabled]}
-                onPress={handleGoogleLogin}
-                disabled={!isGoogleReady}
-            >
-                <MaterialCommunityIcons name="google" size={20} color="#4285F4" style={styles.socialIcon} />
-                <Text style={styles.socialButtonText}>Google 계정으로 로그인</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={[styles.button, styles.buttonEnabled]}
-                onPress={handleSignup}
-            >
-                <Text style={styles.buttonText}>회원 가입</Text>
-            </TouchableOpacity>
-            </KeyboardScrollable>
+
+            {/* 하단 로그인 영역 */}
+            <View style={styles.loginSection}>
+                <TouchableOpacity
+                    style={[styles.googleButton, !isGoogleReady && styles.buttonDisabled]}
+                    onPress={handleGoogleLogin}
+                    disabled={!isGoogleReady}
+                    activeOpacity={0.85}
+                >
+                    <Image
+                        source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                        style={styles.googleLogo}
+                    />
+                    <Text style={styles.googleButtonText}>Google로 계속하기</Text>
+                </TouchableOpacity>
+                <Text style={styles.footerText}>
+                    계속 진행하면 서비스 이용약관에 동의하게 됩니다.
+                </Text>
+            </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 10,
-        padding: 15,
-        fontSize: 16,
-        marginBottom: 15,
-    },
-    button: {
-        padding: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    buttonDisabled: {
-        backgroundColor: '#d3d3d3',
-    },
-    buttonEnabled: {
-        backgroundColor: '#B5EAD7',
-    },
-    buttonText: {
-        fontSize: 16,
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    checkboxContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    checkboxText: {
-        fontSize: 14,
-        color: '#666',
-        marginLeft: 5,
-    },
-    dividerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 20,
-    },
-    dividerLine: {
+    container: {
         flex: 1,
-        height: 1,
-        backgroundColor: '#ddd',
+        backgroundColor: '#ffffff',
     },
-    dividerText: {
-        marginHorizontal: 10,
-        fontSize: 14,
-        color: '#666',
-    },
-    socialButton: {
-        flexDirection: 'row',
+    heroSection: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 10,
-    },
-    socialIcon: {
-        marginRight: 10,
-    },
-    socialButtonText: {
-        fontSize: 16,
-        justifyContent: 'center',
+        paddingTop: 40,
     },
     logo: {
-        width: 300,
-        height: 300,
-        alignSelf: 'center',
-        marginBottom: 20,
+        width: SCREEN_WIDTH * 0.55,
+        height: SCREEN_WIDTH * 0.55,
+    },
+    tagline: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#999',
+        marginTop: 16,
+        letterSpacing: 1,
+    },
+    loginSection: {
+        paddingHorizontal: 28,
+        paddingBottom: 50,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 28,
+        height: 56,
+        paddingHorizontal: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 5,
+    },
+    buttonDisabled: {
+        opacity: 0.4,
+    },
+    googleLogo: {
+        width: 20,
+        height: 20,
+        marginRight: 12,
+    },
+    googleButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1f1f1f',
+    },
+    footerText: {
+        fontSize: 11,
+        color: '#bbb',
+        textAlign: 'center',
+        marginTop: 20,
     },
 });
-

@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import { getDeviceId } from '../utils/device';
 import { AccountStatus, ChooseAccountRequest} from "../types/account";
-import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginRequest, LoginResponse, SignupRequest} from "../types/auth";
+import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginResponse} from "../types/auth";
 import {
     StockResponse,
     StockPriceResponse,
@@ -147,7 +147,7 @@ api.interceptors.response.use(
         const originalRequest: any = error.config;
 
         // 제외 url
-        const excludedUrls = ['/users/login', '/users/signup', '/users/check', '/users/refresh', '/oauth/google/login', '/oauth/google/token'];
+        const excludedUrls = ['/users/refresh', '/oauth/google/login', '/oauth/google/token'];
         // 리프레시 토큰을 사용하는 요청이 아니거나, 제외된 URL인 경우
         if (excludedUrls.includes(originalRequest.url) || !originalRequest.url?.startsWith('/')) {
             return Promise.reject(error);
@@ -259,26 +259,6 @@ const handleApiError = (error: unknown, operation: string): undefined => {
 
 
 
-// 회원 가입
-export const signup = async (param: SignupRequest): Promise<any | undefined> => {
-    try {
-        const response = await api.post('/signup', param);
-        return response.data;
-    } catch (error: unknown) {
-        return handleApiError(error, '회원가입');
-    }
-};
-
-// 로그인
-export const login = async (param: LoginRequest): Promise<LoginResponse | undefined> => {
-    try {
-        const response = await api.post('/users/login', param);
-        return response.data;
-    } catch (error: unknown) {
-        return handleApiError(error, '로그인');
-    }
-};
-
 // Google OAuth 로그인
 export const googleLogin = async (param: GoogleLoginRequest): Promise<LoginResponse | undefined> => {
     try {
@@ -296,16 +276,6 @@ export const updateGoogleToken = async (param: GoogleTokenRefreshRequest): Promi
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, 'Google 토큰 갱신');
-    }
-};
-
-// 중복 ID 체크
-export const checkId = async (user_id: string): Promise<{ isDuplicate: boolean } | undefined>  => {
-    try {
-        const response = await api.get(`/check/${user_id}`);
-        return response.data;
-    } catch (error: unknown) {
-        return handleApiError(error, '중복 체크');
     }
 };
 
