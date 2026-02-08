@@ -264,6 +264,10 @@ const handleApiError = (error: unknown, operation: string): undefined => {
 export const googleLogin = async (param: GoogleLoginRequest): Promise<LoginResponse | undefined> => {
     try {
         const response = await api.post('/oauth/google/login', param);
+        if (!response.data.success) {
+            Alert.alert('알림', response.data.message);
+            return undefined;
+        }
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, 'Google 로그인');
