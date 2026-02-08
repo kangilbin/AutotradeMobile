@@ -155,12 +155,10 @@ export default function SwingDetailScreen() {
                             // 스윙 데이터를 백트레이딩 파라미터로 변환
                             const backtestingParams: AddStockAutoRequest = {
                                 ST_CODE: swingData.ST_CODE,
+                                MRKT_CODE: (swingData as any).MRKT_CODE || '',
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
                                 INIT_AMOUNT: swingData.INIT_AMOUNT,
                                 SWING_TYPE: swingData.SWING_TYPE,
-                                // SHORT_TERM: swingData.SHORT_MA,
-                                // MEDIUM_TERM: swingData.MID_MA,
-                                // LONG_TERM: swingData.LONG_MA,
                                 BUY_RATIO: swingData.BUY_RATIO,
                                 SELL_RATIO: swingData.SELL_RATIO,
                             };

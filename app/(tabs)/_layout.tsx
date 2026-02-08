@@ -19,7 +19,7 @@ export default function TabLayout() {
                 <Tabs.Screen
                     name="stock"
                     options={{
-                        tabBarIcon: ({ color }) => <AntDesign name="barschart" size={28} color={color} />,
+                        tabBarIcon: ({ color }) => <AntDesign name="bar-chart" size={28} color={color} />,
                         tabBarLabel: 'STOCK',
                     }}
                 />
