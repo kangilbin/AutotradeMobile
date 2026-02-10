@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { View, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { refreshAccessToken } from '../contexts/backEndApi';
@@ -23,7 +24,34 @@ export default function StartPageScreen() {
         })();
     }, []);
 
-    if (!route) return null;
+    if (!route) {
+        return (
+            <View style={styles.container}>
+                <Image
+                    style={styles.logo}
+                    source={require('../assets/main.png')}
+                    resizeMode="contain"
+                />
+                <ActivityIndicator size="large" color="#B5EAD7" style={styles.spinner} />
+            </View>
+        );
+    }
 
     return <Redirect href={route} />;
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    logo: {
+        width: 300,
+        height: 300,
+    },
+    spinner: {
+        marginTop: 20,
+    },
+});
