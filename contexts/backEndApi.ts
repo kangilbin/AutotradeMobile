@@ -243,16 +243,11 @@ const isAxiosError = (error: unknown): error is AxiosError<ApiErrorResponse> => 
 
 const handleApiError = (error: unknown, operation: string): undefined => {
     if (isAxiosError(error)) {
-        console.log(`${operation} Error Response:`, error.response);
-        
-        const errorMessage = error.response?.data?.detail || 
-                           error.response?.data?.message || 
-                           error.message || 
-                           '알 수 없는 오류가 발생했습니다';
+        const errorMessage = error.response?.data?.message ||
+                           error.message || '알 수 없는 오류가 발생했습니다';
         
         Alert.alert(`${operation} 실패`, errorMessage);
     } else {
-        console.error(`${operation} Unexpected Error:`, error);
         Alert.alert(`${operation} 실패`, '예상치 못한 오류가 발생했습니다');
     }
     return undefined;
@@ -381,7 +376,7 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
         Alert.alert('완료', '스윙 설정이 추가되었습니다.');
         return response.data;
     } catch (error: unknown) {
-        return handleApiError(error, '주식 오토 설정 추가');
+        return handleApiError(error, '스윙 등록');
     }
 };
 
@@ -438,9 +433,9 @@ export const updateSwingSettings = async (swingId: number, settings: {
 };
 
 // 스윙 삭제
-export const deleteSwing = async (swingId: number): Promise<boolean> => {
+export const deleteSwing = async (swingId: number, swingType: string): Promise<boolean> => {
     try {
-        const response = await api.delete(`/swing/${swingId}`);
+        const response = await api.delete(`/swing/${swingId}/${swingType}`);
         return response.data.success || true;
     } catch (error: unknown) {
         handleApiError(error, '스윙 삭제');

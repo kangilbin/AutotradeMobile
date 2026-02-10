@@ -115,7 +115,7 @@ export default function SwingDetailScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const success = await deleteSwing(swingData.SWING_ID);
+                            const success = await deleteSwing(swingData.SWING_ID, swingData.SWING_TYPE);
                             if (success) {
                                 Alert.alert(
                                     '삭제 완료',
