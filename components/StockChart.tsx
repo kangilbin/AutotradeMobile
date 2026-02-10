@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -12,225 +12,184 @@ export interface CandleData {
     close: number;
 }
 
-export interface StockChartProps {
-    data: CandleData[];
+export interface ChartMarker {
+    time: string;       // 'YYYY-MM-DD'
+    position: 'aboveBar' | 'belowBar';
+    color: string;
+    shape: 'arrowUp' | 'arrowDown' | 'circle';
+    text: string;
 }
 
-export default function StockChart({ data }: StockChartProps) {
-    const webviewRef = useRef<WebView>(null);
+export interface StockChartProps {
+    data: CandleData[];
+    markers?: ChartMarker[];
+    chartType?: 'line' | 'candlestick';
+}
 
-    const chartHTML = `
-  <!doctype html>
-  <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta
-        name="viewport"
-        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
-      />
-      <style>
-        :root{
-          --bg:#FFFFFF;
-          --grid:#F1F5F9;
-          --axis:#64748B;
-          --line:#4ECDC4;
+export default function StockChart({ data, markers, chartType = 'line' }: StockChartProps) {
+    const chartHTML = useMemo(() => {
+        const dataJSON = JSON.stringify(data);
+        const markersJSON = JSON.stringify(markers || []);
+
+        return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<style>
+html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:sans-serif}
+#chart{position:absolute;inset:0}
+#debug{position:absolute;top:4px;left:4px;z-index:999;font-size:10px;color:#999;pointer-events:none}
+#err{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:red;font-size:14px;text-align:center;display:none;z-index:1000}
+</style>
+</head>
+<body>
+<div id="debug">loading...</div>
+<div id="err"></div>
+<div id="chart"></div>
+<script>
+(function(){
+  var dbg=document.getElementById('debug');
+  var errEl=document.getElementById('err');
+  function log(msg){dbg.textContent=msg;}
+  function showErr(msg){errEl.style.display='block';errEl.textContent=msg;}
+
+  try{
+    var CHART_TYPE='${chartType}';
+    var RAW_DATA=${dataJSON};
+    var RAW_MARKERS=${markersJSON};
+    log('data:'+RAW_DATA.length+' markers:'+RAW_MARKERS.length+' type:'+CHART_TYPE);
+  }catch(e){
+    showErr('DATA PARSE ERROR: '+e.message);
+    return;
+  }
+
+  function toBD(s){
+    try{var p=s.split('-').map(Number);return(p[0]&&p[1]&&p[2])?{year:p[0],month:p[1],day:p[2]}:null}catch(e){return null}
+  }
+
+  function toCandles(raw){
+    var o=[];
+    for(var i=0;i<raw.length;i++){
+      var r=raw[i],bd=toBD(r.time);if(!bd)continue;
+      var op=Number(r.open),hi=Number(r.high),lo=Number(r.low),cl=Number(r.close);
+      if(isNaN(op)||isNaN(hi)||isNaN(lo)||isNaN(cl))continue;
+      o.push({time:bd,open:op,high:hi,low:lo,close:cl});
+    }
+    return o;
+  }
+
+  function toLine(raw){
+    var o=[];
+    for(var i=0;i<raw.length;i++){
+      var bd=toBD(raw[i].time);var v=Number(raw[i].close);
+      if(bd&&!isNaN(v))o.push({time:bd,value:v});
+    }
+    return o;
+  }
+
+  function toMkrs(raw,dataSet){
+    if(!raw||!raw.length)return[];
+    var times={};
+    for(var i=0;i<dataSet.length;i++){
+      var t=dataSet[i].time;
+      times[t.year+'-'+t.month+'-'+t.day]=true;
+    }
+    var o=[];
+    for(var i=0;i<raw.length;i++){
+      var bd=toBD(raw[i].time);
+      if(!bd)continue;
+      o.push({time:bd,position:raw[i].position,color:raw[i].color,shape:raw[i].shape,text:raw[i].text});
+    }
+    return o;
+  }
+
+  log('loading CDN...');
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js';
+
+  s.onload=function(){
+    log('CDN loaded, LWC='+(typeof LightweightCharts));
+    if(!window.LightweightCharts){showErr('LightweightCharts undefined after CDN load');return;}
+
+    try{
+      var el=document.getElementById('chart');
+      var w=Math.max(1,el.clientWidth||window.innerWidth);
+      var h=Math.max(1,el.clientHeight||window.innerHeight);
+      log('chart el: '+w+'x'+h);
+
+      var chart=LightweightCharts.createChart(el,{
+        width:w,height:h,
+        layout:{background:{color:'#FFFFFF'},textColor:'#64748B'},
+        grid:{vertLines:{color:'#F1F5F9'},horzLines:{color:'#F1F5F9'}},
+        timeScale:{timeVisible:false,secondsVisible:false,borderColor:'#F1F5F9'},
+        rightPriceScale:{borderColor:'#F1F5F9'},
+        crosshair:{mode:LightweightCharts.CrosshairMode.Normal}
+      });
+      log('chart created');
+
+      var series;
+      if(CHART_TYPE==='candlestick'){
+        series=chart.addCandlestickSeries({
+          upColor:'#FF6B6B',downColor:'#3498DB',
+          borderUpColor:'#FF6B6B',borderDownColor:'#3498DB',
+          wickUpColor:'#FF6B6B',wickDownColor:'#3498DB'
+        });
+        var candles=toCandles(RAW_DATA);
+        log('candlestick series, candles:'+candles.length);
+        series.setData(candles);
+      }else{
+        series=chart.addLineSeries({color:'#4ECDC4',lineWidth:2});
+        var lines=toLine(RAW_DATA);
+        log('line series, points:'+lines.length);
+        series.setData(lines);
+      }
+
+      if(RAW_MARKERS.length>0){
+        try{
+          var mapped=toMkrs(RAW_MARKERS,series.data?series.data():[]);
+          log('markers mapped:'+mapped.length);
+          if(mapped.length>0)series.setMarkers(mapped);
+          log('markers set OK');
+        }catch(me){
+          log('markers error(ignored): '+me.message);
         }
-        html, body {
-          margin:0; padding:0; height:100%;
-        }
-        #root {
-          position:absolute; inset:0;
-        }
-        #chart {
-          position:absolute; inset:0;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="root">
-        <div id="chart"></div>
-      </div>
+      }
 
-      <script>
-        // RN 로그 포워딩(필요시 콘솔로 확인)
-        (function () {
-          const rn = window.ReactNativeWebView;
-          ['log','warn','error'].forEach((k) => {
-            const orig = console[k].bind(console);
-            console[k] = function () {
-              try { rn && rn.postMessage(JSON.stringify({ type: 'console', level: k, args: Array.from(arguments).map(a => String(a)) })); } catch(_) {}
-              orig.apply(console, arguments);
-            };
-          });
-          window.onerror = function (msg, src, line, col, err) {
-            try { rn && rn.postMessage(JSON.stringify({ type: 'js-error', msg, src, line, col, stack: err && err.stack })); } catch(_) {}
-          };
-        })();
+      chart.timeScale().fitContent();
+      log('done! candles='+(CHART_TYPE==='candlestick'?toCandles(RAW_DATA).length:toLine(RAW_DATA).length));
 
-        // 날짜 'YYYY-MM-DD' -> BusinessDay
-        function toBusinessDay(s) {
-          try {
-            const [y, m, d] = s.split('-').map(Number);
-            if (!y || !m || !d) return null;
-            return { year: y, month: m, day: d };
-          } catch (_) { return null; }
-        }
+      window.addEventListener('resize',function(){
+        chart.applyOptions({width:el.clientWidth||window.innerWidth,height:el.clientHeight||window.innerHeight});
+      });
+    }catch(e){
+      showErr('CHART ERROR: '+e.message);
+      log('error: '+e.message);
+    }
+  };
 
-        function mapToLine(raw) {
-          const out = [];
-          for (let i = 0; i < (raw?.length || 0); i++) {
-            const r = raw[i];
-            const bd = toBusinessDay(r.time);
-            const v = Number(r.close);
-            if (!bd || Number.isNaN(v)) continue;
-            out.push({ time: bd, value: v });
-          }
-          return out;
-        }
+  s.onerror=function(){
+    showErr('CDN LOAD FAILED');
+    log('CDN load failed');
+  };
 
-        let chart, lineSeries;
-
-        function createChart() {
-          const el = document.getElementById('chart');
-          const w = Math.max(1, el.clientWidth || window.innerWidth);
-          const h = Math.max(1, el.clientHeight || window.innerHeight);
-
-          chart = LightweightCharts.createChart(el, {
-            width: w,
-            height: h,
-            layout: {
-              background: { color: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#FFFFFF' },
-              textColor: '#64748B'
-            },
-            grid: {
-              vertLines: { color: '#F1F5F9' },
-              horzLines: { color: '#F1F5F9' },
-            },
-            timeScale: {
-              timeVisible: false,
-              secondsVisible: false,
-              borderColor: '#F1F5F9'
-            },
-            rightPriceScale: {
-              borderColor: '#F1F5F9'
-            },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-          });
-
-          // 라인 시리즈(환경에 따라 addSeries(type: 'Line')만 제공될 수도 있어 분기)
-          lineSeries = chart.addLineSeries({
-            color: '#4ECDC4',
-            lineWidth: 2,
-          });
-        
-
-          window.addEventListener('resize', () => {
-            const nel = document.getElementById('chart');
-            const nw = Math.max(1, nel.clientWidth || window.innerWidth);
-            const nh = Math.max(1, nel.clientHeight || window.innerHeight);
-            chart.applyOptions({ width: nw, height: nh });
-          });
-        }
-
-        // RN에서 전체/단건 업데이트 API
-        window.receiveAll = function(json) {
-          try {
-            const arr = typeof json === 'string' ? JSON.parse(json) : json;
-            if (!lineSeries) return;
-            const data = mapToLine(arr);
-            lineSeries.setData(data);
-            chart && chart.timeScale().fitContent();
-          } catch (e) { console.error('receiveAll error', e); }
-        };
-        window.receiveOne = function(json) {
-          try {
-            const c = typeof json === 'string' ? JSON.parse(json) : json;
-            if (!lineSeries) return;
-            const bd = toBusinessDay(c.time);
-            const v = Number(c.close);
-            if (!bd || Number.isNaN(v)) return;
-            lineSeries.update({ time: bd, value: v });
-          } catch (e) { console.error('receiveOne error', e); }
-        };
-
-        // Lightweight Charts 로드
-        (function loadLwCharts() {
-          var s = document.createElement('script');
-          // 안정적인 standalone 빌드 사용
-          s.src = 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js';
-
-          s.onload = function () {
-            try {
-              if (!window.LightweightCharts) {
-                console.error('LightweightCharts not available after load');
-                return;
-              }
-              // 다음 프레임에서 초기화
-              requestAnimationFrame(() => {
-                createChart();
-                // 초기 데이터 1회 세팅(React에서 onLoadEnd로 또 전달하므로 여기서는 noop 가능)
-                try {
-                  window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'lifecycle', event: 'lw-ready' }));
-                } catch(_) {}
-              });
-            } catch (e) {
-              console.error('init error', e);
-            }
-          };
-          s.onerror = function () {
-            console.error('Failed to load Lightweight Charts CDN');
-          };
-          document.head.appendChild(s);
-        })();
-      </script>
-    </body>
-  </html>
-  `;
-
-    // 초기 전체 데이터 세팅
-    const handleLoadEnd = () => {
-        if (!webviewRef.current) return;
-        const payload = JSON.stringify(data);
-        webviewRef.current.injectJavaScript(`
-      (function(){
-        if (window.receiveAll) {
-          window.receiveAll(${JSON.stringify(payload)});
-        } else {
-          // 준비 안되었으면 약간 지연 후 재시도
-          setTimeout(function(){
-            if (window.receiveAll) window.receiveAll(${JSON.stringify(payload)});
-          }, 120);
-        }
-      })();
-      true;
-    `);
-    };
-
-    // 데이터 변경 시 마지막 포인트 업데이트
-    useEffect(() => {
-        if (!webviewRef.current || data.length === 0) return;
-        const last = data[data.length - 1];
-        webviewRef.current.injectJavaScript(`
-      (function(){
-        if (window.receiveOne) {
-          window.receiveOne(${JSON.stringify(JSON.stringify(last))});
-        }
-      })();
-      true;
-    `);
-    }, [data]);
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>`;
+    }, [data, markers, chartType]);
 
     return (
         <View style={styles.container}>
             <WebView
-                ref={webviewRef}
+                key={`chart-${data.length}-${chartType}`}
                 originWhitelist={['*']}
                 source={{ html: chartHTML }}
                 javaScriptEnabled
                 domStorageEnabled
                 scrollEnabled={false}
                 style={styles.webview}
-                onLoadEnd={handleLoadEnd}
                 androidLayerType="software"
                 mixedContentMode="always"
             />
@@ -246,12 +205,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F1F5F9',
         overflow: 'hidden',
-        // iOS shadow
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 12,
-        // Android elevation
         elevation: 4,
     },
     webview: {
