@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as Application from 'expo-application';
+import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
 
 const DEVICE_ID_KEY = 'device_id';
@@ -41,6 +42,10 @@ export const getDeviceId = async (): Promise<string | null> => {
 /**
  * 캐싱된 디바이스 ID 삭제 (로그아웃 시 등)
  */
+export const getDeviceName = (): string => {
+    return Device.modelName ?? '알 수 없는 기기';
+};
+
 export const clearDeviceId = async (): Promise<void> => {
     try {
         await SecureStore.deleteItemAsync(DEVICE_ID_KEY);

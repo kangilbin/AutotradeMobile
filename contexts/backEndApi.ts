@@ -4,7 +4,7 @@ import {Alert} from "react-native";
 import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
-import { getDeviceId } from '../utils/device';
+import { getDeviceId, getDeviceName } from '../utils/device';
 import { AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginResponse} from "../types/auth";
 import {
@@ -115,11 +115,12 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${accessToken}`; // Add Authorization header
         }
 
-        // 디바이스 ID 헤더 추가
+        // 디바이스 ID, 이름 헤더 추가
         const deviceId = await getDeviceId();
         if (deviceId) {
             config.headers['X-Device-ID'] = deviceId;
         }
+        config.headers['X-Device-Name'] = getDeviceName();
 
         return config;
     },
