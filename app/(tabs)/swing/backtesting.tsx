@@ -145,11 +145,17 @@ export default function BacktestingResultScreen() {
     const winTrades = sellTrades.filter(t => (t.realized_pnl ?? 0) > 0);
     const winRate = sellTrades.length > 0 ? ((winTrades.length / sellTrades.length) * 100) : 0;
 
+    // 'YYYYMMDD' -> 'YYYY-MM-DD' 변환
+    const toDateStr = (s: string): string => {
+        if (s.includes('-')) return s;
+        return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+    };
+
     // price_history -> 캔들 데이터 변환
     const priceCandles: CandleData[] = useMemo(() => {
         if (!result?.price_history) return [];
         return result.price_history.map(p => ({
-            time: p.STCK_BSOP_DATE,
+            time: toDateStr(p.STCK_BSOP_DATE),
             open: Number(p.STCK_OPRC),
             high: Number(p.STCK_HGPR),
             low: Number(p.STCK_LWPR),
