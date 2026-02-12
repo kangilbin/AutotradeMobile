@@ -180,6 +180,7 @@ export default function BacktestingResultScreen() {
                 color: isBuy ? '#FF6B6B' : '#3498DB',
                 shape: isBuy ? 'arrowUp' : 'arrowDown',
                 text: isBuy ? `매수 ${trade.quantity}주` : `매도 ${trade.quantity}주`,
+                price: trade.price,
             });
         }
         return markers;
