@@ -36,7 +36,6 @@ export default function PriceScreen() {
         const isInMarketTime = currentTime >= marketStart && currentTime <= marketEnd;
         const hour = currentTime.toString().slice(0, 2);
         const minute = currentTime.toString().slice(2, 4);
-        console.log(`현재 시간: ${hour}:${minute}, 장 시간: ${isInMarketTime ? '예' : '아니오'}`);
         return isInMarketTime;
     }, []); // 의존성 배열이 비어있으므로 컴포넌트 마운트 시에만 계산
 
@@ -134,7 +133,7 @@ export default function PriceScreen() {
             {/* 연결 상태 표시 */}
             <View style={[styles.statusBar, { backgroundColor: isMarketTime ? '#4CAF50' : '#9E9E9E' }]}>
                 <Text style={styles.statusText}>
-                    {isMarketTime ? '장 시간 - 실시간 업데이트' : '장 시간 외 - 정적 데이터'}
+                    {isMarketTime ? '정규장 실시간' : '정규장 종료'}
                 </Text>
             </View>
             
