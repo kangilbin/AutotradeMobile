@@ -10,7 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
-import { updateSwingStatus, deleteSwing } from '../../../contexts/backEndApi';
+import { updateSwingSettings, deleteSwing } from '../../../contexts/backEndApi';
 import { AddStockAutoRequest } from '../../../types/stock';
 import SettingsTab from '../../../components/swing/SettingsTab';
 import ChartTab from '../../../components/swing/ChartTab';
@@ -53,8 +53,8 @@ export default function SwingDetailScreen() {
     const handleSwingActivation = async () => {
         if (!swingData) return;
         
-        const action = swingData.USE_YN ? '비활성화' : '활성화';
-        const newStatus = !swingData.USE_YN;
+        const action = swingData.USE_YN === 'Y' ? '비활성화' : '활성화';
+        const newActiveYn = swingData.USE_YN === 'Y' ? 'N' : 'Y';
         
         Alert.alert(
             '스윙 상태 변경',
@@ -68,10 +68,16 @@ export default function SwingDetailScreen() {
                     text: '확인',
                     onPress: async () => {
                         try {
-                            const success = await updateSwingStatus(swingData.SWING_ID, newStatus);
+                            const success = await updateSwingSettings(swingData.SWING_ID, {
+                                SWING_TYPE: swingData.SWING_TYPE,
+                                BUY_RATIO: swingData.BUY_RATIO,
+                                SELL_RATIO: swingData.SELL_RATIO,
+                                INIT_AMOUNT: swingData.INIT_AMOUNT,
+                                USE_YN: newActiveYn,
+                            });
                             if (success) {
                                 // 로컬 상태 업데이트
-                                setSwingData(prev => prev ? { ...prev, USE_YN: newStatus } : null);
+                                setSwingData(prev => prev ? { ...prev, USE_YN: newActiveYn } : null);
                                 
                                 // 성공 알림
                                 Alert.alert(
@@ -220,17 +226,17 @@ export default function SwingDetailScreen() {
                 <View style={styles.headerRight}>
                     <View style={[
                         styles.statusBadge,
-                        swingData.USE_YN ? styles.statusActive : styles.statusInactive
+                        swingData.USE_YN === 'Y' ? styles.statusActive : styles.statusInactive
                     ]}>
                         <View style={[
                             styles.statusDot,
-                            { backgroundColor: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                            { backgroundColor: swingData.USE_YN === 'Y' ? '#4ECDC4' : '#95A5A6' }
                         ]} />
                         <Text style={[
                             styles.statusText,
-                            { color: swingData.USE_YN ? '#4ECDC4' : '#95A5A6' }
+                            { color: swingData.USE_YN === 'Y' ? '#4ECDC4' : '#95A5A6' }
                         ]}>
-                            {swingData.USE_YN ? '활성' : '비활성'}
+                            {swingData.USE_YN === 'Y' ? '활성' : '비활성'}
                         </Text>
                     </View>
                     <TouchableOpacity
@@ -293,17 +299,17 @@ export default function SwingDetailScreen() {
                     <TouchableOpacity
                         style={[
                             styles.primaryButton,
-                            { backgroundColor: swingData.USE_YN ? '#E74C3C' : '#4ECDC4' }
+                            { backgroundColor: swingData.USE_YN === 'Y' ? '#E74C3C' : '#4ECDC4' }
                         ]}
                         onPress={handleSwingActivation}
                     >
                         <Ionicons
-                            name={swingData.USE_YN ? 'pause-circle' : 'play-circle'}
+                            name={swingData.USE_YN === 'Y' ? 'pause-circle' : 'play-circle'}
                             size={18}
                             color="#FFFFFF"
                         />
                         <Text style={styles.primaryButtonText}>
-                            {swingData.USE_YN ? '비활성화' : '활성화'}
+                            {swingData.USE_YN === 'Y' ? '비활성화' : '활성화'}
                         </Text>
                     </TouchableOpacity>
                 </View>

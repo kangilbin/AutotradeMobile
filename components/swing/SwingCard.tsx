@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SwingItem } from '../../types/swing';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants/theme';
 import {
@@ -15,70 +16,78 @@ interface SwingCardProps {
     onPress: (item: SwingItem) => void;
 }
 
-/**
- * 스윙 카드 컴포넌트 (Presentational)
- */
 function SwingCard({ item, onPress }: SwingCardProps) {
+    const profitColor = getProfitLossColor(item.EVLU_PFLS_AMT);
+    const isProfit = item.EVLU_PFLS_AMT >= 0;
+
     return (
-        <TouchableOpacity style={styles.card} onPress={() => onPress(item)}>
-            {/* 헤더 */}
+        <TouchableOpacity style={styles.card} onPress={() => onPress(item)} activeOpacity={0.7}>
+            {/* 헤더: 종목명 + 코드 + 상태 뱃지 */}
             <View style={styles.header}>
-                <View>
+                <View style={styles.titleRow}>
                     <Text style={styles.stockName}>{item.ST_NM}</Text>
                     <Text style={styles.stockCode}>{item.ST_CODE}</Text>
                 </View>
-                <View style={[styles.badge, { backgroundColor: getActiveBadgeColor(item.USE_YN) }]}>
-                    <Text style={styles.badgeText}>
-                        {item.USE_YN ? '활성' : '비활성'}
+                <View style={[
+                    styles.badge,
+                    item.USE_YN === 'Y' ? styles.activeBadge : styles.inactiveBadge
+                ]}>
+                    <View style={[
+                        styles.badgeDot,
+                        { backgroundColor: getActiveBadgeColor(item.USE_YN) }
+                    ]} />
+                    <Text style={[
+                        styles.badgeText,
+                        { color: getActiveBadgeColor(item.USE_YN) }
+                    ]}>
+                        {item.USE_YN === 'Y' ? '활성' : '비활성'}
                     </Text>
                 </View>
             </View>
 
-            {/* 스윙 설정 정보 */}
-            <View style={styles.infoRow}>
-                <InfoItem label="스윙타입" value={getSwingTypeText(item.SWING_TYPE)} />
-                <InfoItem label="매수비율" value={`${item.BUY_RATIO}%`} />
-                <InfoItem label="매도비율" value={`${item.SELL_RATIO}%`} />
+            {/* 설정 태그들 */}
+            <View style={styles.tagRow}>
+                <Tag label={getSwingTypeText(item.SWING_TYPE)} />
+                <Tag label={`매수 ${item.BUY_RATIO}%`} />
+                <Tag label={`매도 ${item.SELL_RATIO}%`} />
             </View>
-
-            <View style={styles.divider} />
 
             {/* 평가 정보 */}
-            <View style={styles.infoRow}>
-                <InfoItem label="평가금액" value={`${formatNumber(item.EVLU_AMT)}원`} />
-                <InfoItem label="보유수량" value={`${formatNumber(item.HLDG_QTY)}주`} />
-                <InfoItem
-                    label="수익률"
-                    value={formatProfitRate(item.EVLU_PFLS_RT)}
-                    valueColor={getProfitLossColor(item.EVLU_PFLS_RT)}
-                />
+            <View style={styles.evalSection}>
+                <View style={styles.evalItem}>
+                    <Text style={styles.evalLabel}>평가금액</Text>
+                    <Text style={styles.evalValue}>{formatNumber(item.EVLU_AMT)}원</Text>
+                </View>
+                <View style={styles.evalDivider} />
+                <View style={styles.evalItem}>
+                    <Text style={styles.evalLabel}>보유수량</Text>
+                    <Text style={styles.evalValue}>{formatNumber(item.HLDG_QTY)}주</Text>
+                </View>
             </View>
 
-            {/* 평가손익 */}
-            <View style={styles.profitLossRow}>
-                <Text style={styles.label}>평가손익</Text>
-                <Text style={[styles.profitLossValue, { color: getProfitLossColor(item.EVLU_PFLS_AMT) }]}>
-                    {item.EVLU_PFLS_AMT >= 0 ? '+' : ''}
-                    {formatNumber(item.EVLU_PFLS_AMT)}원
-                </Text>
+            {/* 손익 하이라이트 */}
+            <View style={[styles.profitSection, { backgroundColor: isProfit ? '#FFF5F5' : '#F0F7FF' }]}>
+                <View style={styles.profitRow}>
+                    <Text style={styles.profitLabel}>평가손익</Text>
+                    <Text style={[styles.profitValue, { color: profitColor }]}>
+                        {isProfit ? '+' : ''}{formatNumber(item.EVLU_PFLS_AMT)}원
+                    </Text>
+                </View>
+                <View style={styles.profitRow}>
+                    <Text style={styles.profitLabel}>수익률</Text>
+                    <Text style={[styles.profitRate, { color: profitColor }]}>
+                        {formatProfitRate(item.EVLU_PFLS_RT)}
+                    </Text>
+                </View>
             </View>
         </TouchableOpacity>
     );
 }
 
-interface InfoItemProps {
-    label: string;
-    value: string;
-    valueColor?: string;
-}
-
-const InfoItem = memo(function InfoItem({ label, value, valueColor }: InfoItemProps) {
+const Tag = memo(function Tag({ label }: { label: string }) {
     return (
-        <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>{label}</Text>
-            <Text style={[styles.infoValue, valueColor && { color: valueColor }]} numberOfLines={1} adjustsFontSizeToFit>
-                {value}
-            </Text>
+        <View style={styles.tag}>
+            <Text style={styles.tagText}>{label}</Text>
         </View>
     );
 });
@@ -86,79 +95,123 @@ const InfoItem = memo(function InfoItem({ label, value, valueColor }: InfoItemPr
 const styles = StyleSheet.create({
     card: {
         backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.xl,
+        borderRadius: BorderRadius.md,
+        padding: Spacing.lg,
         marginBottom: Spacing.md,
-        ...Shadows.medium,
+        ...Shadows.small,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: Spacing.lg,
+        marginBottom: Spacing.md,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: Spacing.sm,
     },
     stockName: {
         fontSize: FontSizes.xl,
         fontWeight: 'bold',
         color: Colors.textPrimary,
-        marginBottom: 2,
     },
     stockCode: {
-        fontSize: FontSizes.md,
-        color: Colors.textSecondary,
+        fontSize: FontSizes.sm,
+        color: Colors.textMuted,
         fontWeight: '500',
     },
     badge: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.xs + 2,
-        borderRadius: BorderRadius.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.sm + 2,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.full,
+        gap: Spacing.xs,
+    },
+    activeBadge: {
+        backgroundColor: '#E8F8F5',
+    },
+    inactiveBadge: {
+        backgroundColor: '#F0F0F0',
+    },
+    badgeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
     },
     badgeText: {
-        fontSize: FontSizes.sm,
-        color: Colors.textWhite,
-        fontWeight: 'bold',
+        fontSize: FontSizes.xs + 1,
+        fontWeight: '600',
     },
-    infoRow: {
+    tagRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        gap: Spacing.sm,
+        marginBottom: Spacing.lg,
     },
-    infoItem: {
-        flex: 1,
+    tag: {
+        backgroundColor: Colors.background,
+        paddingHorizontal: Spacing.sm + 2,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.sm,
+    },
+    tagText: {
+        fontSize: FontSizes.xs + 1,
+        color: Colors.textSecondary,
+        fontWeight: '500',
+    },
+    evalSection: {
+        flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: Spacing.md,
     },
-    infoLabel: {
+    evalItem: {
+        flex: 1,
+    },
+    evalLabel: {
         fontSize: FontSizes.xs + 1,
         color: Colors.textMuted,
-        marginBottom: 2,
-        fontWeight: '400',
+        marginBottom: Spacing.xs,
     },
-    infoValue: {
-        fontSize: FontSizes.sm + 1,
-        fontWeight: '600',
+    evalValue: {
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
         color: Colors.textPrimary,
-        textAlign: 'center',
     },
-    divider: {
-        height: 1,
-        backgroundColor: Colors.border,
-        marginVertical: Spacing.sm,
+    evalDivider: {
+        width: 1,
+        height: 32,
+        backgroundColor: Colors.borderLight,
+        marginHorizontal: Spacing.lg,
     },
-    label: {
+    profitSection: {
+        borderRadius: BorderRadius.sm,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm + 2,
+        gap: Spacing.xs,
+    },
+    profitRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    profitLabel: {
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
         fontWeight: '500',
     },
-    profitLossRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: Spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: Colors.border,
-    },
-    profitLossValue: {
+    profitValue: {
         fontSize: FontSizes.lg,
         fontWeight: 'bold',
+    },
+    profitRate: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+    },
+    chevron: {
+        position: 'absolute',
+        right: Spacing.md,
+        top: Spacing.lg + 2,
     },
 });
 

@@ -1,10 +1,11 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useSwingData } from '../../../hooks';
-import { Colors, FontSizes, Spacing } from '../../../constants';
+import { Colors, FontSizes, Spacing, BorderRadius } from '../../../constants';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import SwingCard from '../../../components/swing/SwingCard';
 import SwingSummaryCard from '../../../components/swing/SwingSummaryCard';
@@ -41,11 +42,27 @@ export default function SwingScreen() {
 
     const keyExtractor = useCallback((item: SwingItem) => item.SWING_ID.toString(), []);
 
+    const ListHeaderComponent = useCallback(() => (
+        <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>스윙</Text>
+            <Text style={styles.sectionSubtitle}>{swingList.length}건</Text>
+        </View>
+    ), [swingList.length]);
+
     const ListEmptyComponent = useCallback(() => (
         <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>등록된 스윙이 없습니다.</Text>
+            <Ionicons name="swap-horizontal-outline" size={48} color={Colors.textMuted} />
+            <Text style={styles.emptyTitle}>등록된 스윙이 없습니다</Text>
+            <Text style={styles.emptyDescription}>새로운 스윙 매매를 추가해보세요</Text>
+            <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => router.push('/stock')}
+            >
+                <Ionicons name="add" size={18} color={Colors.textWhite} />
+                <Text style={styles.emptyButtonText}>스윙 추가</Text>
+            </TouchableOpacity>
         </View>
-    ), []);
+    ), [router]);
 
     if (loading) {
         return <LoadingIndicator />;
@@ -59,6 +76,7 @@ export default function SwingScreen() {
                 data={swingList}
                 renderItem={renderSwingItem}
                 keyExtractor={keyExtractor}
+                ListHeaderComponent={ListHeaderComponent}
                 ListEmptyComponent={ListEmptyComponent}
                 refreshControl={
                     <RefreshControl
@@ -81,19 +99,58 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         flex: 1,
-        paddingHorizontal: Spacing.lg - 1,
+        paddingHorizontal: Spacing.lg,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.md,
+    },
+    sectionTitle: {
+        fontSize: FontSizes.xl,
+        fontWeight: 'bold',
+        color: Colors.textPrimary,
+    },
+    sectionSubtitle: {
+        fontSize: FontSizes.md,
+        color: Colors.textSecondary,
+        fontWeight: '500',
     },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 50,
+        paddingVertical: 60,
     },
     emptyListContainer: {
         flexGrow: 1,
     },
-    emptyText: {
+    emptyTitle: {
         fontSize: FontSizes.lg,
+        fontWeight: '600',
+        color: Colors.textPrimary,
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.xs,
+    },
+    emptyDescription: {
+        fontSize: FontSizes.md,
         color: Colors.textMuted,
+        marginBottom: Spacing.xl,
+    },
+    emptyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.sm + 2,
+        borderRadius: BorderRadius.sm,
+    },
+    emptyButtonText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.textWhite,
+        marginLeft: Spacing.xs,
     },
 });

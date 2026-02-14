@@ -15,7 +15,7 @@ export type SwingItem = {
     EVLU_PFLS_AMT: number  // 평가손익금액
     EVLU_PFLS_RT: number  // 평가손익율
     HLDG_QTY: number  // 보유수량
-    USE_YN: boolean  // 스윙 활성화 여부
+    USE_YN: string  // 스윙 활성화 여부 ('Y' | 'N')
     // SHORT_MA: number
     // MID_MA: number
     // LONG_MA: number
