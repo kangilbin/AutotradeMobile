@@ -42,14 +42,6 @@ export const useGoogleAuth = () => {
             if (response?.type === 'success') {
                 const { authentication } = response;
 
-                // 디버깅용 로그
-                console.log('=== Google OAuth Response ===');
-                console.log('accessToken:', authentication?.accessToken ? '있음' : '없음');
-                console.log('refreshToken:', authentication?.refreshToken ? '있음' : '없음');
-                console.log('expiresIn:', authentication?.expiresIn);
-                console.log('Full authentication:', JSON.stringify(authentication, null, 2));
-                console.log('=============================');
-
                 if (!authentication?.accessToken) {
                     Alert.alert('오류', 'Google 인증 정보를 가져올 수 없습니다.');
                     return;
