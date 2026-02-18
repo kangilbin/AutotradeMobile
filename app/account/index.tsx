@@ -1,13 +1,13 @@
-import {useEffect, useState, useCallback, useRef, createRef} from 'react';
+import {useState, useCallback, useRef, createRef} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
-import {useRouter} from 'expo-router';
+import {useRouter, useFocusEffect} from 'expo-router';
 import {getAccountList, deleteAccount} from '../../contexts/backEndApi';
 import {AccountStatus} from "../../types/account";
 import {useAccountStore} from "../../stores/useAccountStore";
 import {chooseAuth} from '../../contexts/backEndApi';
-import {Colors, Shadows, FontSizes, Spacing, BorderRadius} from '../../constants';
+import {Colors, FontSizes, Spacing, BorderRadius} from '../../constants';
 import ReanimatedSwipeable, {type SwipeableMethods} from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {useAnimatedStyle, SharedValue} from 'react-native-reanimated';
 
@@ -16,13 +16,15 @@ export default function AccountListScreen() {
     const [accounts, setAccounts] = useState<AccountStatus[]>([]);
     const setAccount = useAccountStore((state) => state.setAccount);
 
-    useEffect(() => {
-        const fetchAccountList = async () => {
-            const response = await getAccountList();
-            setAccounts(response || []);
-        };
-        fetchAccountList();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchAccountList = async () => {
+                const response = await getAccountList();
+                setAccounts(response || []);
+            };
+            fetchAccountList();
+        }, [])
+    );
 
     const swipeableRefs = useRef<Map<number, React.RefObject<SwipeableMethods | null>>>(new Map());
 
@@ -33,9 +35,9 @@ export default function AccountListScreen() {
         return swipeableRefs.current.get(accountId)!;
     }, []);
 
-    const handleAccountPress = useCallback((account: AccountStatus) => {
+    const handleAccountPress = useCallback(async (account: AccountStatus) => {
         setAccount(account);
-        chooseAuth({AUTH_ID: account.AUTH_ID, ACCOUNT_NO: account.ACCOUNT_NO});
+        await chooseAuth({AUTH_ID: account.AUTH_ID, ACCOUNT_NO: account.ACCOUNT_NO});
         router.back();
     }, [setAccount, router]);
 
@@ -184,7 +186,6 @@ const styles = StyleSheet.create({
     },
     accountCard: {
         backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.md,
         padding: Spacing.lg,
         flexDirection: 'row',
         alignItems: 'center',
