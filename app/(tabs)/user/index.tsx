@@ -6,15 +6,14 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
-    Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import { Ionicons } from "@expo/vector-icons";
-import { useAccountStore } from "../../stores/useAccountStore";
-import { JwtPayload } from "../../types/auth";
+import { useAccountStore } from "../../../stores/useAccountStore";
+import { JwtPayload } from "../../../types/auth";
 
 export default function UserScreen() {
     const account = useAccountStore((state) => state.account);
@@ -56,28 +55,15 @@ export default function UserScreen() {
     };
 
     const handleEditProfile = () => {
-        // 프로필 수정 화면으로 이동
-        Alert.alert("알림", "프로필 수정 기능은 준비 중입니다.");
-    };
-
-    const handleAccountSettings = () => {
-        router.push('/account');
-    };
-
-    const handleSecuritySettings = () => {
-        Alert.alert("알림", "보안 설정 기능은 준비 중입니다.");
+        router.push('/(tabs)/user/edit');
     };
 
     const handleNotificationSettings = () => {
-        Alert.alert("알림", "알림 설정 기능은 준비 중입니다.");
+        router.push('/(tabs)/user/notifications');
     };
 
     const handleHelpSupport = () => {
         Alert.alert("알림", "고객 지원 기능은 준비 중입니다.");
-    };
-
-    const handleAboutApp = () => {
-        Alert.alert("알림", "앱 정보 기능은 준비 중입니다.");
     };
 
     const MenuItem = ({ icon, title, subtitle, onPress, showArrow = true, danger = false }: {
@@ -163,43 +149,19 @@ export default function UserScreen() {
                     </View>
                 </View>
 
-                {/* Settings Menu */}
+                {/* Menu */}
                 <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>설정</Text>
-                    <MenuItem
-                        icon="settings-outline"
-                        title="계좌 설정"
-                        subtitle="계좌 정보 관리"
-                        onPress={handleAccountSettings}
-                    />
-                    <MenuItem
-                        icon="shield-checkmark-outline"
-                        title="보안 설정"
-                        subtitle="비밀번호, 인증 설정"
-                        onPress={handleSecuritySettings}
-                    />
                     <MenuItem
                         icon="notifications-outline"
                         title="알림 설정"
                         subtitle="푸시 알림 관리"
                         onPress={handleNotificationSettings}
                     />
-                </View>
-
-                {/* Support Menu */}
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>지원</Text>
                     <MenuItem
                         icon="help-circle-outline"
                         title="고객 지원"
                         subtitle="문의 및 도움말"
                         onPress={handleHelpSupport}
-                    />
-                    <MenuItem
-                        icon="information-circle-outline"
-                        title="앱 정보"
-                        subtitle="버전 및 라이선스"
-                        onPress={handleAboutApp}
                     />
                 </View>
 
@@ -336,12 +298,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: "600",
         color: "#856404",
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#2F3E46",
-        marginBottom: 16,
     },
     menuItem: {
         flexDirection: "row",
