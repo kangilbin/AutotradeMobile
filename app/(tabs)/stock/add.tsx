@@ -24,8 +24,8 @@ type SwingTypeValue = typeof SWING_TYPES[keyof typeof SWING_TYPES];
 
 const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string }[] = [
     { value: SWING_TYPES.SINGLE_MA, label: '단일 이평선' },
-    { value: SWING_TYPES.MULTI_MA, label: '이동평균선' },
-    { value: SWING_TYPES.ICHIMOKU, label: '일목균형표' },
+    // { value: SWING_TYPES.MULTI_MA, label: '이동평균선' },
+    // { value: SWING_TYPES.ICHIMOKU, label: '일목균형표' },
 ];
 
 interface FormState extends AddStockAutoRequest {

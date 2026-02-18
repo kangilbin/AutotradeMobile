@@ -3,7 +3,8 @@ import {
     StyleSheet,
     Text,
     View,
-    ScrollView,
+    FlatList,
+    Alert,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import LoadingIndicator from '../../../components/LoadingIndicator';
@@ -13,6 +14,8 @@ import { backtesting } from '../../../contexts/backEndApi';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants';
 import { formatCurrency, getProfitLossColor, formatProfitRate } from '../../../utils/format';
 
+// --- 유틸 함수 (컴포넌트 외부) ---
+
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
@@ -21,6 +24,111 @@ const formatDate = (dateString: string): string => {
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}.${m}.${d}`;
 };
+
+const toDateStr = (s: string): string => {
+    if (s.includes('-')) return s;
+    return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+};
+
+// --- 커스텀 훅: 백테스팅 데이터 로직 ---
+
+const useBacktesting = () => {
+    const { stockName, ...formParams } = useLocalSearchParams();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
+    const [result, setResult] = useState<BacktestingResponse | null>(null);
+
+    useEffect(() => {
+        const performBacktesting = async () => {
+            setLoading(true);
+            setError(false);
+            try {
+                const backtestingParams: AddStockAutoRequest = {
+                    ST_CODE: formParams.ST_CODE as string,
+                    MRKT_CODE: (formParams.MRKT_CODE as string) || '',
+                    ACCOUNT_NO: formParams.ACCOUNT_NO as string,
+                    INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
+                    SWING_TYPE: formParams.SWING_TYPE as string,
+                    BUY_RATIO: Number(formParams.BUY_RATIO),
+                    SELL_RATIO: Number(formParams.SELL_RATIO),
+                };
+
+                const response = await backtesting(backtestingParams);
+                if (response) {
+                    setResult(response);
+                }
+            } catch (err) {
+                console.error('백테스팅 실패:', err);
+                setError(true);
+                Alert.alert('오류', '백테스팅 결과를 불러오지 못했습니다.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        performBacktesting();
+    }, []);
+
+    const profitLoss = result ? result.final_capital - result.initial_capital : 0;
+    const totalReturnPct = result?.total_return ?? 0;
+
+    const stats = useMemo(() => {
+        if (!result) return { buyCount: 0, sellCount: 0, winRate: 0 };
+        const buyCount = result.trades.filter(t => t.action === 'BUY').length;
+        const sellCount = result.trades.filter(t => t.action === 'SELL').length;
+        const sellTrades = result.trades.filter(t => t.action === 'SELL');
+        const winTrades = sellTrades.filter(t => (t.realized_pnl ?? 0) > 0);
+        const winRate = sellTrades.length > 0 ? ((winTrades.length / sellTrades.length) * 100) : 0;
+        return { buyCount, sellCount, winRate };
+    }, [result]);
+
+    const priceCandles: CandleData[] = useMemo(() => {
+        if (!result?.price_history) return [];
+        return result.price_history.map(p => ({
+            time: toDateStr(p.STCK_BSOP_DATE),
+            open: Number(p.STCK_OPRC),
+            high: Number(p.STCK_HGPR),
+            low: Number(p.STCK_LWPR),
+            close: Number(p.STCK_CLPR),
+        }));
+    }, [result]);
+
+    const tradeMarkers: ChartMarker[] = useMemo(() => {
+        if (!result?.trades) return [];
+        const markers: ChartMarker[] = [];
+        for (const trade of result.trades) {
+            const d = new Date(trade.date);
+            if (isNaN(d.getTime())) continue;
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const isBuy = trade.action === 'BUY';
+            markers.push({
+                time: `${y}-${m}-${day}`,
+                position: isBuy ? 'belowBar' : 'aboveBar',
+                color: isBuy ? '#FF6B6B' : '#3498DB',
+                shape: isBuy ? 'arrowUp' : 'arrowDown',
+                text: isBuy ? `매수 ${trade.quantity}주` : `매도 ${trade.quantity}주`,
+                price: trade.price,
+            });
+        }
+        return markers;
+    }, [result]);
+
+    return {
+        stockName: stockName as string,
+        loading,
+        error,
+        result,
+        profitLoss,
+        totalReturnPct,
+        stats,
+        priceCandles,
+        tradeMarkers,
+    };
+};
+
+// --- 프레젠테이션 컴포넌트 ---
 
 const TradeItem = React.memo(({ trade, index }: { trade: BacktestingTrade; index: number }) => {
     const isBuy = trade.action === 'BUY';
@@ -102,89 +210,125 @@ const TradeItem = React.memo(({ trade, index }: { trade: BacktestingTrade; index
     );
 });
 
+// --- 메인 화면 컴포넌트 ---
+
 export default function BacktestingResultScreen() {
-    const { stockName, ...formParams } = useLocalSearchParams();
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<BacktestingResponse | null>(null);
+    const {
+        stockName, loading, error, result,
+        profitLoss, totalReturnPct, stats,
+        priceCandles, tradeMarkers,
+    } = useBacktesting();
 
-    useEffect(() => {
-        const performBacktesting = async () => {
-            setLoading(true);
-            try {
-                const backtestingParams: AddStockAutoRequest = {
-                    ST_CODE: formParams.ST_CODE as string,
-                    MRKT_CODE: (formParams.MRKT_CODE as string) || '',
-                    ACCOUNT_NO: formParams.ACCOUNT_NO as string,
-                    INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
-                    SWING_TYPE: formParams.SWING_TYPE as string,
-                    BUY_RATIO: Number(formParams.BUY_RATIO),
-                    SELL_RATIO: Number(formParams.SELL_RATIO),
-                };
+    const renderTradeItem = useCallback(({ item, index }: { item: BacktestingTrade; index: number }) => (
+        <TradeItem trade={item} index={index} />
+    ), []);
 
-                const response = await backtesting(backtestingParams);
-                if (response) {
-                    setResult(response);
-                }
-            } catch (error) {
-                console.error('백트레이딩 실패:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const keyExtractor = useCallback((_: BacktestingTrade, index: number) => `trade-${index}`, []);
 
-        performBacktesting();
-    }, []);
+    const ListHeader = useMemo(() => {
+        if (!result) return null;
+        return (
+            <>
+                {/* 전략 정보 카드 */}
+                <View style={styles.strategyCard}>
+                    <View style={styles.strategyHeader}>
+                        <View style={styles.stockBadge}>
+                            <Text style={styles.stockBadgeText}>{result.parameters.ST_CODE}</Text>
+                        </View>
+                        <Text style={styles.stockNameText}>{stockName}</Text>
+                    </View>
+                    <Text style={styles.strategyName}>{result.strategy_name}</Text>
+                    <Text style={styles.strategyPeriod}>
+                        {formatDate(result.start_date)} ~ {formatDate(result.end_date)}
+                    </Text>
+                </View>
 
-    const profitLoss = result ? result.final_capital - result.initial_capital : 0;
-    const totalReturnPct = result?.total_return ?? 0;
-    const buyCount = result?.trades.filter(t => t.action === 'BUY').length ?? 0;
-    const sellCount = result?.trades.filter(t => t.action === 'SELL').length ?? 0;
+                {/* 총 수익률 하이라이트 카드 */}
+                <View style={styles.returnHighlightCard}>
+                    <Text style={styles.returnHighlightLabel}>총 수익률</Text>
+                    <Text style={[styles.returnHighlightValue, { color: getProfitLossColor(totalReturnPct) }]}>
+                        {formatProfitRate(totalReturnPct)}
+                    </Text>
+                    <View style={styles.returnDivider} />
+                    <View style={styles.returnRow}>
+                        <View style={styles.returnCol}>
+                            <Text style={styles.returnLabel}>초기 자본금</Text>
+                            <Text style={styles.returnValue}>
+                                {formatCurrency(result.initial_capital)}원
+                            </Text>
+                        </View>
+                        <View style={styles.returnColDivider} />
+                        <View style={styles.returnCol}>
+                            <Text style={styles.returnLabel}>최종 자본금</Text>
+                            <Text style={[styles.returnValue, { color: getProfitLossColor(profitLoss) }]}>
+                                {formatCurrency(Math.round(result.final_capital))}원
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={styles.profitLossRow}>
+                        <Text style={styles.returnLabel}>손익</Text>
+                        <Text style={[styles.profitLossValue, { color: getProfitLossColor(profitLoss) }]}>
+                            {profitLoss >= 0 ? '+' : ''}{formatCurrency(Math.round(profitLoss))}원
+                        </Text>
+                    </View>
+                </View>
 
-    // 승률 계산 (실현손익 > 0인 매도 비율)
-    const sellTrades = result?.trades.filter(t => t.action === 'SELL') ?? [];
-    const winTrades = sellTrades.filter(t => (t.realized_pnl ?? 0) > 0);
-    const winRate = sellTrades.length > 0 ? ((winTrades.length / sellTrades.length) * 100) : 0;
+                {/* 주가 캔들 차트 + 매수/매도 마커 */}
+                {priceCandles.length > 0 && (
+                    <View style={styles.chartSection}>
+                        <Text style={styles.sectionTitle}>주가 차트</Text>
+                        <View style={styles.chartLegend}>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: Colors.profit }]} />
+                                <Text style={styles.legendText}>매수</Text>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
+                                <Text style={styles.legendText}>매도</Text>
+                            </View>
+                        </View>
+                        <View style={styles.chartContainer}>
+                            <StockChart
+                                data={priceCandles}
+                                markers={tradeMarkers}
+                                chartType="candlestick"
+                            />
+                        </View>
+                    </View>
+                )}
 
-    // 'YYYYMMDD' -> 'YYYY-MM-DD' 변환
-    const toDateStr = (s: string): string => {
-        if (s.includes('-')) return s;
-        return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
-    };
+                {/* 거래 통계 카드 */}
+                <View style={styles.statsCard}>
+                    <Text style={styles.sectionTitle}>거래 통계</Text>
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{result.total_trades}</Text>
+                            <Text style={styles.statLabel}>총 거래</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statValue, { color: Colors.profit }]}>{stats.buyCount}</Text>
+                            <Text style={styles.statLabel}>매수</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statValue, { color: Colors.loss }]}>{stats.sellCount}</Text>
+                            <Text style={styles.statLabel}>매도</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statValue, { color: stats.winRate >= 50 ? Colors.profit : Colors.loss }]}>
+                                {stats.winRate.toFixed(0)}%
+                            </Text>
+                            <Text style={styles.statLabel}>승률</Text>
+                        </View>
+                    </View>
+                </View>
 
-    // price_history -> 캔들 데이터 변환
-    const priceCandles: CandleData[] = useMemo(() => {
-        if (!result?.price_history) return [];
-        return result.price_history.map(p => ({
-            time: toDateStr(p.STCK_BSOP_DATE),
-            open: Number(p.STCK_OPRC),
-            high: Number(p.STCK_HGPR),
-            low: Number(p.STCK_LWPR),
-            close: Number(p.STCK_CLPR),
-        }));
-    }, [result]);
-
-    // trades -> 매수/매도 마커 변환
-    const tradeMarkers: ChartMarker[] = useMemo(() => {
-        if (!result?.trades) return [];
-        const markers: ChartMarker[] = [];
-        for (const trade of result.trades) {
-            const d = new Date(trade.date);
-            if (isNaN(d.getTime())) continue;
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const isBuy = trade.action === 'BUY';
-            markers.push({
-                time: `${y}-${m}-${day}`,
-                position: isBuy ? 'belowBar' : 'aboveBar',
-                color: isBuy ? '#FF6B6B' : '#3498DB',
-                shape: isBuy ? 'arrowUp' : 'arrowDown',
-                text: isBuy ? `매수 ${trade.quantity}주` : `매도 ${trade.quantity}주`,
-                price: trade.price,
-            });
-        }
-        return markers;
-    }, [result]);
+                {/* 매매 내역 타이틀 */}
+                <View style={styles.tradesSection}>
+                    <Text style={styles.sectionTitle}>매매 내역</Text>
+                </View>
+            </>
+        );
+    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, stats]);
 
     return (
         <View style={styles.container}>
@@ -198,114 +342,21 @@ export default function BacktestingResultScreen() {
             </View>
 
             {result ? (
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    {/* 전략 정보 카드 */}
-                    <View style={styles.strategyCard}>
-                        <View style={styles.strategyHeader}>
-                            <View style={styles.stockBadge}>
-                                <Text style={styles.stockBadgeText}>{result.parameters.ST_CODE}</Text>
-                            </View>
-                            <Text style={styles.stockNameText}>{stockName}</Text>
-                        </View>
-                        <Text style={styles.strategyName}>{result.strategy_name}</Text>
-                        <Text style={styles.strategyPeriod}>
-                            {formatDate(result.start_date)} ~ {formatDate(result.end_date)}
-                        </Text>
-                    </View>
-
-                    {/* 총 수익률 하이라이트 카드 */}
-                    <View style={styles.returnHighlightCard}>
-                        <Text style={styles.returnHighlightLabel}>총 수익률</Text>
-                        <Text style={[styles.returnHighlightValue, { color: getProfitLossColor(totalReturnPct) }]}>
-                            {formatProfitRate(totalReturnPct)}
-                        </Text>
-                        <View style={styles.returnDivider} />
-                        <View style={styles.returnRow}>
-                            <View style={styles.returnCol}>
-                                <Text style={styles.returnLabel}>초기 자본금</Text>
-                                <Text style={styles.returnValue}>
-                                    {formatCurrency(result.initial_capital)}원
-                                </Text>
-                            </View>
-                            <View style={styles.returnColDivider} />
-                            <View style={styles.returnCol}>
-                                <Text style={styles.returnLabel}>최종 자본금</Text>
-                                <Text style={[styles.returnValue, { color: getProfitLossColor(profitLoss) }]}>
-                                    {formatCurrency(Math.round(result.final_capital))}원
-                                </Text>
-                            </View>
-                        </View>
-                        <View style={styles.profitLossRow}>
-                            <Text style={styles.returnLabel}>손익</Text>
-                            <Text style={[styles.profitLossValue, { color: getProfitLossColor(profitLoss) }]}>
-                                {profitLoss >= 0 ? '+' : ''}{formatCurrency(Math.round(profitLoss))}원
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* 주가 캔들 차트 + 매수/매도 마커 */}
-                    {priceCandles.length > 0 && (
-                        <View style={styles.chartSection}>
-                            <Text style={styles.sectionTitle}>주가 차트</Text>
-                            <View style={styles.chartLegend}>
-                                <View style={styles.legendItem}>
-                                    <View style={[styles.legendDot, { backgroundColor: Colors.profit }]} />
-                                    <Text style={styles.legendText}>매수</Text>
-                                </View>
-                                <View style={styles.legendItem}>
-                                    <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
-                                    <Text style={styles.legendText}>매도</Text>
-                                </View>
-                            </View>
-                            <View style={styles.chartContainer}>
-                                <StockChart
-                                    data={priceCandles}
-                                    markers={tradeMarkers}
-                                    chartType="candlestick"
-                                />
-                            </View>
-                        </View>
-                    )}
-
-                    {/* 거래 통계 카드 */}
-                    <View style={styles.statsCard}>
-                        <Text style={styles.sectionTitle}>거래 통계</Text>
-                        <View style={styles.statsGrid}>
-                            <View style={styles.statItem}>
-                                <Text style={styles.statValue}>{result.total_trades}</Text>
-                                <Text style={styles.statLabel}>총 거래</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Text style={[styles.statValue, { color: Colors.profit }]}>{buyCount}</Text>
-                                <Text style={styles.statLabel}>매수</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Text style={[styles.statValue, { color: Colors.loss }]}>{sellCount}</Text>
-                                <Text style={styles.statLabel}>매도</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Text style={[styles.statValue, { color: winRate >= 50 ? Colors.profit : Colors.loss }]}>
-                                    {winRate.toFixed(0)}%
-                                </Text>
-                                <Text style={styles.statLabel}>승률</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* 매매 내역 */}
-                    <View style={styles.tradesSection}>
-                        <Text style={styles.sectionTitle}>매매 내역</Text>
-                        {result.trades.map((trade, index) => (
-                            <TradeItem key={`trade-${index}`} trade={trade} index={index} />
-                        ))}
-                    </View>
-
-                    <View style={{ height: 40 }} />
-                </ScrollView>
+                <FlatList
+                    data={result.trades}
+                    renderItem={renderTradeItem}
+                    keyExtractor={keyExtractor}
+                    ListHeaderComponent={ListHeader}
+                    ListFooterComponent={<View style={styles.listFooter} />}
+                    contentContainerStyle={styles.content}
+                    showsVerticalScrollIndicator={false}
+                />
             ) : (
                 !loading && (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>결과를 불러오는 중...</Text>
+                        <Text style={styles.emptyText}>
+                            {error ? '백테스팅 결과를 불러오지 못했습니다.' : '결과를 불러오는 중...'}
+                        </Text>
                     </View>
                 )
             )}
@@ -338,8 +389,10 @@ const styles = StyleSheet.create({
         width: 40,
     },
     content: {
-        flex: 1,
         padding: Spacing.xl,
+    },
+    listFooter: {
+        height: 40,
     },
 
     // 전략 정보 카드
@@ -525,7 +578,7 @@ const styles = StyleSheet.create({
 
     // 매매 내역 섹션
     tradesSection: {
-        marginBottom: Spacing.xl,
+        marginBottom: Spacing.xs,
     },
 
     // 개별 거래 카드
