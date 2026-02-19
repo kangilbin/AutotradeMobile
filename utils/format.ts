@@ -62,6 +62,6 @@ export const getSwingTypeText = (type: string): string => {
  * @param isActive 활성화 여부
  * @returns 색상 코드
  */
-export const getActiveBadgeColor = (isActive: boolean): string => {
-    return isActive ? Colors.active : Colors.inactive;
+export const getActiveBadgeColor = (isActive: string): string => {
+    return isActive === 'Y' ? Colors.active : Colors.inactive;
 };

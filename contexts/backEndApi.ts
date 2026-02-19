@@ -8,7 +8,6 @@ import { getDeviceId, getDeviceName } from '../utils/device';
 import { AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginResponse} from "../types/auth";
 import {
-    StockResponse,
     StockPriceResponse,
     AddStockAutoRequest,
     StockAutoStatus,
@@ -380,16 +379,6 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
     }
 };
 
-// 주식 오토 설정 목록 조회
-export const getStockAutoList = async (): Promise<StockAutoStatus[] | undefined> => {
-    try {
-        const response = await api.get('/stocks/auto');
-        return response.data;
-    } catch (error: unknown) {
-        return handleApiError(error, '주식 오토 설정 목록 조회');
-    }
-};
-
 // 스윙 목록 조회
 export const getSwingList = async (account_no: string): Promise<SwingItem[] | undefined> => {
     try {
@@ -400,32 +389,17 @@ export const getSwingList = async (account_no: string): Promise<SwingItem[] | un
     }
 };
 
-// 스윙 상태 변경
-export const updateSwingStatus = async (swingId: number, isActive: boolean): Promise<boolean> => {
-    try {
-        const response = await api.put(`/swing/${swingId}/status`, {
-            is_active: isActive
-        });
-        return response.data.success || false;
-    } catch (error: unknown) {
-        handleApiError(error, '스윙 상태 변경');
-        return false;
-    }
-};
-
 // 스윙 설정 업데이트
 export const updateSwingSettings = async (swingId: number, settings: {
     SWING_TYPE: string;
     BUY_RATIO: number;
     SELL_RATIO: number;
     INIT_AMOUNT: number;
-    // SHORT_MA: number;
-    // MID_MA: number;
-    // LONG_MA: number;
+    USE_YN: string;
 }): Promise<boolean> => {
     try {
         const response = await api.put(`/swing/${swingId}/settings`, settings);
-        return response.data.success || false;
+        return response.data || false;
     } catch (error: unknown) {
         handleApiError(error, '스윙 설정 업데이트');
         return false;

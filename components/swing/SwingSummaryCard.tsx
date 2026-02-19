@@ -8,6 +8,8 @@ interface SwingSummaryCardProps {
     summary: SwingSummary | null;
 }
 
+const PLACEHOLDER = '-';
+
 /**
  * 스윙 요약 카드 컴포넌트 (Presentational)
  */
@@ -18,7 +20,7 @@ function SwingSummaryCard({ summary }: SwingSummaryCardProps) {
             <View style={styles.mainSection}>
                 <Text style={styles.mainLabel}>내 투자</Text>
                 <Text style={styles.mainValue}>
-                    {summary ? formatNumber(summary.TOTAL_INVESTMENT_AMOUNT) : '0'}원
+                    {summary ? `${formatNumber(summary.TOTAL_INVESTMENT_AMOUNT)}원` : PLACEHOLDER}
                 </Text>
             </View>
 
@@ -26,24 +28,26 @@ function SwingSummaryCard({ summary }: SwingSummaryCardProps) {
             <View style={styles.subInfoContainer}>
                 <SummaryItem
                     label="원금"
-                    value={`${summary ? formatNumber(summary.TOTAL_PRINCIPAL) : '0'}원`}
+                    value={summary ? `${formatNumber(summary.TOTAL_PRINCIPAL)}원` : PLACEHOLDER}
                 />
 
                 <View style={styles.subInfoItem}>
                     <Text style={styles.subInfoLabel}>총 수익</Text>
                     <View style={styles.profitInfo}>
-                        <Text style={[styles.subInfoValue, { color: summary ? getProfitLossColor(summary.TOTAL_PROFIT) : Colors.textSecondary }]}>
-                            {summary ? formatNumber(summary.TOTAL_PROFIT) : '0'}원
+                        <Text style={[styles.subInfoValue, summary && { color: getProfitLossColor(summary.TOTAL_PROFIT) }]}>
+                            {summary ? `${formatNumber(summary.TOTAL_PROFIT)}원` : PLACEHOLDER}
                         </Text>
-                        <Text style={[styles.profitRate, { color: summary ? getProfitLossColor(summary.TOTAL_PROFIT_RATE) : Colors.textSecondary }]}>
-                            {summary ? formatProfitRate(summary.TOTAL_PROFIT_RATE) : '0%'}
-                        </Text>
+                        {summary && (
+                            <Text style={[styles.profitRate, { color: getProfitLossColor(summary.TOTAL_PROFIT_RATE) }]}>
+                                {formatProfitRate(summary.TOTAL_PROFIT_RATE)}
+                            </Text>
+                        )}
                     </View>
                 </View>
 
                 <SummaryItem
                     label="현금 자산"
-                    value={`${summary ? formatNumber(summary.CASH_ASSET) : '0'}원`}
+                    value={summary ? `${formatNumber(summary.CASH_ASSET)}원` : PLACEHOLDER}
                 />
             </View>
         </View>
@@ -68,10 +72,11 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: Colors.cardBackground,
         padding: Spacing.xxl,
+        marginHorizontal: Spacing.lg,
+        marginTop: Spacing.lg,
         marginBottom: Spacing.sm,
-        ...Shadows.large,
-        borderBottomLeftRadius: BorderRadius.lg,
-        borderBottomRightRadius: BorderRadius.lg,
+        borderRadius: BorderRadius.lg,
+        ...Shadows.medium,
     },
     mainSection: {
         alignItems: 'center',
