@@ -10,11 +10,10 @@ import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshReques
 import {
     StockPriceResponse,
     AddStockAutoRequest,
-    StockAutoStatus,
     BacktestingResponse,
     StockStatus
 } from "../types/stock";
-import { SwingItem, SwingSummary } from '../types/swing';
+import { SwingItem } from '../types/swing';
 
 // API 로딩 상태
 let apiLoading = false;
@@ -58,19 +57,16 @@ const refreshGoogleAccessToken = async (): Promise<string | null> => {
             return null;
         }
 
-        const response = await fetch('https://oauth2.googleapis.com/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
+        const { data } = await axios.post('https://oauth2.googleapis.com/token',
+            new URLSearchParams({
                 client_id: GOOGLE_WEB_CLIENT_ID,
                 refresh_token: googleRefreshToken,
                 grant_type: 'refresh_token',
             }).toString(),
-        });
-
-        const data = await response.json();
+            {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            },
+        );
 
         if (data.access_token) {
             console.log('Google access_token 갱신 성공');
@@ -134,11 +130,6 @@ api.interceptors.response.use(
     (response: AxiosResponse) => {
         setApiLoading(false);
 
-        // 백엔드 응답이 { data: 실제데이터 } 구조인 경우 자동 unwrap
-        if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-            response.data = response.data.data;
-        }
-
         return response;
     },
     async (error: AxiosError) => {
@@ -199,7 +190,6 @@ api.interceptors.response.use(
         const errorData = error.response?.data as ApiErrorResponse | undefined;
         if (errorData?.error_code === 'token_expired' && !originalRequest._googleRetry) {
             originalRequest._googleRetry = true;
-
             console.log('Google 토큰 만료 감지, 갱신 시도...');
 
             try {
@@ -217,7 +207,6 @@ api.interceptors.response.use(
                 console.log('Google 토큰 갱신 완료, 재요청...');
                 return api(originalRequest); // 원래 요청 재시도
             } catch (err) {
-                console.error('Google 토큰 갱신 처리 실패:', err);
                 Alert.alert('Google 인증 만료', '다시 로그인해주세요.');
                 router.replace('/(auth)/login');
                 return Promise.reject(err);
@@ -262,7 +251,7 @@ export const googleLogin = async (param: GoogleLoginRequest): Promise<LoginRespo
             Alert.alert('알림', response.data.message);
             return undefined;
         }
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, 'Google 로그인');
     }
@@ -282,7 +271,7 @@ export const updateGoogleToken = async (param: GoogleTokenRefreshRequest): Promi
 export const refreshAccessToken = async (refresh_token: string): Promise<LoginResponse | undefined> => {
     try {
         const response = await api.post('/users/refresh', { refresh_token });
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         console.error('토큰 갱신 실패:', error);
         return undefined;
@@ -299,7 +288,7 @@ export type AddAccountRequest = {
 export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus | undefined> => {
     try {
         const response = await api.post('/accounts', param);
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '계좌 추가');
     }
@@ -310,7 +299,7 @@ export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus
 export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undefined> => {
     try {
         const response = await api.post('/auths', param);
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '권한 추가');
     }
@@ -320,7 +309,7 @@ export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undef
 export const getAuthList = async (): Promise<AuthStatus[] | undefined> => {
     try {
         const response = await api.get('/auths');
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '권한 목록');
     }
@@ -330,7 +319,7 @@ export const getAuthList = async (): Promise<AuthStatus[] | undefined> => {
 export const chooseAuth = async (param: ChooseAccountRequest): Promise<AuthStatus | undefined> => {
     try {
         const response = await api.post('/auths/choice', param);
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '권한 선택');
     }
@@ -340,7 +329,7 @@ export const chooseAuth = async (param: ChooseAccountRequest): Promise<AuthStatu
 export const getAccountList = async (): Promise<AccountStatus[] | undefined> => {
     try {
         const response = await api.get('/accounts');
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '계좌 목록');
     }
@@ -351,7 +340,7 @@ export const getAccountList = async (): Promise<AccountStatus[] | undefined> => 
 export const searchStock = async (query: string): Promise<StockStatus[] | undefined> => {
     try {
         const response = await api.get('/stocks', { params: { query } });
-        return response.data;
+        return response.data.dat;
     } catch (error: unknown) {
         return handleApiError(error, '주식 검색');
     }
@@ -362,7 +351,7 @@ export const searchStock = async (query: string): Promise<StockStatus[] | undefi
 export const getStockPrice = async (st_code: string): Promise<StockPriceResponse | undefined> => {
     try {
         const response = await api.get('/stocks/price', { params: { st_code } });
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 시세 조회');
     }
@@ -373,7 +362,7 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
     try {
         const response = await api.post('/swing', param);
         Alert.alert('완료', '스윙 설정이 추가되었습니다.');
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '스윙 등록');
     }
@@ -383,7 +372,7 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
 export const getSwingList = async (account_no: string): Promise<SwingItem[] | undefined> => {
     try {
         const response = await api.get('/swing/list', { params: { account_no }});
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '스윙 목록 조회');
     }
@@ -399,7 +388,7 @@ export const updateSwingSettings = async (swingId: number, settings: {
 }): Promise<boolean> => {
     try {
         const response = await api.put(`/swing/${swingId}/settings`, settings);
-        return response.data || false;
+        return response.data.data || false;
     } catch (error: unknown) {
         handleApiError(error, '스윙 설정 업데이트');
         return false;
