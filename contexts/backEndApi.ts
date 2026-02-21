@@ -335,6 +335,17 @@ export const getAccountList = async (): Promise<AccountStatus[] | undefined> => 
     }
 }
 
+// 계좌 삭제
+export const deleteAccount = async (accountId: number): Promise<boolean> => {
+    try {
+        await api.delete(`/accounts/${accountId}`);
+        return true;
+    } catch (error: unknown) {
+        handleApiError(error, '계좌 삭제');
+        return false;
+    }
+}
+
 
 // 주식 검색
 export const searchStock = async (query: string): Promise<StockStatus[] | undefined> => {
