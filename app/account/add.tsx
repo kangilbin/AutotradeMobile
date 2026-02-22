@@ -56,7 +56,7 @@ export default function AddAccountScreen() {
 
         await addAccount(form);
         Alert.alert('완료', '계좌가 추가되었습니다.');
-        router.replace('account');
+        router.back();
     };
 
     const handleAddAuth = async () => {
