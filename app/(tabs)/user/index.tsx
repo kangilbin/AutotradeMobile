@@ -143,8 +143,11 @@ export default function UserScreen() {
                                 styles.modeBadge,
                                 account?.SIMULATION_YN === 'Y' ? styles.simulationMode : styles.realMode
                             ]}>
-                                <Text style={styles.modeText}>
-                                    {account?.SIMULATION_YN === 'Y' ? '모의 투자' : '실전 투자'}
+                                <Text style={[
+                                    styles.modeText,
+                                    account?.SIMULATION_YN === 'Y' ? styles.simulationText : styles.realText
+                                ]}>
+                                    {account?.SIMULATION_YN === 'Y' ? '모의투자' : '실전투자'}
                                 </Text>
                             </View>
                         </View>
@@ -299,7 +302,12 @@ const styles = StyleSheet.create({
     modeText: {
         fontSize: 12,
         fontWeight: "600",
+    },
+    simulationText: {
         color: "#856404",
+    },
+    realText: {
+        color: "#0C5460",
     },
     menuItem: {
         flexDirection: "row",
