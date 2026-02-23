@@ -14,6 +14,7 @@ import {
     StockStatus
 } from "../types/stock";
 import { SwingItem } from '../types/swing';
+import { UpdateUserProfileRequest, NotificationSettings, UpdateNotificationRequest } from '../types/user';
 
 // API 로딩 상태
 let apiLoading = false;
@@ -424,5 +425,37 @@ export const backtesting = async (param: AddStockAutoRequest): Promise<Backtesti
         return response.data;
     } catch (error: unknown) {
         return handleApiError(error, '백 트레이딩');
+    }
+};
+
+// 프로필 수정
+export const updateUserProfile = async (param: UpdateUserProfileRequest): Promise<boolean> => {
+    try {
+        await api.put('/users/profile', param);
+        return true;
+    } catch (error: unknown) {
+        handleApiError(error, '프로필 수정');
+        return false;
+    }
+};
+
+// 알림 설정 조회
+export const getNotificationSettings = async (): Promise<NotificationSettings | undefined> => {
+    try {
+        const response = await api.get('/users/notification-settings');
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '알림 설정 조회');
+    }
+};
+
+// 알림 설정 변경
+export const updateNotificationSettings = async (param: UpdateNotificationRequest): Promise<boolean> => {
+    try {
+        await api.put('/users/notification-settings', param);
+        return true;
+    } catch (error: unknown) {
+        handleApiError(error, '알림 설정 변경');
+        return false;
     }
 };
