@@ -21,16 +21,30 @@ export interface ChartMarker {
     price?: number;     // 정확한 거래 가격
 }
 
+export interface LineOverlayData {
+    time: string; // 'YYYY-MM-DD'
+    value: number;
+}
+
+export interface LineOverlay {
+    data: LineOverlayData[];
+    color: string;
+    lineWidth?: number;
+    title?: string;
+}
+
 export interface StockChartProps {
     data: CandleData[];
     markers?: ChartMarker[];
     chartType?: 'line' | 'candlestick';
+    lineOverlays?: LineOverlay[];
 }
 
-export default function StockChart({ data, markers, chartType = 'line' }: StockChartProps) {
+export default function StockChart({ data, markers, chartType = 'line', lineOverlays }: StockChartProps) {
     const chartHTML = useMemo(() => {
         const dataJSON = JSON.stringify(data);
         const markersJSON = JSON.stringify(markers || []);
+        const overlaysJSON = JSON.stringify(lineOverlays || []);
 
         return `<!doctype html>
 <html>
@@ -86,6 +100,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
     var CHART_TYPE='${chartType}';
     var RAW_DATA=${dataJSON};
     var RAW_MARKERS=${markersJSON};
+    var RAW_OVERLAYS=${overlaysJSON};
   }catch(e){showErr('DATA PARSE ERROR: '+e.message);return;}
 
   function toBD(s){
@@ -152,6 +167,26 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
       }else{
         series=chart.addLineSeries({color:'#4ECDC4',lineWidth:2});
         series.setData(toLine(RAW_DATA));
+      }
+
+      // 라인 오버레이 (EMA 등)
+      for(var oi=0;oi<RAW_OVERLAYS.length;oi++){
+        var ov=RAW_OVERLAYS[oi];
+        var ovSeries=chart.addLineSeries({
+          color:ov.color||'#FF9800',
+          lineWidth:ov.lineWidth||2,
+          crosshairMarkerVisible:false,
+          priceLineVisible:false,
+          lastValueVisible:false
+        });
+        var ovData=[];
+        for(var li=0;li<ov.data.length;li++){
+          var ld=ov.data[li];
+          var ovBd=toBD(ld.time);
+          var ovVal=Number(ld.value);
+          if(ovBd&&!isNaN(ovVal))ovData.push({time:ovBd,value:ovVal});
+        }
+        ovSeries.setData(ovData);
       }
 
       // 매수/매도를 정확한 거래 가격에 원으로 표시
@@ -260,7 +295,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 </script>
 </body>
 </html>`;
-    }, [data, markers, chartType]);
+    }, [data, markers, chartType, lineOverlays]);
 
     return (
         <View style={styles.container}>

@@ -4,6 +4,7 @@ import { useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { jwtDecode } from 'jwt-decode';
 import { googleLogin } from '../contexts/backEndApi';
 
 // 웹 브라우저 세션 완료 처리
@@ -63,6 +64,13 @@ export const useGoogleAuth = () => {
                     // Google refresh_token 저장 (나중에 Google API 사용 시 필요)
                     if (authentication.refreshToken) {
                         await SecureStore.setItemAsync('google_refresh_token', authentication.refreshToken);
+                    }
+                    // Google idToken에서 프로필 이미지 URL 추출 후 저장
+                    if (authentication.idToken) {
+                        const decoded = jwtDecode<{ picture?: string }>(authentication.idToken);
+                        if (decoded.picture) {
+                            await SecureStore.setItemAsync('google_picture', decoded.picture);
+                        }
                     }
                     // 홈 화면으로 이동
                     router.replace('home');

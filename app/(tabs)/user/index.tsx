@@ -7,6 +7,7 @@ import {
     ScrollView,
     Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -19,6 +20,7 @@ export default function UserScreen() {
     const account = useAccountStore((state) => state.account);
     const [userName, setUserName] = useState<string>('');
     const [userPhone, setUserPhone] = useState<string>('');
+    const [profileImage, setProfileImage] = useState<string | null>(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -29,6 +31,8 @@ export default function UserScreen() {
                     setUserName(decodedToken.user_claims?.USER_NAME || '');
                     setUserPhone(decodedToken.user_claims?.PHONE || '');
                 }
+                const picture = await SecureStore.getItemAsync('google_picture');
+                setProfileImage(picture);
             };
             fetchUserInfo();
         }, [])
@@ -49,6 +53,8 @@ export default function UserScreen() {
                     onPress: async () => {
                         await SecureStore.deleteItemAsync('access_token');
                         await SecureStore.deleteItemAsync('refresh_token');
+                        await SecureStore.deleteItemAsync('google_refresh_token');
+                        await SecureStore.deleteItemAsync('google_picture');
                         router.replace('/(auth)/login');
                     }
                 }
@@ -107,12 +113,18 @@ export default function UserScreen() {
                 {/* User Profile Section */}
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>
-                        <View style={styles.profileImage}>
-                            <Ionicons name="person" size={40} color="#4ECDC4" />
-                        </View>
-                        <TouchableOpacity style={styles.editImageButton}>
-                            <Ionicons name="camera" size={16} color="#4ECDC4" />
-                        </TouchableOpacity>
+                        {profileImage ? (
+                            <Image
+                                source={{ uri: profileImage }}
+                                style={styles.profileImage}
+                                contentFit="cover"
+                                transition={200}
+                            />
+                        ) : (
+                            <View style={styles.profileImage}>
+                                <Ionicons name="person" size={40} color="#4ECDC4" />
+                            </View>
+                        )}
                     </View>
                     <Text style={styles.userName}>{userName}</Text>
                     <Text style={styles.userPhone}>{userPhone}</Text>
@@ -207,24 +219,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderWidth: 3,
         borderColor: "#4ECDC4",
-    },
-    editImageButton: {
-        position: "absolute",
-        bottom: 0,
-        right: 0,
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: "#fff",
-        justifyContent: "center",
-        alignItems: "center",
-        borderWidth: 2,
-        borderColor: "#4ECDC4",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
     },
     userName: {
         fontSize: 20,
