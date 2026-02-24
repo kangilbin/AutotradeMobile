@@ -431,7 +431,7 @@ export const backtesting = async (param: AddStockAutoRequest): Promise<Backtesti
 // 프로필 수정
 export const updateUserProfile = async (param: UpdateUserProfileRequest): Promise<boolean> => {
     try {
-        await api.put('/users/profile', param);
+        await api.patch('/users/profile', param);
         return true;
     } catch (error: unknown) {
         handleApiError(error, '프로필 수정');
