@@ -22,7 +22,7 @@ const SWING_TYPE_LABELS: Record<SwingTypeValue, string> = {
 
 interface SettingsTabProps {
     swingData: SwingItem | null;
-    onStatusChange: () => void;
+    onStatusChange: (updatedData: Partial<SwingItem>) => void;
 }
 
 interface FormState {
@@ -139,7 +139,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
             await updateSwingSettings(swingData.SWING_ID, updateData);
             Alert.alert('성공', '설정이 저장되었습니다.');
             setIsEditMode(false);
-            onStatusChange();
+            onStatusChange(updateData);
         } catch (error) {
             Alert.alert('오류', '설정 저장에 실패했습니다.');
         }

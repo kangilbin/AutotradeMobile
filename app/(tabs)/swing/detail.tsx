@@ -46,8 +46,8 @@ export default function SwingDetailScreen() {
         setActiveTab(tabId);
     };
 
-    const handleStatusChange = () => {
-        // 상태 변경 시 필요한 로직이 있다면 여기에 추가
+    const handleStatusChange = (updatedData: Partial<SwingItem>) => {
+        setSwingData(prev => prev ? { ...prev, ...updatedData } : null);
     };
 
     const handleSwingActivation = async () => {
