@@ -5,23 +5,25 @@ import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState, useCallback } from 'react';
 import { JwtPayload } from '../types/auth';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Colors, FontSizes, Spacing, BorderRadius } from '../constants/theme';
 
 export default function TopHeader() {
     const account = useAccountStore((state) => state.account);
     const [userName, setUserName] = useState<string>('');
 
-    useEffect(() => {
-        const fetchAccessToken = async () => {
-            const accessToken = await SecureStore.getItemAsync('access_token');
-            if (accessToken) {
-                const decodedToken = jwtDecode<JwtPayload>(accessToken);
-                setUserName(decodedToken.user_claims?.USER_NAME || '');
-            }
-        };
-        fetchAccessToken();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchAccessToken = async () => {
+                const accessToken = await SecureStore.getItemAsync('access_token');
+                if (accessToken) {
+                    const decodedToken = jwtDecode<JwtPayload>(accessToken);
+                    setUserName(decodedToken.user_claims?.USER_NAME || '');
+                }
+            };
+            fetchAccessToken();
+        }, [])
+    );
 
     useEffect(() => {
         if (!account) {

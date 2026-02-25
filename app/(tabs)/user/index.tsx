@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
     View,
     Text,
@@ -8,7 +8,7 @@ import {
     Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,17 +20,19 @@ export default function UserScreen() {
     const [userName, setUserName] = useState<string>('');
     const [userPhone, setUserPhone] = useState<string>('');
 
-    useEffect(() => {
-        const fetchUserInfo = async () => {
-            const accessToken = await SecureStore.getItemAsync('access_token');
-            if (accessToken) {
-                const decodedToken = jwtDecode<JwtPayload>(accessToken);
-                setUserName(decodedToken.user_claims?.USER_NAME || '');
-                setUserPhone(decodedToken.user_claims?.PHONE || '');
-            }
-        };
-        fetchUserInfo();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            const fetchUserInfo = async () => {
+                const accessToken = await SecureStore.getItemAsync('access_token');
+                if (accessToken) {
+                    const decodedToken = jwtDecode<JwtPayload>(accessToken);
+                    setUserName(decodedToken.user_claims?.USER_NAME || '');
+                    setUserPhone(decodedToken.user_claims?.PHONE || '');
+                }
+            };
+            fetchUserInfo();
+        }, [])
+    );
 
     const handleLogout = () => {
         Alert.alert(

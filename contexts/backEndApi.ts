@@ -429,13 +429,15 @@ export const backtesting = async (param: AddStockAutoRequest): Promise<Backtesti
 };
 
 // 프로필 수정
-export const updateUserProfile = async (param: UpdateUserProfileRequest): Promise<boolean> => {
+export const updateUserProfile = async (param: UpdateUserProfileRequest): Promise<string | undefined> => {
     try {
-        await api.patch('/users/profile', param);
-        return true;
+        const response = await api.patch('/users/profile', param);
+        if (!response.data.success) {
+            return undefined;
+        }
+        return response.data.data.access_token;
     } catch (error: unknown) {
-        handleApiError(error, '프로필 수정');
-        return false;
+        return handleApiError(error, '프로필 수정');
     }
 };
 

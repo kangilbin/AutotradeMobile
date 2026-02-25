@@ -42,8 +42,9 @@ export default function EditProfileScreen() {
             return Alert.alert('알림', '핸드폰 번호를 입력하세요.');
         }
 
-        const success = await updateUserProfile({ USER_NAME: userName.trim(), PHONE: phone.trim() });
-        if (success) {
+        const newAccessToken = await updateUserProfile({ USER_NAME: userName.trim(), PHONE: phone.trim() });
+        if (newAccessToken) {
+            await SecureStore.setItemAsync('access_token', newAccessToken);
             Alert.alert('완료', '프로필이 수정되었습니다.', [
                 { text: '확인', onPress: () => router.back() },
             ]);
