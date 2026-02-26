@@ -352,7 +352,7 @@ export const deleteAccount = async (accountId: number): Promise<boolean> => {
 export const searchStock = async (query: string): Promise<StockStatus[] | undefined> => {
     try {
         const response = await api.get('/stocks', { params: { query } });
-        return response.data.dat;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 검색');
     }

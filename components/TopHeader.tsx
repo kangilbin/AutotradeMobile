@@ -40,9 +40,17 @@ export default function TopHeader() {
             <View style={styles.container}>
                 <View style={styles.leftSection}>
                     <View style={styles.row}>
-                        <Text style={styles.modeBadge}>
-                            {account?.SIMULATION_YN === 'Y' ? '모의 투자' : '실전 투자'}
-                        </Text>
+                        <View style={[
+                            styles.modeBadge,
+                            account?.SIMULATION_YN === 'Y' ? styles.simulationBadge : styles.realBadge
+                        ]}>
+                            <Text style={[
+                                styles.modeText,
+                                account?.SIMULATION_YN === 'Y' ? styles.simulationText : styles.realText
+                            ]}>
+                                {account?.SIMULATION_YN === 'Y' ? '모의투자' : '실전투자'}
+                            </Text>
+                        </View>
                         <Text style={styles.userName}>{userName}님</Text>
                     </View>
                 </View>
@@ -79,15 +87,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modeBadge: {
-        backgroundColor: Colors.primary,
-        color: Colors.textWhite,
-        fontSize: FontSizes.sm,
         paddingHorizontal: Spacing.sm,
         paddingVertical: Spacing.xs,
         borderRadius: BorderRadius.sm + 2,
         marginRight: Spacing.sm + 2,
-        fontWeight: '600',
         overflow: 'hidden',
+    },
+    simulationBadge: {
+        backgroundColor: '#FFF3CD',
+    },
+    realBadge: {
+        backgroundColor: '#D1ECF1',
+    },
+    modeText: {
+        fontSize: FontSizes.sm,
+        fontWeight: '600',
+    },
+    simulationText: {
+        color: '#856404',
+    },
+    realText: {
+        color: '#0C5460',
     },
     userName: {
         fontSize: FontSizes.xl,
