@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import LoadingIndicator from '../../../components/LoadingIndicator';
-import StockChart, { CandleData, ChartMarker } from '../../../components/StockChart';
+import StockChart, { CandleData, ChartMarker, LineOverlay } from '../../../components/StockChart';
 import { AddStockAutoRequest, BacktestingResponse, BacktestingTrade } from '../../../types/stock';
 import { backtesting } from '../../../contexts/backEndApi';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants';
@@ -73,7 +73,7 @@ const useBacktesting = () => {
     const totalReturnPct = result?.total_return ?? 0;
 
     const stats = useMemo(() => {
-        if (!result) return { buyCount: 0, sellCount: 0, winRate: 0 };
+        if (!result?.trades) return { buyCount: 0, sellCount: 0, winRate: 0 };
         const buyCount = result.trades.filter(t => t.action === 'BUY').length;
         const sellCount = result.trades.filter(t => t.action === 'SELL').length;
         const sellTrades = result.trades.filter(t => t.action === 'SELL');
@@ -115,6 +115,19 @@ const useBacktesting = () => {
         return markers;
     }, [result]);
 
+    const lineOverlays: LineOverlay[] = useMemo(() => {
+        if (!result?.ema20_history?.length) return [];
+        return [{
+            data: result.ema20_history.map(item => ({
+                time: toDateStr(item.STCK_BSOP_DATE),
+                value: Number(item.ema20),
+            })),
+            color: Colors.primary,
+            lineWidth: 2,
+            title: 'EMA 20',
+        }];
+    }, [result]);
+
     return {
         stockName: stockName as string,
         loading,
@@ -125,6 +138,7 @@ const useBacktesting = () => {
         stats,
         priceCandles,
         tradeMarkers,
+        lineOverlays,
     };
 };
 
@@ -216,7 +230,7 @@ export default function BacktestingResultScreen() {
     const {
         stockName, loading, error, result,
         profitLoss, totalReturnPct, stats,
-        priceCandles, tradeMarkers,
+        priceCandles, tradeMarkers, lineOverlays,
     } = useBacktesting();
 
     const renderTradeItem = useCallback(({ item, index }: { item: BacktestingTrade; index: number }) => (
@@ -286,12 +300,19 @@ export default function BacktestingResultScreen() {
                                 <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
                                 <Text style={styles.legendText}>매도</Text>
                             </View>
+                            {lineOverlays.length > 0 && (
+                                <View style={styles.legendItem}>
+                                    <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
+                                    <Text style={styles.legendText}>EMA 20</Text>
+                                </View>
+                            )}
                         </View>
                         <View style={styles.chartContainer}>
                             <StockChart
                                 data={priceCandles}
                                 markers={tradeMarkers}
                                 chartType="candlestick"
+                                lineOverlays={lineOverlays}
                             />
                         </View>
                     </View>
@@ -328,7 +349,7 @@ export default function BacktestingResultScreen() {
                 </View>
             </>
         );
-    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, stats]);
+    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, lineOverlays, stats]);
 
     return (
         <View style={styles.container}>
@@ -343,7 +364,7 @@ export default function BacktestingResultScreen() {
 
             {result ? (
                 <FlatList
-                    data={result.trades}
+                    data={result.trades ?? []}
                     renderItem={renderTradeItem}
                     keyExtractor={keyExtractor}
                     ListHeaderComponent={ListHeader}

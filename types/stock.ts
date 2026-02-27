@@ -169,6 +169,11 @@ export type StockPriceOutput2 = {
     vi_cls_code: string;              // VI적용구분코드
 }
 
+export type EmaHistoryItem = {
+    STCK_BSOP_DATE: string;     // 'YYYYMMDD' or 'YYYY-MM-DD'
+    ema20: number;               // 20일 지수이동평균
+}
+
 // 백트레이딩 응답 타입 (실제 백엔드 응답)
 export type BacktestingResponse = {
     start_date: string;             // 시작일 (예: "2023-02-10 00:00:00")
@@ -183,6 +188,7 @@ export type BacktestingResponse = {
         SWING_TYPE: string;
     };
     price_history: PriceHistoryItem[];
+    ema20_history?: EmaHistoryItem[];
     trades: BacktestingTrade[];
 }
 

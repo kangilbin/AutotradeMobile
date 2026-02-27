@@ -130,11 +130,11 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
             };
 
             // 이동평균선 타입일 때만 MA 값 포함
-            if (form.SWING_TYPE === SWING_TYPES.MULTI_MA) {
-                updateData.SHORT_MA = form.SHORT_MA;
-                updateData.MID_MA = form.MID_MA;
-                updateData.LONG_MA = form.LONG_MA;
-            }
+            // if (form.SWING_TYPE === SWING_TYPES.MULTI_MA) {
+            //     updateData.SHORT_MA = form.SHORT_MA;
+            //     updateData.MID_MA = form.MID_MA;
+            //     updateData.LONG_MA = form.LONG_MA;
+            // }
 
             await updateSwingSettings(swingData.SWING_ID, updateData);
             Alert.alert('성공', '설정이 저장되었습니다.');
@@ -250,34 +250,31 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>스윙 전략</Text>
 
-                    {/* 스윙 유형 */}
-                    <View style={styles.settingRow}>
+                    <View style={[styles.settingRow, styles.settingRowLast]}>
                         <Text style={styles.label}>유형</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
-                                {Object.entries(SWING_TYPES).map(([key, value]) => (
-                                    <TouchableOpacity
-                                        key={key}
-                                        style={[
-                                            styles.radioOption,
-                                            form.SWING_TYPE === value && styles.radioOptionSelected
-                                        ]}
-                                        onPress={() => handleSwingTypeChange(value)}
-                                    >
-                                        <View style={[
-                                            styles.radioCircle,
-                                            form.SWING_TYPE === value && styles.radioCircleSelected
-                                        ]}>
-                                            {form.SWING_TYPE === value && <View style={styles.radioInner} />}
-                                        </View>
-                                        <Text style={[
-                                            styles.radioLabel,
-                                            form.SWING_TYPE === value && styles.radioLabelSelected
-                                        ]}>
-                                            {SWING_TYPE_LABELS[value]}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {/* TODO: 이동평균선(MULTI_MA), 일목균형표(ICHIMOKU) 개발 후 활성화 */}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => handleSwingTypeChange(SWING_TYPES.SINGLE_MA)}
+                                >
+                                    <View style={[
+                                        styles.radioCircle,
+                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioCircleSelected
+                                    ]}>
+                                        {form.SWING_TYPE === SWING_TYPES.SINGLE_MA && <View style={styles.radioInner} />}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioLabel,
+                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioLabelSelected
+                                    ]}>
+                                        {SWING_TYPE_LABELS[SWING_TYPES.SINGLE_MA]}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                         ) : (
                             <Text style={styles.value}>
@@ -285,79 +282,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                             </Text>
                         )}
                     </View>
-
-                    {/* 이동평균선 설정 - 이동평균선(A) 타입일 때만 표시 */}
-                    {isMultiMA && (
-                        <View style={[styles.settingRow, styles.settingRowLast, styles.maSection]}>
-                            <Text style={styles.label}>이동평균선</Text>
-                            {isEditMode ? (
-                                <View style={styles.maInputGroup}>
-                                    <View style={styles.maInputRow}>
-                                        <Text style={styles.maLabel}>단기</Text>
-                                        <View style={styles.inputWithUnit}>
-                                            <TextInput
-                                                style={[
-                                                    styles.input,
-                                                    styles.inputMa,
-                                                    validationErrors.movingAverage && styles.inputError
-                                                ]}
-                                                value={form.SHORT_MA.toString()}
-                                                onChangeText={(text) => updateForm('SHORT_MA', parseInt(text) || 0)}
-                                                keyboardType="numeric"
-                                            />
-                                            <Text style={styles.unit}>일</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.maInputRow}>
-                                        <Text style={styles.maLabel}>중기</Text>
-                                        <View style={styles.inputWithUnit}>
-                                            <TextInput
-                                                style={[
-                                                    styles.input,
-                                                    styles.inputMa,
-                                                    validationErrors.movingAverage && styles.inputError
-                                                ]}
-                                                value={form.MID_MA.toString()}
-                                                onChangeText={(text) => updateForm('MID_MA', parseInt(text) || 0)}
-                                                keyboardType="numeric"
-                                            />
-                                            <Text style={styles.unit}>일</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.maInputRow}>
-                                        <Text style={styles.maLabel}>장기</Text>
-                                        <View style={styles.inputWithUnit}>
-                                            <TextInput
-                                                style={[
-                                                    styles.input,
-                                                    styles.inputMa,
-                                                    validationErrors.movingAverage && styles.inputError
-                                                ]}
-                                                value={form.LONG_MA.toString()}
-                                                onChangeText={(text) => updateForm('LONG_MA', parseInt(text) || 0)}
-                                                keyboardType="numeric"
-                                            />
-                                            <Text style={styles.unit}>일</Text>
-                                        </View>
-                                    </View>
-                                    {validationErrors.movingAverage && (
-                                        <Text style={styles.errorText}>
-                                            단기 {'<'} 중기 {'<'} 장기 순서로 설정해주세요
-                                        </Text>
-                                    )}
-                                </View>
-                            ) : (
-                                <Text style={styles.value}>
-                                    {form.SHORT_MA}일 / {form.MID_MA}일 / {form.LONG_MA}일
-                                </Text>
-                            )}
-                        </View>
-                    )}
-
-                    {/* 이동평균선이 아닌 경우 마지막 row 스타일 적용 */}
-                    {!isMultiMA && (
-                        <View style={styles.settingRowPlaceholder} />
-                    )}
                 </View>
             </View>
         </ScrollView>

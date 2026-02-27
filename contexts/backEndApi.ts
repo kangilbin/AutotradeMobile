@@ -422,7 +422,7 @@ export const deleteSwing = async (swingId: number, swingType: string): Promise<b
 export const backtesting = async (param: AddStockAutoRequest): Promise<BacktestingResponse | undefined> => {
     try {
         const response = await api.post('/backtesting', param);
-        return response.data;
+        return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '백 트레이딩');
     }
