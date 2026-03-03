@@ -18,6 +18,7 @@ export const Colors = {
     inactive: '#95A5A6',         // 비활성화
     warning: '#F39C12',          // 경고
     error: '#E74C3C',            // 에러
+    errorLight: '#FEF2F2',       // 에러 배경
     success: '#27AE60',          // 성공
 
     // 배경 색상
@@ -35,6 +36,14 @@ export const Colors = {
     border: '#ECF0F1',           // 기본 보더
     borderLight: '#F0F0F0',      // 밝은 보더
     divider: '#E8F4F8',          // 구분선
+
+    // 입력 필드 색상
+    inputBorder: '#E2E8F0',      // 입력 필드 보더
+    inputBackground: '#F8FAFC',  // 입력 필드 배경
+
+    // 뱃지 색상
+    badgeBackground: '#e3f2fd',  // 뱃지 배경 (밝은 파랑)
+    badgeText: '#1976d2',        // 뱃지 텍스트 (파랑)
 
     // 버튼 색상
     buttonPrimary: '#4ECDC4',
