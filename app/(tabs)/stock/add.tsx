@@ -5,13 +5,17 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    ScrollView,
+    Platform,
 } from 'react-native';
 import {useRouter, useLocalSearchParams} from 'expo-router';
+import {Ionicons} from '@expo/vector-icons';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
 import {addStockAuto, useApiLoading} from "../../../contexts/backEndApi";
 import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import { useAccountStore } from '../../../stores/useAccountStore';
+import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
@@ -22,10 +26,17 @@ const SWING_TYPES = {
 
 type SwingTypeValue = typeof SWING_TYPES[keyof typeof SWING_TYPES];
 
-const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string }[] = [
-    { value: SWING_TYPES.SINGLE_MA, label: '단일 이평선' },
-    // { value: SWING_TYPES.MULTI_MA, label: '이동평균선' },
-    // { value: SWING_TYPES.ICHIMOKU, label: '일목균형표' },
+const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string; icon: string }[] = [
+    { value: SWING_TYPES.SINGLE_MA, label: '단일 이평선', icon: 'trending-up-outline' },
+    // { value: SWING_TYPES.MULTI_MA, label: '이동평균선', icon: 'analytics-outline' },
+    // { value: SWING_TYPES.ICHIMOKU, label: '일목균형표', icon: 'grid-outline' },
+];
+
+// 금액 프리셋
+const AMOUNT_PRESETS = [
+    { label: '100만', value: 1000000 },
+    { label: '500만', value: 5000000 },
+    { label: '1000만', value: 10000000 },
 ];
 
 interface FormState extends AddStockAutoRequest {
@@ -67,6 +78,10 @@ export default function AddStockScreen() {
         setFocusedField(fieldName);
     };
 
+    const handleBlur = () => {
+        setFocusedField(null);
+    };
+
     const getSectionByField = (field: string) => {
         if (["SHORT_MA", "MID_MA", "LONG_MA"].includes(field)) return 'movingAverage';
         if (["buyRatio", "sellRatio"].includes(field)) return 'ratio';
@@ -76,12 +91,12 @@ export default function AddStockScreen() {
 
     const getSectionStyle = (sectionName: string) => {
         if (validationErrors[sectionName]) {
-            return [styles.sectionContainer, styles.sectionContainerError];
+            return [styles.card, styles.cardError];
         }
         if (getSectionByField(focusedField || '') === sectionName) {
-            return [styles.sectionContainer, styles.sectionContainerFocused];
+            return [styles.card, styles.cardFocused];
         }
-        return [styles.sectionContainer];
+        return [styles.card];
     };
 
     const handleChange = (field: keyof FormState, value: string | number) => {
@@ -185,117 +200,91 @@ export default function AddStockScreen() {
     };
 
     return (
-        <DismissKeyboardView style={styles.mainContainer}>
+        <DismissKeyboardView style={styles.container}>
             {loading && <LoadingIndicator />}
-            <View style={styles.content}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
                 {/* 주식 정보 헤더 */}
                 <View style={styles.stockHeader}>
-                    <View style={styles.stockCodeContainer}>
+                    <View style={styles.stockBadge}>
                         <Text style={styles.stockCodeText}>{stCode}</Text>
                     </View>
-                    <Text style={styles.stockNameText}>{stockName}</Text>
+                    <View style={styles.stockInfo}>
+                        <Text style={styles.stockNameText}>{stockName}</Text>
+                        <Text style={styles.stockSubText}>스윙 매매 설정</Text>
+                    </View>
                 </View>
 
                 {/* 스윙 타입 선택 */}
                 <View style={getSectionStyle('swingType')}>
-                    <Text style={styles.sectionTitle}>스윙 전략</Text>
-                    <View style={styles.radioContainer}>
-                        {SWING_TYPE_OPTIONS.map((option) => (
-                            <TouchableOpacity
-                                key={option.value}
-                                style={[
-                                    styles.radioOption,
-                                    form.SWING_TYPE === option.value && styles.radioOptionSelected
-                                ]}
-                                onPress={() => handleChange('SWING_TYPE', option.value)}
-                            >
-                                <View style={[
-                                    styles.radioButton,
-                                    form.SWING_TYPE === option.value && styles.radioButtonSelected
-                                ]}>
-                                    {form.SWING_TYPE === option.value && (
-                                        <View style={styles.radioButtonInner} />
-                                    )}
-                                </View>
-                                <Text style={[
-                                    styles.radioText,
-                                    form.SWING_TYPE === option.value && styles.radioTextSelected
-                                ]}>
-                                    {option.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="flash-outline" size={18} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>스윙 전략</Text>
+                    </View>
+                    <View style={styles.chipContainer}>
+                        {SWING_TYPE_OPTIONS.map((option) => {
+                            const selected = form.SWING_TYPE === option.value;
+                            return (
+                                <TouchableOpacity
+                                    key={option.value}
+                                    style={[styles.chip, selected && styles.chipSelected]}
+                                    onPress={() => handleChange('SWING_TYPE', option.value)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons
+                                        name={option.icon as any}
+                                        size={16}
+                                        color={selected ? Colors.textWhite : Colors.textSecondary}
+                                    />
+                                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                                        {option.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 
                 {/* 이동평균선 설정 - 이동평균선(A) 타입일 때만 표시 */}
                 {isMultiMA && (
                     <View style={getSectionStyle('movingAverage')}>
-                        <Text style={styles.sectionTitle}>이동평균선 설정</Text>
+                        <View style={styles.sectionHeader}>
+                            <Ionicons name="analytics-outline" size={18} color={Colors.primary} />
+                            <Text style={styles.sectionTitle}>이동평균선 설정</Text>
+                        </View>
                         <View style={styles.maContainer}>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>단기</Text>
-                                <View style={styles.maInputWrapper}>
-                                    <TextInput
-                                        ref={shortMaRef}
-                                        style={[
-                                            styles.maInput,
-                                            validationErrors.movingAverage && styles.inputError
-                                        ]}
-                                        value={form.SHORT_MA?.toString() || ''}
-                                        onChangeText={(t) => {
-                                            if (/^[0-9]*$/.test(t)) {
-                                                handleChange('SHORT_MA', t === '' ? 0 : parseInt(t, 10));
-                                            }
-                                        }}
-                                        keyboardType="number-pad"
-                                        onFocus={() => handleFocus('SHORT_MA')}
-                                    />
-                                    <Text style={styles.maUnit}>일</Text>
+                            {[
+                                { label: '단기', ref: shortMaRef, field: 'SHORT_MA' as const, value: form.SHORT_MA },
+                                { label: '중기', ref: midMaRef, field: 'MID_MA' as const, value: form.MID_MA },
+                                { label: '장기', ref: longMaRef, field: 'LONG_MA' as const, value: form.LONG_MA },
+                            ].map((ma) => (
+                                <View key={ma.field} style={styles.maItem}>
+                                    <Text style={styles.maLabel}>{ma.label}</Text>
+                                    <View style={styles.maInputWrapper}>
+                                        <TextInput
+                                            ref={ma.ref}
+                                            style={[
+                                                styles.maInput,
+                                                validationErrors.movingAverage && styles.inputError
+                                            ]}
+                                            value={ma.value?.toString() || ''}
+                                            onChangeText={(t) => {
+                                                if (/^[0-9]*$/.test(t)) {
+                                                    handleChange(ma.field, t === '' ? 0 : parseInt(t, 10));
+                                                }
+                                            }}
+                                            keyboardType="number-pad"
+                                            onFocus={() => handleFocus(ma.field)}
+                                            onBlur={handleBlur}
+                                        />
+                                        <Text style={styles.maUnit}>일</Text>
+                                    </View>
                                 </View>
-                            </View>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>중기</Text>
-                                <View style={styles.maInputWrapper}>
-                                    <TextInput
-                                        ref={midMaRef}
-                                        style={[
-                                            styles.maInput,
-                                            validationErrors.movingAverage && styles.inputError
-                                        ]}
-                                        value={form.MID_MA?.toString() || ''}
-                                        onChangeText={(t) => {
-                                            if (/^[0-9]*$/.test(t)) {
-                                                handleChange('MID_MA', t === '' ? 0 : parseInt(t, 10));
-                                            }
-                                        }}
-                                        keyboardType="number-pad"
-                                        onFocus={() => handleFocus('MID_MA')}
-                                    />
-                                    <Text style={styles.maUnit}>일</Text>
-                                </View>
-                            </View>
-                            <View style={styles.maItem}>
-                                <Text style={styles.maLabel}>장기</Text>
-                                <View style={styles.maInputWrapper}>
-                                    <TextInput
-                                        ref={longMaRef}
-                                        style={[
-                                            styles.maInput,
-                                            validationErrors.movingAverage && styles.inputError
-                                        ]}
-                                        value={form.LONG_MA?.toString() || ''}
-                                        onChangeText={(t) => {
-                                            if (/^[0-9]*$/.test(t)) {
-                                                handleChange('LONG_MA', t === '' ? 0 : parseInt(t, 10));
-                                            }
-                                        }}
-                                        keyboardType="number-pad"
-                                        onFocus={() => handleFocus('LONG_MA')}
-                                    />
-                                    <Text style={styles.maUnit}>일</Text>
-                                </View>
-                            </View>
+                            ))}
                         </View>
                         {validationErrors.movingAverage && (
                             <Text style={styles.errorText}>
@@ -307,12 +296,16 @@ export default function AddStockScreen() {
 
                 {/* 투자금액 설정 */}
                 <View style={getSectionStyle('swingAmount')}>
-                    <Text style={styles.sectionTitle}>스윙 금액</Text>
-                    <View style={styles.amountContainer}>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="wallet-outline" size={18} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>스윙 금액</Text>
+                    </View>
+                    <View style={styles.amountDisplay}>
                         <TextInput
                             ref={swingAmountRef}
                             style={styles.amountInput}
-                            placeholder="1,000,000"
+                            placeholder="0"
+                            placeholderTextColor={Colors.textMuted}
                             value={form.INIT_AMOUNT ? form.INIT_AMOUNT.toLocaleString() : ''}
                             onChangeText={(text) => {
                                 const numericValue = text.replace(/,/g, '');
@@ -321,329 +314,495 @@ export default function AddStockScreen() {
                             }}
                             keyboardType="number-pad"
                             onFocus={() => handleFocus('swingAmount')}
+                            onBlur={handleBlur}
                         />
-                        <Text style={styles.amountText}>원</Text>
+                        <Text style={styles.amountUnit}>원</Text>
+                    </View>
+                    <View style={styles.presetContainer}>
+                        {AMOUNT_PRESETS.map((preset) => (
+                            <TouchableOpacity
+                                key={preset.value}
+                                style={[
+                                    styles.presetButton,
+                                    form.INIT_AMOUNT === preset.value && styles.presetButtonActive,
+                                ]}
+                                onPress={() => handleChange('INIT_AMOUNT', preset.value)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.presetText,
+                                    form.INIT_AMOUNT === preset.value && styles.presetTextActive,
+                                ]}>
+                                    {preset.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={[
+                                styles.presetButton,
+                                !AMOUNT_PRESETS.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetButtonActive,
+                            ]}
+                            onPress={() => swingAmountRef.current?.focus()}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={[
+                                styles.presetText,
+                                !AMOUNT_PRESETS.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetTextActive,
+                            ]}>
+                                직접입력
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* 분할 비율 설정 */}
                 <View style={getSectionStyle('ratio')}>
-                    <Text style={styles.sectionTitle}>분할 비율</Text>
-                    <View style={styles.ratioContainer}>
-                        <View style={styles.ratioItem}>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="pie-chart-outline" size={18} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>분할 비율</Text>
+                    </View>
+
+                    {/* 매수 비율 */}
+                    <View style={styles.ratioRow}>
+                        <View style={styles.ratioLabelContainer}>
+                            <View style={[styles.ratioDot, { backgroundColor: Colors.profit }]} />
                             <Text style={styles.ratioLabel}>매수</Text>
-                            <TouchableOpacity
-                                style={[
-                                    styles.ratioInputContainer,
-                                    focusedField === 'buyRatio' && styles.ratioInputContainerFocused
-                                ]}
-                                onPress={() => buyRatioRef.current?.focus()}
-                                activeOpacity={0.8}
-                            >
-                                <TextInput
-                                    ref={buyRatioRef}
-                                    style={styles.input}
-                                    placeholder="0~100"
-                                    value={form.BUY_RATIO ? form.BUY_RATIO.toString() : ''}
-                                    onChangeText={t => {
-                                        if (/^[0-9]*$/.test(t)) {
-                                            handleChange('BUY_RATIO', t === '' ? 0 : parseInt(t, 10));
-                                        }
-                                    }}
-                                    keyboardType="number-pad"
-                                    onFocus={() => handleFocus('buyRatio')}
-                                />
-                                <Text style={styles.percentText}>%</Text>
-                            </TouchableOpacity>
                         </View>
-                        <View style={styles.ratioItem}>
+                        <View style={styles.ratioBarContainer}>
+                            <View style={styles.ratioBarTrack}>
+                                <View
+                                    style={[
+                                        styles.ratioBarFill,
+                                        {
+                                            width: `${Math.min(form.BUY_RATIO, 100)}%`,
+                                            backgroundColor: Colors.profit,
+                                        }
+                                    ]}
+                                />
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            style={[
+                                styles.ratioInputBox,
+                                focusedField === 'buyRatio' && styles.ratioInputBoxFocused,
+                            ]}
+                            onPress={() => buyRatioRef.current?.focus()}
+                            activeOpacity={0.8}
+                        >
+                            <TextInput
+                                ref={buyRatioRef}
+                                style={styles.ratioInput}
+                                placeholder="0"
+                                placeholderTextColor={Colors.textMuted}
+                                value={form.BUY_RATIO ? form.BUY_RATIO.toString() : ''}
+                                onChangeText={t => {
+                                    if (/^[0-9]*$/.test(t)) {
+                                        handleChange('BUY_RATIO', t === '' ? 0 : parseInt(t, 10));
+                                    }
+                                }}
+                                keyboardType="number-pad"
+                                onFocus={() => handleFocus('buyRatio')}
+                                onBlur={handleBlur}
+                            />
+                            <Text style={styles.ratioPercent}>%</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* 매도 비율 */}
+                    <View style={styles.ratioRow}>
+                        <View style={styles.ratioLabelContainer}>
+                            <View style={[styles.ratioDot, { backgroundColor: Colors.loss }]} />
                             <Text style={styles.ratioLabel}>매도</Text>
-                            <TouchableOpacity
-                                style={[
-                                    styles.ratioInputContainer,
-                                    focusedField === 'sellRatio' && styles.ratioInputContainerFocused
-                                ]}
-                                onPress={() => sellRatioRef.current?.focus()}
-                                activeOpacity={0.8}
-                            >
-                                <TextInput
-                                    ref={sellRatioRef}
-                                    style={styles.input}
-                                    placeholder="0~100"
-                                    value={form.SELL_RATIO ? form.SELL_RATIO.toString() : ''}
-                                    onChangeText={t => {
-                                        if (/^[0-9]*$/.test(t)) {
-                                            handleChange('SELL_RATIO', t === '' ? 0 : parseInt(t, 10));
-                                        }
-                                    }}
-                                    keyboardType="number-pad"
-                                    onFocus={() => handleFocus('sellRatio')}
-                                />
-                                <Text style={styles.percentText}>%</Text>
-                            </TouchableOpacity>
                         </View>
+                        <View style={styles.ratioBarContainer}>
+                            <View style={styles.ratioBarTrack}>
+                                <View
+                                    style={[
+                                        styles.ratioBarFill,
+                                        {
+                                            width: `${Math.min(form.SELL_RATIO, 100)}%`,
+                                            backgroundColor: Colors.loss,
+                                        }
+                                    ]}
+                                />
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            style={[
+                                styles.ratioInputBox,
+                                focusedField === 'sellRatio' && styles.ratioInputBoxFocused,
+                            ]}
+                            onPress={() => sellRatioRef.current?.focus()}
+                            activeOpacity={0.8}
+                        >
+                            <TextInput
+                                ref={sellRatioRef}
+                                style={styles.ratioInput}
+                                placeholder="0"
+                                placeholderTextColor={Colors.textMuted}
+                                value={form.SELL_RATIO ? form.SELL_RATIO.toString() : ''}
+                                onChangeText={t => {
+                                    if (/^[0-9]*$/.test(t)) {
+                                        handleChange('SELL_RATIO', t === '' ? 0 : parseInt(t, 10));
+                                    }
+                                }}
+                                keyboardType="number-pad"
+                                onFocus={() => handleFocus('sellRatio')}
+                                onBlur={handleBlur}
+                            />
+                            <Text style={styles.ratioPercent}>%</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* 등록 버튼 */}
                 <TouchableOpacity
                     style={[
-                        styles.saveBtn,
-                        isFormValid() ? styles.saveEnabled : styles.saveDisabled,
+                        styles.submitButton,
+                        isFormValid() ? styles.submitEnabled : styles.submitDisabled,
                     ]}
                     onPress={handleSave}
                     disabled={!isFormValid()}
+                    activeOpacity={0.8}
                 >
-                    <Text style={styles.saveTxt}>등록</Text>
+                    <Ionicons
+                        name="checkmark-circle-outline"
+                        size={20}
+                        color={Colors.textWhite}
+                        style={styles.submitIcon}
+                    />
+                    <Text style={styles.submitText}>등록하기</Text>
                 </TouchableOpacity>
-            </View>
+
+                <View style={styles.bottomSpacer} />
+            </ScrollView>
         </DismissKeyboardView>
     );
 }
 
 const styles = StyleSheet.create({
-    mainContainer: {
+    container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: Colors.background,
     },
-    content: {
-        padding: 20,
-        paddingBottom: 80,
+    scrollView: {
+        flex: 1,
     },
+    scrollContent: {
+        padding: Spacing.xl,
+    },
+
+    // 주식 정보 헤더
     stockHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.xl,
+        marginBottom: Spacing.xl,
+        ...Shadows.medium,
     },
-    stockCodeContainer: {
-        backgroundColor: '#e3f2fd',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        marginRight: 15,
+    stockBadge: {
+        backgroundColor: Colors.badgeBackground,
+        paddingVertical: Spacing.sm + 2,
+        paddingHorizontal: Spacing.lg,
+        borderRadius: BorderRadius.md,
+        marginRight: Spacing.lg,
     },
     stockCodeText: {
-        fontSize: 15,
+        fontSize: FontSizes.md,
         fontWeight: 'bold',
-        color: '#1976d2',
+        color: Colors.badgeText,
     },
-    stockNameText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
+    stockInfo: {
         flex: 1,
     },
-    sectionContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
+    stockNameText: {
+        fontSize: FontSizes.xl,
+        fontWeight: 'bold',
+        color: Colors.textPrimary,
     },
-    sectionContainerError: {
-        borderColor: '#ff6b6b',
-    },
-    sectionContainerFocused: {
-        borderColor: '#4ECDC4',
-    },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#64748B',
-        marginBottom: 12,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+    stockSubText: {
+        fontSize: FontSizes.sm,
+        color: Colors.textMuted,
+        marginTop: 2,
     },
 
-    // 라디오 버튼
-    radioContainer: {
+    // 카드 공통
+    card: {
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.xl,
+        marginBottom: Spacing.lg,
+        ...Shadows.small,
+    },
+    cardError: {
+        borderWidth: 1,
+        borderColor: Colors.error,
+    },
+    cardFocused: {
+        borderWidth: 1,
+        borderColor: Colors.primary,
+    },
+
+    // 섹션 헤더
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        marginBottom: Spacing.lg,
+    },
+    sectionTitle: {
+        fontSize: FontSizes.md,
+        fontWeight: '700',
+        color: Colors.textPrimary,
+    },
+
+    // 칩 스타일 전략 선택
+    chipContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: Spacing.sm + 2,
     },
-    radioOption: {
+    chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 10,
-        backgroundColor: '#F8FAFC',
+        gap: Spacing.sm,
+        paddingVertical: Spacing.sm + 2,
+        paddingHorizontal: Spacing.lg,
+        borderRadius: BorderRadius.full,
+        backgroundColor: Colors.background,
+        borderWidth: 1.5,
+        borderColor: Colors.border,
     },
-    radioOptionSelected: {
-        backgroundColor: 'rgba(78, 205, 196, 0.1)',
+    chipSelected: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
     },
-    radioButton: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        borderWidth: 2,
-        borderColor: '#CBD5E1',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 8,
-    },
-    radioButtonSelected: {
-        borderColor: '#4ECDC4',
-    },
-    radioButtonInner: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#4ECDC4',
-    },
-    radioText: {
-        fontSize: 14,
-        color: '#64748B',
-        fontWeight: '500',
-    },
-    radioTextSelected: {
+    chipText: {
+        fontSize: FontSizes.md,
         fontWeight: '600',
-        color: '#4ECDC4',
+        color: Colors.textSecondary,
+    },
+    chipTextSelected: {
+        color: Colors.textWhite,
     },
 
     // 이동평균선 입력
     maContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: Spacing.md,
     },
     maItem: {
         flex: 1,
         alignItems: 'center',
     },
     maLabel: {
-        fontSize: 12,
-        color: '#64748B',
-        marginBottom: 8,
-        fontWeight: '500',
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
+        marginBottom: Spacing.sm,
+        fontWeight: '600',
     },
     maInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: Spacing.xs,
     },
     maInput: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1E293B',
-        paddingVertical: 10,
-        paddingHorizontal: 12,
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
+        color: Colors.textPrimary,
+        paddingVertical: Spacing.sm + 2,
+        paddingHorizontal: Spacing.md,
         borderWidth: 1.5,
-        borderColor: '#E2E8F0',
-        borderRadius: 10,
-        backgroundColor: '#fff',
+        borderColor: Colors.inputBorder,
+        borderRadius: BorderRadius.sm,
+        backgroundColor: Colors.cardBackground,
         width: 60,
         textAlign: 'center',
     },
     maUnit: {
-        fontSize: 14,
-        color: '#64748B',
+        fontSize: FontSizes.md,
+        color: Colors.textMuted,
         fontWeight: '500',
     },
     inputError: {
-        borderColor: '#E74C3C',
-        backgroundColor: '#FEF2F2',
+        borderColor: Colors.error,
+        backgroundColor: Colors.errorLight,
     },
     errorText: {
-        fontSize: 12,
-        color: '#E74C3C',
-        marginTop: 10,
+        fontSize: FontSizes.sm,
+        color: Colors.error,
+        marginTop: Spacing.sm + 2,
         textAlign: 'center',
+        fontWeight: '500',
     },
 
     // 금액 입력
-    amountContainer: {
+    amountDisplay: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'baseline',
         justifyContent: 'flex-end',
+        paddingBottom: Spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.borderLight,
+        marginBottom: Spacing.lg,
     },
     amountInput: {
-        fontSize: 24,
+        fontSize: 32,
         fontWeight: 'bold',
-        color: '#1E293B',
+        color: Colors.textPrimary,
         paddingVertical: 0,
         paddingHorizontal: 0,
-        width: 200,
+        flex: 1,
         textAlign: 'right',
         borderWidth: 0,
         backgroundColor: 'transparent',
     },
-    amountText: {
-        fontSize: 18,
-        color: '#64748B',
-        marginLeft: 8,
-        fontWeight: '500',
+    amountUnit: {
+        fontSize: FontSizes.xl,
+        color: Colors.textSecondary,
+        marginLeft: Spacing.sm,
+        fontWeight: '600',
+    },
+
+    // 금액 프리셋 버튼
+    presetContainer: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
+    },
+    presetButton: {
+        flex: 1,
+        paddingVertical: Spacing.sm + 2,
+        borderRadius: BorderRadius.sm,
+        backgroundColor: Colors.background,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    presetButtonActive: {
+        backgroundColor: `${Colors.primary}15`,
+        borderColor: Colors.primary,
+    },
+    presetText: {
+        fontSize: FontSizes.sm,
+        fontWeight: '600',
+        color: Colors.textSecondary,
+    },
+    presetTextActive: {
+        color: Colors.primary,
     },
 
     // 비율 입력
-    ratioContainer: {
+    ratioRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    ratioItem: {
         alignItems: 'center',
+        marginBottom: Spacing.lg,
+        gap: Spacing.md,
+    },
+    ratioLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: 52,
+        gap: Spacing.sm,
+    },
+    ratioDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
     ratioLabel: {
-        fontSize: 12,
-        color: '#64748B',
-        marginBottom: 8,
-        fontWeight: '500',
+        fontSize: FontSizes.md,
+        color: Colors.textPrimary,
+        fontWeight: '600',
     },
-    ratioInputContainer: {
+    ratioBarContainer: {
+        flex: 1,
+    },
+    ratioBarTrack: {
+        height: 8,
+        backgroundColor: Colors.background,
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    ratioBarFill: {
+        height: '100%',
+        borderRadius: 4,
+        minWidth: 0,
+    },
+    ratioInputBox: {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1.5,
-        borderColor: '#E2E8F0',
-        borderRadius: 10,
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        backgroundColor: '#F8FAFC',
+        borderColor: Colors.inputBorder,
+        borderRadius: BorderRadius.sm,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        backgroundColor: Colors.inputBackground,
+        width: 72,
     },
-    ratioInputContainerFocused: {
-        borderColor: '#4ECDC4',
-        backgroundColor: '#fff',
+    ratioInputBoxFocused: {
+        borderColor: Colors.primary,
+        backgroundColor: Colors.cardBackground,
     },
-    input: {
+    ratioInput: {
         borderWidth: 0,
-        borderRadius: 0,
         paddingVertical: 0,
         paddingHorizontal: 0,
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
         backgroundColor: 'transparent',
-        color: '#1E293B',
-        width: 50,
+        color: Colors.textPrimary,
+        flex: 1,
         textAlign: 'center',
     },
-    percentText: {
-        fontSize: 14,
-        color: '#64748B',
-        marginLeft: 4,
-        fontWeight: '500',
+    ratioPercent: {
+        fontSize: FontSizes.sm,
+        color: Colors.textMuted,
+        fontWeight: '600',
     },
 
     // 등록 버튼
-    saveBtn: {
-        paddingVertical: 16,
-        borderRadius: 12,
+    submitButton: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 24,
+        justifyContent: 'center',
+        paddingVertical: Spacing.lg,
+        borderRadius: BorderRadius.md,
+        marginTop: Spacing.sm,
+        ...Platform.select({
+            ios: {
+                shadowColor: Colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 6,
+            },
+        }),
     },
-    saveEnabled: {
-        backgroundColor: '#4ECDC4',
+    submitEnabled: {
+        backgroundColor: Colors.primary,
     },
-    saveDisabled: {
-        backgroundColor: '#CBD5E1',
+    submitDisabled: {
+        backgroundColor: Colors.inactive,
+        ...Platform.select({
+            ios: { shadowOpacity: 0 },
+            android: { elevation: 0 },
+        }),
     },
-    saveTxt: {
-        color: '#fff',
-        fontWeight: '600',
-        fontSize: 16,
+    submitIcon: {
+        marginRight: Spacing.sm,
+    },
+    submitText: {
+        color: Colors.textWhite,
+        fontWeight: 'bold',
+        fontSize: FontSizes.lg,
+    },
+
+    bottomSpacer: {
+        height: Spacing.xxl,
     },
 });
