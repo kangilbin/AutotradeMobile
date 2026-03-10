@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export interface CandleData {
     time: string; // 'YYYY-MM-DD'
@@ -54,7 +54,7 @@ export default function StockChart({ data, markers, chartType = 'line', lineOver
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-system,sans-serif;-webkit-text-size-adjust:100%}
-#chart{position:absolute;top:36px;left:0;right:0;bottom:0}
+#chart{position:absolute;top:36px;left:0;right:0;bottom:0;overflow:hidden}
 #ohlc{
   position:absolute;top:0;left:0;right:0;height:34px;z-index:10;
   display:flex;align-items:center;justify-content:center;padding:0;gap:14px;
@@ -148,7 +148,8 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
           tickMarkFormatter:function(time){return time.month+'월 '+time.day+'일'}
         },
         localization:{
-          timeFormatter:function(time){return time.month+'월 '+time.day+'일'}
+          timeFormatter:function(time){return time.month+'월 '+time.day+'일'},
+          priceFormatter:function(price){return Math.round(price).toLocaleString()}
         },
         rightPriceScale:{borderColor:'#F1F5F9'},
         crosshair:{mode:LightweightCharts.CrosshairMode.Normal}
@@ -208,11 +209,13 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
           tradeDots.push({dot:dot,time:bd,price:price});
         }
         function updateDots(){
+          var plotW=chart.timeScale().width();
+          var plotH=el.clientHeight;
           for(var j=0;j<tradeDots.length;j++){
             var td=tradeDots[j];
             var x=chart.timeScale().timeToCoordinate(td.time);
             var y=series.priceToCoordinate(td.price);
-            if(x===null||y===null){td.dot.style.display='none';continue;}
+            if(x===null||y===null||x<0||x>plotW||y<0||y>plotH){td.dot.style.display='none';continue;}
             td.dot.style.display='block';
             td.dot.style.left=x+'px';
             td.dot.style.top=y+'px';
@@ -316,7 +319,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 
 const styles = StyleSheet.create({
     container: {
-        width,
+        alignSelf: 'stretch',
         height: Math.max(300, height * 0.45),
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
