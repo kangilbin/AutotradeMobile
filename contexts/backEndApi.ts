@@ -15,6 +15,7 @@ import {
 } from "../types/stock";
 import { SwingItem } from '../types/swing';
 import { UpdateUserProfileRequest, NotificationSettings, UpdateNotificationRequest } from '../types/user';
+import { TradeHistoryWithChartResponse } from '../types/tradeHistory';
 
 // API 로딩 상태
 let apiLoading = false;
@@ -438,6 +439,22 @@ export const updateUserProfile = async (param: UpdateUserProfileRequest): Promis
         return response.data.data.access_token;
     } catch (error: unknown) {
         return handleApiError(error, '프로필 수정');
+    }
+};
+
+// 매매 내역 + 차트 데이터 조회
+export const getTradeHistoryWithChart = async (
+    swingId: number,
+    startDate: string,
+    endDate: string
+): Promise<TradeHistoryWithChartResponse | undefined> => {
+    try {
+        const response = await api.get(`/trade-history/${swingId}`, {
+            params: { start_date: startDate, end_date: endDate }
+        });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '매매 내역 조회');
     }
 };
 

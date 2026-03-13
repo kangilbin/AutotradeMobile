@@ -201,7 +201,7 @@ export default function SwingDetailScreen() {
             case 1:
                 return <ChartTab swingData={swingData} />;
             case 2:
-                return <HistoryTab swingData={swingData} />;
+                return null; // HistoryTab은 ScrollView 외부에서 직접 렌더링
             default:
                 return null;
         }
@@ -275,9 +275,15 @@ export default function SwingDetailScreen() {
             </View>
 
             {/* 탭 컨텐츠 */}
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                {renderTabContent()}
-            </ScrollView>
+            {activeTab === 2 ? (
+                <View style={{ flex: 1 }}>
+                    <HistoryTab swingData={swingData} />
+                </View>
+            ) : (
+                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                    {renderTabContent()}
+                </ScrollView>
+            )}
 
             {/* 설정 탭일 때만 하단에 액션 버튼들 표시 */}
             {activeTab === 0 && (
