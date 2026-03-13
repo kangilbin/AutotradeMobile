@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
 const { height } = Dimensions.get('window');
 
@@ -33,14 +33,22 @@ export interface LineOverlay {
     title?: string;
 }
 
+export interface VisibleRange {
+    from: string;
+    to: string;
+    fromIdx: number;
+}
+
 export interface StockChartProps {
     data: CandleData[];
     markers?: ChartMarker[];
     chartType?: 'line' | 'candlestick';
     lineOverlays?: LineOverlay[];
+    onVisibleRangeChange?: (range: VisibleRange) => void;
+    webViewRef?: React.RefObject<WebView | null>;
 }
 
-export default function StockChart({ data, markers, chartType = 'line', lineOverlays }: StockChartProps) {
+export default function StockChart({ data, markers, chartType = 'line', lineOverlays, onVisibleRangeChange, webViewRef }: StockChartProps) {
     const chartHTML = useMemo(() => {
         const dataJSON = JSON.stringify(data);
         const markersJSON = JSON.stringify(markers || []);
@@ -279,6 +287,38 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
         showOHLC(last.time,last.open,last.high,last.low,last.close);
       }
 
+      // visible range 변경 이벤트 → React Native 전달
+      chart.timeScale().subscribeVisibleLogicalRangeChange(function(range){
+        if(range && candleData && candleData.length>0 && window.ReactNativeWebView){
+          var fromIdx=Math.max(0,Math.floor(range.from));
+          var toIdx=Math.min(candleData.length-1,Math.ceil(range.to));
+          var fromTime=candleData[fromIdx]?bdStr(candleData[fromIdx].time):'';
+          var toTime=candleData[toIdx]?bdStr(candleData[toIdx].time):'';
+          if(fromTime&&toTime){
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type:'visibleRangeChange',from:fromTime,to:toTime,fromIdx:fromIdx
+            }));
+          }
+        }
+      });
+
+      // 외부에서 특정 날짜로 차트 스크롤
+      window.scrollToDate=function(dateStr){
+        if(!candleData||candleData.length===0)return;
+        var parts=dateStr.replace(/\\./g,'-').split('-').map(Number);
+        var ty=parts[0],tm=parts[1],td=parts[2];
+        // 해당 날짜에 가장 가까운 캔들 인덱스 찾기
+        var bestIdx=0,bestDiff=Infinity;
+        for(var ci=0;ci<candleData.length;ci++){
+          var c=candleData[ci].time;
+          var diff=Math.abs((c.year-ty)*10000+(c.month-tm)*100+(c.day-td));
+          if(diff<bestDiff){bestDiff=diff;bestIdx=ci;}
+          if(diff===0)break;
+        }
+        var half=25;
+        chart.timeScale().setVisibleLogicalRange({from:bestIdx-half,to:bestIdx+half});
+      };
+
       // 초기 표시: 최근 50개 캔들
       var totalBars=RAW_DATA.length;
       var visibleCount=Math.min(50,totalBars);
@@ -300,9 +340,19 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 </html>`;
     }, [data, markers, chartType, lineOverlays]);
 
+    const handleMessage = useCallback((event: WebViewMessageEvent) => {
+        try {
+            const msg = JSON.parse(event.nativeEvent.data);
+            if (msg.type === 'visibleRangeChange' && onVisibleRangeChange) {
+                onVisibleRangeChange({ from: msg.from, to: msg.to, fromIdx: msg.fromIdx });
+            }
+        } catch {}
+    }, [onVisibleRangeChange]);
+
     return (
         <View style={styles.container}>
             <WebView
+                ref={webViewRef}
                 key={`chart-${data.length}-${chartType}`}
                 originWhitelist={['*']}
                 source={{ html: chartHTML }}
@@ -312,6 +362,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
                 style={styles.webview}
                 androidLayerType="software"
                 mixedContentMode="always"
+                onMessage={handleMessage}
             />
         </View>
     );
