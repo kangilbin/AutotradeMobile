@@ -15,7 +15,7 @@ import {
 } from "../types/stock";
 import { SwingItem } from '../types/swing';
 import { UpdateUserProfileRequest, NotificationSettings, UpdateNotificationRequest } from '../types/user';
-import { TradeHistoryWithChartResponse } from '../types/tradeHistory';
+import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 
 // API 로딩 상태
 let apiLoading = false;
@@ -451,6 +451,34 @@ export const getTradeHistoryWithChart = async (
     try {
         const response = await api.get(`/trade-history/${swingId}`, {
             params: { start_date: startDate, end_date: endDate }
+        });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '매매 내역 조회');
+    }
+};
+
+// 매매 통계 조회 (전체 기간)
+export const getTradeStats = async (
+    swingId: number
+): Promise<TradeStats | undefined> => {
+    try {
+        const response = await api.get(`/trade-history/${swingId}/stats`);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '매매 통계 조회');
+    }
+};
+
+// 매매 내역 페이징 조회
+export const getTradeHistoryList = async (
+    swingId: number,
+    page: number = 1,
+    size: number = 100
+): Promise<TradeHistoryPageResponse | undefined> => {
+    try {
+        const response = await api.get(`/trade-history/${swingId}/list`, {
+            params: { page, size }
         });
         return response.data.data;
     } catch (error: unknown) {
