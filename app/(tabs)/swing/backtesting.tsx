@@ -124,7 +124,7 @@ const useBacktesting = () => {
             })),
             color: Colors.primary,
             lineWidth: 2,
-            title: 'EMA 20',
+            title: '20EMA',
         }];
     }, [result]);
 
@@ -303,7 +303,7 @@ export default function BacktestingResultScreen() {
                             {lineOverlays.length > 0 && (
                                 <View style={styles.legendItem}>
                                     <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
-                                    <Text style={styles.legendText}>EMA 20</Text>
+                                    <Text style={styles.legendText}>20EMA</Text>
                                 </View>
                             )}
                         </View>

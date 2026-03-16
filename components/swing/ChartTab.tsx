@@ -1,77 +1,214 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { SwingItem } from '../../types/swing';
-import StockChart, {CandleData} from "../StockChart";
+import StockChart, { VisibleRange } from '../StockChart';
+import { useTradeHistory } from '../../hooks/useTradeHistory';
+import { getTradeStats } from '../../contexts/backEndApi';
+import { TradeStats } from '../../types/tradeHistory';
+import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
 
 interface ChartTabProps {
     swingData: SwingItem | null;
 }
 
 export default function ChartTab({ swingData }: ChartTabProps) {
-    const [chartData, setChartData] = useState<CandleData[]>([
-        { time: '2024-11-01', open: 150, high: 170, low: 140, close: 160 },
-        { time: '2024-11-02', open: 160, high: 175, low: 155, close: 170 },
-        { time: '2024-11-03', open: 170, high: 180, low: 165, close: 168 },
-        { time: '2024-11-04', open: 168, high: 175, low: 160, close: 162 },
-        { time: '2024-11-05', open: 162, high: 170, low: 150, close: 155 },
-    ]);
+    const webViewRef = useRef<WebView>(null);
 
-    const handleAddCandle = () => {
-        setChartData((prev) => {
-            if (prev.length === 0) return prev;
+    const {
+        loading,
+        loadingMore,
+        priceCandles,
+        tradeMarkers,
+        lineOverlays,
+        loadEarlierData,
+        setVisibleDateRange,
+        hasEarlierData,
+    } = useTradeHistory(swingData?.SWING_ID ?? 0);
 
-            const last = prev[prev.length - 1];
+    // 통계: 별도 API로 전체 기간 건수 조회
+    const [stats, setStats] = useState<TradeStats | null>(null);
 
-            // 날짜 +1일 유틸
-            const toDate = (yyyy_mm_dd: string) => {
-                const [y, m, d] = yyyy_mm_dd.split('-').map(Number);
-                return new Date(Date.UTC(y, m - 1, d));
-            };
-            const addDays = (date: Date, days: number) => {
-                const next = new Date(date.getTime());
-                next.setUTCDate(next.getUTCDate() + days);
-                return next;
-            };
-            const fmt = (date: Date) => {
-                const y = date.getUTCFullYear();
-                const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-                const d = String(date.getUTCDate()).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            };
+    useEffect(() => {
+        if (!swingData?.SWING_ID) return;
+        getTradeStats(swingData.SWING_ID).then(result => {
+            if (result) setStats(result);
+        });
+    }, [swingData?.SWING_ID]);
 
-            const nextDateStr = fmt(addDays(toDate(last.time), 1));
+    const handleVisibleRangeChange = useCallback((range: VisibleRange) => {
+        setVisibleDateRange(range.from, range.to);
 
-            // 간단한 랜덤 워크로 OHLC 생성
-            const base = last.close;
-            const delta = (rng: number) => Math.round(rng * 10) / 10; // 소수1자리
-            const open = base + delta((Math.random() - 0.5) * 4); // ±2
-            const close = open + delta((Math.random() - 0.5) * 6); // ±3
-            const high = Math.max(open, close) + delta(Math.random() * 4 + 1); // +[1..5]
-            const low = Math.min(open, close) - delta(Math.random() * 4 + 1);  // -[1..5]
+        if (range.fromIdx <= 5 && hasEarlierData && !loadingMore) {
+            loadEarlierData();
+        }
+    }, [setVisibleDateRange, hasEarlierData, loadingMore, loadEarlierData]);
 
-            const newCandle: CandleData = {
-                time: nextDateStr,
-                open: Number(open.toFixed(2)),
-                high: Number(high.toFixed(2)),
-                low: Number(low.toFixed(2)),
-                close: Number(close.toFixed(2)),
-            };
-            return [...prev, newCandle];
-        })
-    };
+    if (!swingData) return null;
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={styles.loadingText}>차트 데이터를 불러오는 중...</Text>
+            </View>
+        );
+    }
 
     return (
-        <View style={styles.container}>
-            <StockChart data={chartData} />
-            <TouchableOpacity onPress={handleAddCandle}>
-                <Text>다음 봉 추가</Text>
-            </TouchableOpacity>
-        </View>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <View style={styles.content}>
+                {/* 범례 */}
+                <View style={styles.chartLegend}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: Colors.profit }]} />
+                        <Text style={styles.legendText}>매수</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
+                        <Text style={styles.legendText}>매도</Text>
+                    </View>
+                    {lineOverlays.length > 0 && (
+                        <View style={styles.legendItem}>
+                            <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
+                            <Text style={styles.legendText}>20EMA</Text>
+                        </View>
+                    )}
+                </View>
+
+                {/* 차트 */}
+                {priceCandles.length > 0 && (
+                    <View style={styles.chartContainer}>
+                        <StockChart
+                            data={priceCandles}
+                            markers={tradeMarkers}
+                            chartType="candlestick"
+                            lineOverlays={lineOverlays}
+                            onVisibleRangeChange={handleVisibleRangeChange}
+                            webViewRef={webViewRef}
+                        />
+                        {loadingMore && (
+                            <View style={styles.loadingMoreOverlay}>
+                                <ActivityIndicator size="small" color={Colors.primary} />
+                                <Text style={styles.loadingMoreText}>이전 데이터 로딩중...</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                {/* 거래 통계 (전체 기간) */}
+                {stats && (
+                    <View style={styles.statsBar}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{stats.total_count}</Text>
+                            <Text style={styles.statLabel}>총 거래</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statValue, { color: Colors.profit }]}>{stats.buy_count}</Text>
+                            <Text style={styles.statLabel}>매수</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statValue, { color: Colors.loss }]}>{stats.sell_count}</Text>
+                            <Text style={styles.statLabel}>매도</Text>
+                        </View>
+                    </View>
+                )}
+            </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: Colors.background,
+    },
+    content: {
+        padding: Spacing.lg,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: Spacing.md,
+    },
+    loadingText: {
+        fontSize: FontSizes.md,
+        color: Colors.textSecondary,
+    },
+
+    // 범례
+    chartLegend: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: Spacing.lg,
+        marginBottom: Spacing.md,
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    legendDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    legendText: {
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
+        fontWeight: '500',
+    },
+
+    // 차트
+    chartContainer: {
+        marginBottom: Spacing.lg,
+        borderRadius: BorderRadius.lg,
+        overflow: 'hidden',
+    },
+    loadingMoreOverlay: {
+        position: 'absolute',
+        top: Spacing.sm,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+    loadingMoreText: {
+        fontSize: FontSizes.xs,
+        color: Colors.primary,
+        fontWeight: '500',
+    },
+
+    // 통계 바
+    statsBar: {
+        flexDirection: 'row',
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.lg,
+        ...Shadows.small,
+    },
+    statItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    statDivider: {
+        width: 1,
+        backgroundColor: Colors.border,
+    },
+    statValue: {
+        fontSize: FontSizes.xxl,
+        fontWeight: 'bold',
+        color: Colors.textPrimary,
+        marginBottom: Spacing.xs,
+    },
+    statLabel: {
+        fontSize: FontSizes.xs,
+        color: Colors.textSecondary,
+        fontWeight: '500',
     },
 });
