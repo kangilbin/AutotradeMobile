@@ -36,12 +36,14 @@ export default function HomeScreen() {
     const volume = useVolumeRank();
     const volumePower = useVolumePowerRank();
 
-    // 초기 로드: 모든 탭 데이터
+    // 탭 전환 시 데이터 없으면 최초 1회 fetch
     useEffect(() => {
-        fluctuation.fetch(fluctuationSort, fluctuationPrice);
-        volume.fetch(volumeBlng);
-        volumePower.fetch();
-    }, []);
+        if (activeTab === 'volume' && volume.data.length === 0) {
+            volume.fetch(volumeBlng);
+        } else if (activeTab === 'volume_power' && volumePower.data.length === 0) {
+            volumePower.fetch();
+        }
+    }, [activeTab]);
 
     // 등락률 필터 변경 시 재조회
     useEffect(() => {
@@ -50,7 +52,9 @@ export default function HomeScreen() {
 
     // 거래량 필터 변경 시 재조회
     useEffect(() => {
-        volume.fetch(volumeBlng);
+        if (volume.data.length > 0 || activeTab === 'volume') {
+            volume.fetch(volumeBlng);
+        }
     }, [volumeBlng]);
 
     const handleFluctuationSortChange = useCallback((v: FluctuationSortCode) => {
@@ -102,8 +106,8 @@ export default function HomeScreen() {
                 primaryMetric = v.acml_vol;
                 primaryMetricLabel = '';
             } else if (volumeBlng === '1') {
-                primaryMetric = v.vol_inrt;
-                primaryMetricLabel = '증가율';
+                primaryMetric = `${v.vol_tnrt}%`;
+                primaryMetricLabel = '회전율';
             } else {
                 primaryMetric = v.acml_tr_pbmn;
                 primaryMetricLabel = '거래대금';
