@@ -23,6 +23,7 @@ import {
     FluctuationSortCode,
     FluctuationPriceCode,
     VolumeBlngCode,
+    VolumePowerMarketCode,
 } from '../types/ranking';
 
 // API 로딩 상태
@@ -524,9 +525,13 @@ export const getVolumeRank = async (
 };
 
 // 체결강도 순위 조회
-export const getVolumePowerRank = async (): Promise<VolumePowerRankItem[] | undefined> => {
+export const getVolumePowerRank = async (
+    inputIscd: VolumePowerMarketCode = '0000',
+): Promise<VolumePowerRankItem[] | undefined> => {
     try {
-        const response = await api.get('/stocks/ranking/volume-power');
+        const response = await api.get('/stocks/ranking/volume-power', {
+            params: { input_iscd: inputIscd },
+        });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '체결강도 순위 조회');

@@ -6,6 +6,7 @@ import {
     FluctuationSortCode,
     FluctuationPriceCode,
     VolumeBlngCode,
+    VolumePowerMarketCode,
 } from '../../types/ranking';
 
 interface FilterOption<T extends string> {
@@ -38,14 +39,24 @@ const VOLUME_BLNG_OPTIONS: FilterOption<VolumeBlngCode>[] = [
     { value: '3', label: '큰손이 움직이는' },
 ];
 
+// 체결강도 - 시장 구분 옵션
+const VOLUME_POWER_MARKET_OPTIONS: FilterOption<VolumePowerMarketCode>[] = [
+    { value: '0000', label: '전체' },
+    { value: '0001', label: '거래소' },
+    { value: '1001', label: '코스닥' },
+    { value: '2001', label: '코스피200' },
+];
+
 interface RankingFilterChipsProps {
     activeTab: RankingTab;
     fluctuationSort: FluctuationSortCode;
     fluctuationPrice: FluctuationPriceCode;
     volumeBlng: VolumeBlngCode;
+    volumePowerMarket: VolumePowerMarketCode;
     onFluctuationSortChange: (v: FluctuationSortCode) => void;
     onFluctuationPriceChange: (v: FluctuationPriceCode) => void;
     onVolumeBlngChange: (v: VolumeBlngCode) => void;
+    onVolumePowerMarketChange: (v: VolumePowerMarketCode) => void;
 }
 
 function Chip<T extends string>({
@@ -75,12 +86,12 @@ function RankingFilterChips({
     fluctuationSort,
     fluctuationPrice,
     volumeBlng,
+    volumePowerMarket,
     onFluctuationSortChange,
     onFluctuationPriceChange,
     onVolumeBlngChange,
+    onVolumePowerMarketChange,
 }: RankingFilterChipsProps) {
-    if (activeTab === 'volume_power') return null;
-
     const priceOptions = fluctuationSort === '0'
         ? FLUCTUATION_PRICE_OPTIONS_ASC
         : FLUCTUATION_PRICE_OPTIONS_DESC;
@@ -121,6 +132,18 @@ function RankingFilterChips({
                             option={opt}
                             isActive={volumeBlng === opt.value}
                             onPress={onVolumeBlngChange}
+                        />
+                    ))}
+                </>
+            )}
+            {activeTab === 'volume_power' && (
+                <>
+                    {VOLUME_POWER_MARKET_OPTIONS.map((opt) => (
+                        <Chip
+                            key={`market-${opt.value}`}
+                            option={opt}
+                            isActive={volumePowerMarket === opt.value}
+                            onPress={onVolumePowerMarketChange}
                         />
                     ))}
                 </>

@@ -10,6 +10,7 @@ import {
     FluctuationSortCode,
     FluctuationPriceCode,
     VolumeBlngCode,
+    VolumePowerMarketCode,
 } from '../../types/ranking';
 import RankingTabSelector from '../../components/ranking/RankingTabSelector';
 import RankingFilterChips from '../../components/ranking/RankingFilterChips';
@@ -30,6 +31,7 @@ export default function HomeScreen() {
     const [fluctuationSort, setFluctuationSort] = useState<FluctuationSortCode>('0');
     const [fluctuationPrice, setFluctuationPrice] = useState<FluctuationPriceCode>('1');
     const [volumeBlng, setVolumeBlng] = useState<VolumeBlngCode>('3');
+    const [volumePowerMarket, setVolumePowerMarket] = useState<VolumePowerMarketCode>('0000');
 
     // 각 순위별 개별 훅
     const fluctuation = useFluctuationRank();
@@ -41,7 +43,7 @@ export default function HomeScreen() {
         if (activeTab === 'volume' && volume.data.length === 0) {
             volume.fetch(volumeBlng);
         } else if (activeTab === 'volume_power' && volumePower.data.length === 0) {
-            volumePower.fetch();
+            volumePower.fetch(volumePowerMarket);
         }
     }, [activeTab]);
 
@@ -57,9 +59,16 @@ export default function HomeScreen() {
         }
     }, [volumeBlng]);
 
+    // 체결강도 시장 필터 변경 시 재조회
+    useEffect(() => {
+        if (volumePower.data.length > 0 || activeTab === 'volume_power') {
+            volumePower.fetch(volumePowerMarket);
+        }
+    }, [volumePowerMarket]);
+
     const handleFluctuationSortChange = useCallback((v: FluctuationSortCode) => {
         setFluctuationSort(v);
-        setFluctuationPrice('0'); // 정렬 변경 시 가격 기준 초기화
+        setFluctuationPrice('0');
     }, []);
 
     const handleFluctuationPriceChange = useCallback((v: FluctuationPriceCode) => {
@@ -68,6 +77,10 @@ export default function HomeScreen() {
 
     const handleVolumeBlngChange = useCallback((v: VolumeBlngCode) => {
         setVolumeBlng(v);
+    }, []);
+
+    const handleVolumePowerMarketChange = useCallback((v: VolumePowerMarketCode) => {
+        setVolumePowerMarket(v);
     }, []);
 
     // 현재 탭의 데이터와 로딩 상태
@@ -90,10 +103,10 @@ export default function HomeScreen() {
         } else if (activeTab === 'volume') {
             await volume.fetch(volumeBlng);
         } else {
-            await volumePower.fetch();
+            await volumePower.fetch(volumePowerMarket);
         }
         setRefreshing(false);
-    }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng]);
+    }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket]);
 
     const renderItem = useCallback(({ item }: { item: RankItem }) => {
         const code = getItemCode(item, activeTab);
@@ -112,10 +125,23 @@ export default function HomeScreen() {
                 primaryMetric = v.acml_tr_pbmn;
                 primaryMetricLabel = '거래대금';
             }
-        } else if (activeTab === 'volume_power') {
+        }
+
+        if (activeTab === 'volume_power') {
             const vp = item as VolumePowerRankItem;
-            primaryMetric = vp.tday_rltv;
-            primaryMetricLabel = '체결강도';
+            return (
+                <RankingListItem
+                    rank={item.data_rank}
+                    name={item.hts_kor_isnm}
+                    code={code}
+                    price={item.stck_prpr}
+                    changeRate={item.prdy_ctrt}
+                    changeAmount={item.prdy_vrss}
+                    changeSign={item.prdy_vrss_sign}
+                    buyVolume={vp.shnu_cnqn_smtn}
+                    sellVolume={vp.seln_cnqn_smtn}
+                />
+            );
         }
 
         return (
@@ -137,20 +163,24 @@ export default function HomeScreen() {
         return `${activeTab}-${item.data_rank}-${getItemCode(item, activeTab)}`;
     }, [activeTab]);
 
+    const filterChipsProps = {
+        activeTab,
+        fluctuationSort,
+        fluctuationPrice,
+        volumeBlng,
+        volumePowerMarket,
+        onFluctuationSortChange: handleFluctuationSortChange,
+        onFluctuationPriceChange: handleFluctuationPriceChange,
+        onVolumeBlngChange: handleVolumeBlngChange,
+        onVolumePowerMarketChange: handleVolumePowerMarketChange,
+    };
+
     // 초기 로딩 (데이터 없음 + 로딩 중)
     if (isLoading && listData.length === 0 && !refreshing) {
         return (
             <View style={styles.container}>
                 <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
-                <RankingFilterChips
-                    activeTab={activeTab}
-                    fluctuationSort={fluctuationSort}
-                    fluctuationPrice={fluctuationPrice}
-                    volumeBlng={volumeBlng}
-                    onFluctuationSortChange={handleFluctuationSortChange}
-                    onFluctuationPriceChange={handleFluctuationPriceChange}
-                    onVolumeBlngChange={handleVolumeBlngChange}
-                />
+                <RankingFilterChips {...filterChipsProps} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -161,15 +191,7 @@ export default function HomeScreen() {
     return (
         <View style={styles.container}>
             <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
-            <RankingFilterChips
-                activeTab={activeTab}
-                fluctuationSort={fluctuationSort}
-                fluctuationPrice={fluctuationPrice}
-                volumeBlng={volumeBlng}
-                onFluctuationSortChange={handleFluctuationSortChange}
-                onFluctuationPriceChange={handleFluctuationPriceChange}
-                onVolumeBlngChange={handleVolumeBlngChange}
-            />
+            <RankingFilterChips {...filterChipsProps} />
             {listData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>순위 데이터가 없습니다</Text>
