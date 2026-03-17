@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { TradeHistory } from '../../types/tradeHistory';
+import { TradeItemData } from '../../types/tradeItem';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
-import { formatCurrency, getProfitLossColor } from '../../utils/format';
+import { formatCurrency, getProfitLossColor, formatProfitRate } from '../../utils/format';
 
 interface TradeHistoryItemProps {
-    trade: TradeHistory;
+    trade: TradeItemData;
     index: number;
 }
 
@@ -19,14 +19,7 @@ const formatDate = (dateString: string): string => {
 };
 
 const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) => {
-    const isBuy = trade.TRADE_TYPE === 'B';
-    const accentColor = isBuy ? Colors.profit : Colors.loss;
-
-    const reasons: string[] = useMemo(() => {
-        if (!trade.TRADE_REASONS) return [];
-        try { return JSON.parse(trade.TRADE_REASONS); }
-        catch { return []; }
-    }, [trade.TRADE_REASONS]);
+    const accentColor = trade.isBuy ? Colors.profit : Colors.loss;
 
     return (
         <View style={styles.tradeCard}>
@@ -37,62 +30,80 @@ const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) =>
             <View style={styles.tradeHeader}>
                 <View style={styles.tradeHeaderLeft}>
                     <View style={[styles.tradeBadge, { backgroundColor: accentColor }]}>
-                        <Text style={styles.tradeBadgeText}>{isBuy ? '매수' : '매도'}</Text>
+                        <Text style={styles.tradeBadgeText}>{trade.isBuy ? '매수' : '매도'}</Text>
                     </View>
                     <Text style={styles.tradeIndex}>#{index + 1}</Text>
                 </View>
-                <Text style={styles.tradeDate}>{formatDate(trade.TRADE_DATE)}</Text>
+                <Text style={styles.tradeDate}>{formatDate(trade.date)}</Text>
             </View>
 
             {/* 거래 상세 - 가로 3열 */}
             <View style={styles.tradeStats}>
                 <View style={styles.tradeStat}>
                     <Text style={styles.tradeStatLabel}>단가</Text>
-                    <Text style={styles.tradeStatValue}>{formatCurrency(Math.round(Number(trade.TRADE_PRICE)))}</Text>
+                    <Text style={styles.tradeStatValue}>{formatCurrency(Math.round(trade.price))}</Text>
                 </View>
                 <View style={styles.tradeStatDivider} />
                 <View style={styles.tradeStat}>
                     <Text style={styles.tradeStatLabel}>수량</Text>
-                    <Text style={styles.tradeStatValue}>{trade.TRADE_QTY}주</Text>
+                    <Text style={styles.tradeStatValue}>{trade.quantity}주</Text>
                 </View>
                 <View style={styles.tradeStatDivider} />
                 <View style={styles.tradeStat}>
                     <Text style={styles.tradeStatLabel}>금액</Text>
-                    <Text style={styles.tradeStatValue}>{formatCurrency(Math.round(Number(trade.TRADE_AMOUNT)))}</Text>
+                    <Text style={styles.tradeStatValue}>{formatCurrency(Math.round(trade.amount))}</Text>
                 </View>
             </View>
 
             {/* 매도 시 손익 정보 */}
-            {!isBuy && trade.REALIZED_PNL != null && (
+            {!trade.isBuy && trade.realizedPnl != null && (
                 <View style={[styles.pnlSection, {
-                    backgroundColor: trade.REALIZED_PNL >= 0 ? 'rgba(78, 205, 196, 0.06)' : 'rgba(231, 76, 60, 0.06)',
+                    backgroundColor: trade.realizedPnl >= 0 ? 'rgba(78, 205, 196, 0.06)' : 'rgba(231, 76, 60, 0.06)',
                 }]}>
                     <View style={styles.pnlRow}>
                         <Text style={styles.pnlLabel}>실현손익</Text>
-                        <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.REALIZED_PNL) }]}>
-                            {trade.REALIZED_PNL >= 0 ? '+' : ''}{formatCurrency(Math.round(Number(trade.REALIZED_PNL)))}원
+                        <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.realizedPnl) }]}>
+                            {trade.realizedPnl >= 0 ? '+' : ''}{formatCurrency(Math.round(trade.realizedPnl))}원
                         </Text>
                     </View>
-                    {trade.TOTAL_FEE != null && (
+                    {trade.realizedPnlPct != null && (
+                        <View style={styles.pnlRow}>
+                            <Text style={styles.pnlLabel}>수익률</Text>
+                            <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.realizedPnlPct) }]}>
+                                {formatProfitRate(trade.realizedPnlPct)}
+                            </Text>
+                        </View>
+                    )}
+                    {trade.totalFee != null && (
                         <View style={styles.pnlRow}>
                             <Text style={styles.pnlLabel}>수수료+세금</Text>
                             <Text style={styles.pnlFeeValue}>
-                                {formatCurrency(Math.round(Number(trade.TOTAL_FEE)))}원
+                                {formatCurrency(Math.round(trade.totalFee))}원
                             </Text>
                         </View>
                     )}
                 </View>
             )}
 
+            {/* 거래 후 잔고 (백테스팅) */}
+            {trade.currentCapital != null && (
+                <View style={styles.capitalRow}>
+                    <Text style={styles.capitalLabel}>거래 후 잔고</Text>
+                    <Text style={styles.capitalValue}>
+                        {formatCurrency(Math.round(trade.currentCapital))}원
+                    </Text>
+                </View>
+            )}
+
             {/* 매매 사유 - 태그 칩 */}
-            {reasons.length > 0 && (
+            {trade.reasons.length > 0 && (
                 <View style={styles.reasonChips}>
-                    {reasons.map((reason, idx) => (
+                    {trade.reasons.map((reason, idx) => (
                         <View
                             key={idx}
                             style={[styles.reasonChip, {
-                                backgroundColor: isBuy ? 'rgba(78, 205, 196, 0.08)' : 'rgba(231, 76, 60, 0.08)',
-                                borderColor: isBuy ? 'rgba(78, 205, 196, 0.25)' : 'rgba(231, 76, 60, 0.25)',
+                                backgroundColor: trade.isBuy ? 'rgba(78, 205, 196, 0.08)' : 'rgba(231, 76, 60, 0.08)',
+                                borderColor: trade.isBuy ? 'rgba(78, 205, 196, 0.25)' : 'rgba(231, 76, 60, 0.25)',
                             }]}
                         >
                             <View style={[styles.chipDot, { backgroundColor: accentColor }]} />
@@ -212,6 +223,28 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.sm,
         fontWeight: '600',
         color: Colors.textMuted,
+    },
+
+    // 거래 후 잔고
+    capitalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: Spacing.xs,
+        paddingHorizontal: Spacing.sm,
+        marginBottom: Spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
+    },
+    capitalLabel: {
+        fontSize: FontSizes.xs,
+        color: Colors.textMuted,
+        fontWeight: '500',
+    },
+    capitalValue: {
+        fontSize: FontSizes.sm,
+        fontWeight: '600',
+        color: Colors.textPrimary,
     },
 
     // 매매 사유 - 태그 칩

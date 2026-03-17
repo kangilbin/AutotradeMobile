@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { SwingItem } from '../../types/swing';
 import { TradeHistory } from '../../types/tradeHistory';
+import { TradeItemData, fromTradeHistory } from '../../types/tradeItem';
 import TradeHistoryItem from './TradeHistoryItem';
 import { getTradeHistoryList } from '../../contexts/backEndApi';
 import { Colors, FontSizes, Spacing } from '../../constants';
@@ -54,11 +55,13 @@ export default function HistoryTab({ swingData }: HistoryTabProps) {
         setLoadingMore(false);
     }, [loadingMore, hasNext, page, swingData?.SWING_ID]);
 
-    const renderTradeItem = useCallback(({ item, index }: { item: TradeHistory; index: number }) => (
+    const tradeItems: TradeItemData[] = useMemo(() => trades.map(fromTradeHistory), [trades]);
+
+    const renderTradeItem = useCallback(({ item, index }: { item: TradeItemData; index: number }) => (
         <TradeHistoryItem trade={item} index={index} />
     ), []);
 
-    const keyExtractor = useCallback((item: TradeHistory) => String(item.TRADE_ID), []);
+    const keyExtractor = useCallback((item: TradeItemData) => item.id, []);
 
     const ListHeader = useMemo(() => {
         if (trades.length === 0) return null;
@@ -104,7 +107,7 @@ export default function HistoryTab({ swingData }: HistoryTabProps) {
 
     return (
         <FlatList
-            data={trades}
+            data={tradeItems}
             renderItem={renderTradeItem}
             keyExtractor={keyExtractor}
             ListHeaderComponent={ListHeader}
