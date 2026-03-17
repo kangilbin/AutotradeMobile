@@ -72,8 +72,7 @@ export const useGoogleAuth = () => {
                             await SecureStore.setItemAsync('google_picture', decoded.picture);
                         }
                     }
-                    // 홈 화면으로 이동
-                    router.replace('home');
+                    router.replace('account');
                 }
             } else if (response?.type === 'error') {
                 Alert.alert('Google 로그인 실패', response.error?.message || '로그인 중 오류가 발생했습니다.');

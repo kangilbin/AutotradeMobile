@@ -34,9 +34,9 @@ const FLUCTUATION_PRICE_OPTIONS_DESC: FilterOption<FluctuationPriceCode>[] = [
 
 // 거래량 - 소속 구분 옵션
 const VOLUME_BLNG_OPTIONS: FilterOption<VolumeBlngCode>[] = [
-    { value: '0', label: '꾸준한 관심주' },
-    { value: '1', label: '수급 폭발' },
-    { value: '3', label: '큰손이 움직이는' },
+    { value: '0', label: '평균 거래량' },
+    { value: '1', label: '거래 증가율' },
+    { value: '3', label: '거래 금액' },
 ];
 
 // 체결강도 - 시장 구분 옵션
