@@ -16,6 +16,14 @@ import {
 import { SwingItem } from '../types/swing';
 import { UpdateUserProfileRequest, NotificationSettings, UpdateNotificationRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
+import {
+    FluctuationRankItem,
+    VolumeRankItem,
+    VolumePowerRankItem,
+    FluctuationSortCode,
+    FluctuationPriceCode,
+    VolumeBlngCode,
+} from '../types/ranking';
 
 // API 로딩 상태
 let apiLoading = false;
@@ -483,6 +491,45 @@ export const getTradeHistoryList = async (
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '매매 내역 조회');
+    }
+};
+
+// 등락률 순위 조회
+export const getFluctuationRank = async (
+    rankSort: FluctuationSortCode = '0',
+    prcCls: FluctuationPriceCode = '1',
+): Promise<FluctuationRankItem[] | undefined> => {
+    try {
+        const response = await api.get('/stocks/ranking/fluctuation', {
+            params: { rank_sort: rankSort, prc_cls: prcCls },
+        });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '등락률 순위 조회');
+    }
+};
+
+// 거래량 순위 조회
+export const getVolumeRank = async (
+    blngCls: VolumeBlngCode = '3',
+): Promise<VolumeRankItem[] | undefined> => {
+    try {
+        const response = await api.get('/stocks/ranking/volume', {
+            params: { blng_cls: blngCls },
+        });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '거래량 순위 조회');
+    }
+};
+
+// 체결강도 순위 조회
+export const getVolumePowerRank = async (): Promise<VolumePowerRankItem[] | undefined> => {
+    try {
+        const response = await api.get('/stocks/ranking/volume-power');
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '체결강도 순위 조회');
     }
 };
 
