@@ -12,6 +12,8 @@ interface RankingListItemProps {
     changeSign: string;
     primaryMetric?: string;
     primaryMetricLabel?: string;
+    buyVolume?: string;
+    sellVolume?: string;
 }
 
 /** prdy_vrss_sign: 1=상한, 2=상승, 3=보합, 4=하한, 5=하락 */
@@ -51,6 +53,8 @@ function RankingListItem({
     changeSign,
     primaryMetric,
     primaryMetricLabel,
+    buyVolume,
+    sellVolume,
 }: RankingListItemProps) {
     const signColor = getSignColor(changeSign);
     const signPrefix = getSignPrefix(changeSign);
@@ -81,11 +85,21 @@ function RankingListItem({
             {/* 우측: 현재가 + 메인 지표 */}
             <View style={styles.priceContainer}>
                 <Text style={styles.price}>{formatPrice(price)}원</Text>
-                {primaryMetric && (
+                {buyVolume !== undefined && sellVolume !== undefined ? (
+                    <View style={styles.volumePowerRow}>
+                        <Text style={[styles.volumeLabel, { color: Colors.profit }]}>
+                            매수 {formatVolume(buyVolume)}
+                        </Text>
+                        <Text style={styles.volumeSeparator}>|</Text>
+                        <Text style={[styles.volumeLabel, { color: Colors.loss }]}>
+                            매도 {formatVolume(sellVolume)}
+                        </Text>
+                    </View>
+                ) : primaryMetric ? (
                     <Text style={styles.metric}>
                         {primaryMetricLabel} {primaryMetric.includes('.') ? primaryMetric : formatVolume(primaryMetric)}
                     </Text>
-                )}
+                ) : null}
             </View>
         </View>
     );
@@ -149,5 +163,19 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
         marginTop: 2,
+    },
+    volumePowerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+        gap: 4,
+    },
+    volumeLabel: {
+        fontSize: FontSizes.xs + 1,
+        fontWeight: '600',
+    },
+    volumeSeparator: {
+        fontSize: FontSizes.xs,
+        color: Colors.border,
     },
 });
