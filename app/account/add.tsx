@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
     Alert,
     Modal,
+    Platform,
     Pressable,
     StyleSheet,
     Text,
@@ -20,7 +21,6 @@ import {
     addAuth,
     getAuthList
 } from "../../contexts/backEndApi";
-import AuthToggle from "../../components/AuthToggle";
 import {AddAuthRequest, AuthStatus} from "../../types/auth";
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Colors, Shadows, FontSizes, Spacing, BorderRadius} from '../../constants/theme';
@@ -33,9 +33,9 @@ export default function AddAccountScreen() {
     const [form, setForm] = useState<AddAccountRequest>({ACCOUNT_NO: '', AUTH_ID: 0});
     const [authList, setAuthList] = useState<AuthStatus[]>([]);
     const [pickerVisible, setPickerVisible] = useState(false);
-    const [isOn, setIsOn] = useState(false);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [newAuth, setNewAuth] = useState<AddAuthRequest>({ SIMULATION_YN: 'N', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     /* ─ 권한 목록 불러오기 ─ */
     useEffect(() => {
@@ -90,27 +90,32 @@ export default function AddAccountScreen() {
             >
                 {/* 계좌번호 입력 */}
                 <View style={styles.card}>
-                    <View style={styles.cardHeader}>
-                        <Ionicons name="card-outline" size={20} color="#4ECDC4" />
-                        <Text style={styles.cardTitle}>계좌 정보</Text>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="card-outline" size={18} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>계좌 정보</Text>
                     </View>
                     <Text style={styles.inputLabel}>계좌번호</Text>
                     <TextInput
                         ref={acctRef}
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            focusedField === 'ACCOUNT_NO' && styles.inputFocused,
+                        ]}
                         placeholder="계좌번호를 입력하세요"
                         placeholderTextColor={Colors.textMuted}
                         value={form.ACCOUNT_NO}
                         onChangeText={t => handleChange('ACCOUNT_NO', t)}
                         keyboardType="number-pad"
+                        onFocus={() => setFocusedField('ACCOUNT_NO')}
+                        onBlur={() => setFocusedField(null)}
                     />
                 </View>
 
                 {/* 보안키 선택 */}
                 <View style={styles.card}>
-                    <View style={styles.cardHeader}>
-                        <Ionicons name="key-outline" size={20} color="#4ECDC4" />
-                        <Text style={styles.cardTitle}>보안키 설정</Text>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="key-outline" size={18} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>보안키 설정</Text>
                     </View>
                     <Text style={styles.inputLabel}>보안키</Text>
                     <View style={styles.authRow}>
@@ -123,18 +128,25 @@ export default function AddAccountScreen() {
                             <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
                         </Pressable>
                         <TouchableOpacity style={styles.authAddBtn} onPress={() => setIsAddModalVisible(true)}>
-                            <Ionicons name="add" size={20} color="#fff" />
+                            <Ionicons name="add" size={20} color={Colors.textWhite} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* 등록 버튼 */}
                 <TouchableOpacity
-                    style={[styles.saveBtn, isFormValid ? styles.saveEnabled : styles.saveDisabled]}
+                    style={[styles.submitButton, isFormValid ? styles.submitEnabled : styles.submitDisabled]}
                     disabled={!isFormValid}
                     onPress={handleSave}
+                    activeOpacity={0.8}
                 >
-                    <Text style={styles.saveTxt}>계좌 등록</Text>
+                    <Ionicons
+                        name="checkmark-circle-outline"
+                        size={20}
+                        color={Colors.textWhite}
+                        style={styles.submitIcon}
+                    />
+                    <Text style={styles.submitText}>계좌 등록</Text>
                 </TouchableOpacity>
 
                 <View style={styles.bottomSpacing} />
@@ -194,17 +206,37 @@ export default function AddAccountScreen() {
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.toggleRow}>
-                            <Text style={styles.inputLabel}>투자 모드</Text>
-                            <AuthToggle
-                                isOn={isOn}
-                                onText="모의"
-                                offText="실전"
-                                onToggle={() => {
-                                    setIsOn(prev => !prev);
-                                    setNewAuth((prev) => ({...prev, SIMULATION_YN: isOn ? 'Y' : 'N'}));
-                                }}
-                            />
+                        {/* 투자 모드 - 세그먼트 칩 */}
+                        <Text style={styles.inputLabel}>투자 모드</Text>
+                        <View style={styles.chipContainer}>
+                            <TouchableOpacity
+                                style={[styles.chip, newAuth.SIMULATION_YN === 'N' && styles.chipSelected]}
+                                onPress={() => setNewAuth(prev => ({...prev, SIMULATION_YN: 'N'}))}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name="trending-up-outline"
+                                    size={16}
+                                    color={newAuth.SIMULATION_YN === 'N' ? Colors.textWhite : Colors.textSecondary}
+                                />
+                                <Text style={[styles.chipText, newAuth.SIMULATION_YN === 'N' && styles.chipTextSelected]}>
+                                    실전
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.chip, newAuth.SIMULATION_YN === 'Y' && styles.chipSelected]}
+                                onPress={() => setNewAuth(prev => ({...prev, SIMULATION_YN: 'Y'}))}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name="flask-outline"
+                                    size={16}
+                                    color={newAuth.SIMULATION_YN === 'Y' ? Colors.textWhite : Colors.textSecondary}
+                                />
+                                <Text style={[styles.chipText, newAuth.SIMULATION_YN === 'Y' && styles.chipTextSelected]}>
+                                    모의
+                                </Text>
+                            </TouchableOpacity>
                         </View>
 
                         <Text style={styles.inputLabel}>보안키 이름</Text>
@@ -227,19 +259,27 @@ export default function AddAccountScreen() {
 
                         <Text style={styles.inputLabel}>App Secret</Text>
                         <TextInput
-                            style={[styles.modalInput, styles.modalInputLarge]}
+                            style={[styles.modalInput, styles.modalInputSecret]}
                             placeholder="App Secret을 입력하세요"
                             placeholderTextColor={Colors.textMuted}
                             value={newAuth.SECRET_KEY}
                             onChangeText={(text) => setNewAuth((prev) => ({...prev, SECRET_KEY: text}))}
+                            multiline
                         />
 
                         <TouchableOpacity
-                            style={[styles.saveBtn, isAuthEnabled ? styles.saveEnabled : styles.saveDisabled]}
+                            style={[styles.submitButton, isAuthEnabled ? styles.submitEnabled : styles.submitDisabled]}
                             disabled={!isAuthEnabled}
                             onPress={handleAddAuth}
+                            activeOpacity={0.8}
                         >
-                            <Text style={styles.saveTxt}>등록</Text>
+                            <Ionicons
+                                name="checkmark-circle-outline"
+                                size={20}
+                                color={Colors.textWhite}
+                                style={styles.submitIcon}
+                            />
+                            <Text style={styles.submitText}>등록</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -257,28 +297,31 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
+        padding: Spacing.xl,
     },
+
+    // 카드 공통 (stock/add.tsx 패턴)
     card: {
         backgroundColor: Colors.cardBackground,
-        marginHorizontal: Spacing.lg,
-        marginTop: Spacing.lg,
-        borderRadius: BorderRadius.md,
-        padding: Spacing.lg,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.xl,
+        marginBottom: Spacing.lg,
         ...Shadows.small,
     },
-    cardHeader: {
+
+    // 섹션 헤더 (stock/add.tsx 패턴)
+    sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: Spacing.sm,
         marginBottom: Spacing.lg,
     },
-    cardTitle: {
-        fontSize: FontSizes.lg,
-        fontWeight: '600',
+    sectionTitle: {
+        fontSize: FontSizes.md,
+        fontWeight: '700',
         color: Colors.textPrimary,
-        marginLeft: Spacing.sm,
     },
+
     inputLabel: {
         fontSize: FontSizes.md,
         fontWeight: '500',
@@ -286,14 +329,18 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.sm,
     },
     input: {
-        borderWidth: 1,
-        borderColor: Colors.border,
+        borderWidth: 1.5,
+        borderColor: Colors.inputBorder,
         borderRadius: BorderRadius.sm,
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.md,
         fontSize: FontSizes.lg,
         color: Colors.textPrimary,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.inputBackground,
+    },
+    inputFocused: {
+        borderColor: Colors.primary,
+        backgroundColor: Colors.cardBackground,
     },
     authRow: {
         flexDirection: 'row',
@@ -305,12 +352,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderWidth: 1,
-        borderColor: Colors.border,
+        borderWidth: 1.5,
+        borderColor: Colors.inputBorder,
         borderRadius: BorderRadius.sm,
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.md,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.inputBackground,
     },
     selectText: {
         fontSize: FontSizes.lg,
@@ -324,30 +371,51 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: BorderRadius.sm,
-        backgroundColor: '#4ECDC4',
+        backgroundColor: Colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    saveBtn: {
-        marginHorizontal: Spacing.lg,
-        marginTop: Spacing.xl,
+
+    // 등록 버튼 (stock/add.tsx 패턴)
+    submitButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         paddingVertical: Spacing.lg,
         borderRadius: BorderRadius.md,
-        alignItems: 'center',
+        marginTop: Spacing.sm,
+        ...Platform.select({
+            ios: {
+                shadowColor: Colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 6,
+            },
+        }),
     },
-    saveEnabled: {
-        backgroundColor: '#4ECDC4',
+    submitEnabled: {
+        backgroundColor: Colors.primary,
     },
-    saveDisabled: {
-        backgroundColor: Colors.border,
+    submitDisabled: {
+        backgroundColor: Colors.inactive,
+        ...Platform.select({
+            ios: { shadowOpacity: 0 },
+            android: { elevation: 0 },
+        }),
     },
-    saveTxt: {
-        color: '#fff',
+    submitIcon: {
+        marginRight: Spacing.sm,
+    },
+    submitText: {
+        color: Colors.textWhite,
         fontSize: FontSizes.lg,
         fontWeight: 'bold',
     },
     bottomSpacing: {
-        height: Spacing.xl,
+        height: Spacing.xxl,
     },
 
     /* Picker 모달 */
@@ -391,7 +459,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.cardBackground,
         borderRadius: BorderRadius.lg,
         padding: Spacing.xl,
-        width: '85%',
+        width: '90%',
         zIndex: 1,
         ...Shadows.medium,
     },
@@ -406,25 +474,56 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.textPrimary,
     },
-    toggleRow: {
+
+    // 칩 스타일 (stock/add.tsx 패턴)
+    chipContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        gap: Spacing.sm + 2,
         marginBottom: Spacing.lg,
     },
-    modalInput: {
-        borderWidth: 1,
+    chip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: Spacing.sm,
+        paddingVertical: Spacing.sm + 2,
+        paddingHorizontal: Spacing.lg,
+        borderRadius: BorderRadius.full,
+        backgroundColor: Colors.background,
+        borderWidth: 1.5,
         borderColor: Colors.border,
+    },
+    chipSelected: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+    },
+    chipText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.textSecondary,
+    },
+    chipTextSelected: {
+        color: Colors.textWhite,
+    },
+
+    modalInput: {
+        borderWidth: 1.5,
+        borderColor: Colors.inputBorder,
         borderRadius: BorderRadius.sm,
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.md,
         fontSize: FontSizes.md,
         color: Colors.textPrimary,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.inputBackground,
         marginBottom: Spacing.md,
     },
     modalInputLarge: {
         minHeight: 60,
+        textAlignVertical: 'top',
+    },
+    modalInputSecret: {
+        minHeight: 100,
         textAlignVertical: 'top',
     },
 });
