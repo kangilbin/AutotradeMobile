@@ -5,58 +5,88 @@ import {
     StyleSheet,
     Alert,
     ActivityIndicator,
+    Linking,
+    Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 import AuthToggle from '../../../components/AuthToggle';
-import { getNotificationSettings, updateNotificationSettings } from '../../../contexts/backEndApi';
+import { getNotificationSettings, updateNotificationSetting } from '../../../contexts/backEndApi';
+import { NotiSettingItem } from '../../../types/user';
 
 export default function NotificationsScreen() {
     const [buyNoti, setBuyNoti] = useState(false);
     const [sellNoti, setSellNoti] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
 
     useEffect(() => {
-        const fetchSettings = async () => {
+        const init = async () => {
+            // 알림 권한 상태 확인
+            const { status } = await Notifications.getPermissionsAsync();
+            setPermissionGranted(status === 'granted');
+
+            // 알림 설정 조회 (백엔드: NotiSettingItem[])
             const settings = await getNotificationSettings();
             if (settings) {
-                setBuyNoti(settings.BUY_NOTI_YN === 'Y');
-                setSellNoti(settings.SELL_NOTI_YN === 'Y');
+                const findSetting = (type: string) =>
+                    settings.find((item: NotiSettingItem) => item.NOTI_TYPE === type);
+                setBuyNoti(findSetting('BUY')?.USE_YN === 'Y');
+                setSellNoti(findSetting('SELL')?.USE_YN === 'Y');
             }
             setLoading(false);
         };
-        fetchSettings();
+        init();
+    }, []);
+
+    const handleRequestPermission = useCallback(async () => {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'denied') {
+            Alert.alert(
+                '알림 권한 필요',
+                '푸시 알림을 받으려면 설정에서 알림 권한을 허용해주세요.',
+                [
+                    { text: '취소', style: 'cancel' },
+                    { text: '설정으로 이동', onPress: () => Linking.openSettings() },
+                ],
+            );
+            return;
+        }
+
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        setPermissionGranted(newStatus === 'granted');
     }, []);
 
     const handleToggleBuy = useCallback(async () => {
         const newValue = !buyNoti;
         setBuyNoti(newValue);
 
-        const success = await updateNotificationSettings({
-            BUY_NOTI_YN: newValue ? 'Y' : 'N',
-            SELL_NOTI_YN: sellNoti ? 'Y' : 'N',
+        const success = await updateNotificationSetting({
+            NOTI_TYPE: 'BUY',
+            USE_YN: newValue ? 'Y' : 'N',
         });
 
         if (!success) {
             setBuyNoti(!newValue);
             Alert.alert('오류', '알림 설정 변경에 실패했습니다.');
         }
-    }, [buyNoti, sellNoti]);
+    }, [buyNoti]);
 
     const handleToggleSell = useCallback(async () => {
         const newValue = !sellNoti;
         setSellNoti(newValue);
 
-        const success = await updateNotificationSettings({
-            BUY_NOTI_YN: buyNoti ? 'Y' : 'N',
-            SELL_NOTI_YN: newValue ? 'Y' : 'N',
+        const success = await updateNotificationSetting({
+            NOTI_TYPE: 'SELL',
+            USE_YN: newValue ? 'Y' : 'N',
         });
 
         if (!success) {
             setSellNoti(!newValue);
             Alert.alert('오류', '알림 설정 변경에 실패했습니다.');
         }
-    }, [buyNoti, sellNoti]);
+    }, [sellNoti]);
 
     if (loading) {
         return (
@@ -71,6 +101,17 @@ export default function NotificationsScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <View style={styles.content}>
+                {/* 알림 권한 상태 배너 */}
+                {permissionGranted === false && (
+                    <Pressable style={styles.permissionBanner} onPress={handleRequestPermission}>
+                        <Ionicons name="warning-outline" size={18} color="#E17055" />
+                        <Text style={styles.permissionText}>
+                            푸시 알림이 꺼져 있습니다. 탭하여 권한을 허용해주세요.
+                        </Text>
+                        <Ionicons name="chevron-forward" size={16} color="#6C757D" />
+                    </Pressable>
+                )}
+
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
                         <Ionicons name="notifications-outline" size={20} color="#4ECDC4" />
@@ -122,6 +163,22 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingTop: 16,
+    },
+    permissionBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF3E0',
+        marginHorizontal: 16,
+        marginBottom: 12,
+        borderRadius: 10,
+        padding: 12,
+        gap: 8,
+    },
+    permissionText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#E17055',
+        fontWeight: '500',
     },
     card: {
         backgroundColor: '#fff',

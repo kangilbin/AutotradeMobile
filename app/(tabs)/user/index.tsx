@@ -15,6 +15,8 @@ import { jwtDecode } from "jwt-decode";
 import { Ionicons } from "@expo/vector-icons";
 import { useAccountStore } from "../../../stores/useAccountStore";
 import { JwtPayload } from "../../../types/auth";
+import { deletePushToken } from "../../../contexts/backEndApi";
+import { getExpoPushToken } from "../../../utils/pushNotification";
 
 export default function UserScreen() {
     const account = useAccountStore((state) => state.account);
@@ -51,6 +53,11 @@ export default function UserScreen() {
                     text: "로그아웃",
                     style: "destructive",
                     onPress: async () => {
+                        // 푸시 토큰 서버에서 삭제
+                        const pushToken = await getExpoPushToken();
+                        if (pushToken) {
+                            await deletePushToken({ PUSH_TOKEN: pushToken }).catch(console.error);
+                        }
                         await SecureStore.deleteItemAsync('access_token');
                         await SecureStore.deleteItemAsync('refresh_token');
                         await SecureStore.deleteItemAsync('google_refresh_token');
