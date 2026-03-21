@@ -1,18 +1,18 @@
-import {View, Text, StyleSheet, FlatList, TouchableOpacity} from 'react-native';
-import React, {useEffect, useState, useCallback, useMemo} from "react";
-import OrderBookRow from "../../../components/OrderBookRow";
-import {router, useLocalSearchParams, useFocusEffect} from 'expo-router';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { getStockPrice } from "../../../contexts/backEndApi";
-import { StockPriceResponse } from "../../../types/stock";
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import OrderBookRow from '../../../components/OrderBookRow';
+import { getStockPrice } from '../../../contexts/backEndApi';
+import { StockPriceResponse } from '../../../types/stock';
 import { Colors, Shadows, Spacing, BorderRadius, FontSizes } from '../../../constants/theme';
-
 
 
 export default function PriceScreen() {
     const { stockName, stCode, mrktCode } = useLocalSearchParams();
     const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
-    const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 160 });
+    const flatListRef = useRef<FlatList>(null);
+    const initialScrollDone = useRef(false);
 
     // 현재가 (stockData가 없으면 기본값 10000)
     const referencePrice = stockData?.output2?.stck_prpr ? parseFloat(stockData.output2.stck_prpr) : 10000;
@@ -30,7 +30,7 @@ export default function PriceScreen() {
             amount: change,
             rate,
             color: change > 0 ? Colors.profit : change < 0 ? Colors.loss : Colors.textPrimary,
-            sign: change > 0 ? '+' : change < 0 ? '' : '',
+            sign: change > 0 ? '▲' : change < 0 ? '▼' : '',
         };
     }, [stockData?.output2?.stck_prpr, stockData?.output2?.stck_sdpr]);
 
@@ -50,8 +50,6 @@ export default function PriceScreen() {
         }
 
         const isInMarketTime = currentTime >= marketStart && currentTime <= marketEnd;
-        const hour = currentTime.toString().slice(0, 2);
-        const minute = currentTime.toString().slice(2, 4);
         return isInMarketTime;
     }, []); // 의존성 배열이 비어있으므로 컴포넌트 마운트 시에만 계산
 
@@ -85,20 +83,16 @@ export default function PriceScreen() {
         return () => clearInterval(interval);
     }, [isMarketTime, stCode, requestStockData]);
 
-    // 스크롤 핸들러 메모이제이션
-    const handleScroll = useCallback((event: any) => {
-        const { x, y } = event.nativeEvent.contentOffset;
-        // 스크롤 위치가 실제로 변경되었을 때만 상태 업데이트
-        if (Math.abs(scrollOffset.y - y) > 1 || Math.abs(scrollOffset.x - x) > 1) {
-            setScrollOffset({ x, y });
-        }
-    }, [scrollOffset]);
+    // 초기 스크롤 위치 설정 (중앙으로)
+    const scrollToCenter = useCallback(() => {
+        flatListRef.current?.scrollToOffset({ offset: 160, animated: false });
+    }, []);
 
     // 화면이 포커스될 때마다 스크롤 위치를 중앙으로 복원
     useFocusEffect(
         useCallback(() => {
-            setScrollOffset({ x: 0, y: 160 });
-        }, [])
+            scrollToCenter();
+        }, [scrollToCenter])
     );
 
     // 실제 데이터가 있으면 사용, 없으면 빈 배열
@@ -137,36 +131,36 @@ export default function PriceScreen() {
 
     return (
         <View style={styles.mainContainer}>
-            {/* 상단 종목 헤더 */}
-            <TouchableOpacity style={styles.header} onPress={() => router.back()} activeOpacity={0.7}>
-                <View style={styles.headerTop}>
+            {/* 상단 헤더 */}
+            <View style={styles.header}>
+                <View style={styles.headerLeft}>
                     <Text style={styles.stockName}>{stockName}</Text>
-                    <View style={[styles.marketBadge, isMarketTime ? styles.badgeActive : styles.badgeInactive]}>
-                        <View style={[styles.dot, { backgroundColor: isMarketTime ? '#4CAF50' : Colors.textMuted }]} />
-                        <Text style={[styles.badgeText, { color: isMarketTime ? '#4CAF50' : Colors.textMuted }]}>
-                            {isMarketTime ? '실시간' : '장 마감'}
-                        </Text>
+                    <View style={styles.codeBadge}>
+                        <Text style={styles.codeBadgeText}>{stCode}</Text>
                     </View>
                 </View>
-                <Text style={styles.stockCode}>{stCode}</Text>
-                {/* 현재가 대형 표시 */}
-                <View style={styles.priceRow}>
-                    <Text style={[styles.bigPrice, { color: priceChange.color }]}>
-                        {referencePrice.toLocaleString()}
+                <View style={[styles.marketBadge, isMarketTime ? styles.badgeActive : styles.badgeInactive]}>
+                    <View style={[styles.marketDot, { backgroundColor: isMarketTime ? '#4CAF50' : Colors.textMuted }]} />
+                    <Text style={[styles.badgeText, { color: isMarketTime ? '#4CAF50' : Colors.textMuted }]}>
+                        {isMarketTime ? '실시간' : '장 마감'}
                     </Text>
-                    <Text style={[styles.priceUnit, { color: priceChange.color }]}>원</Text>
                 </View>
-                <View style={styles.changeRow}>
-                    <Text style={[styles.changeText, { color: priceChange.color }]}>
-                        {priceChange.sign}{priceChange.amount.toLocaleString()}원
+                <TouchableOpacity onPress={() => router.push('/stock')} style={styles.searchButton}>
+                    <AntDesign name="search" size={22} color={Colors.textPrimary} />
+                </TouchableOpacity>
+            </View>
+
+            {/* 가격 정보 바 */}
+            <View style={styles.priceInfoBar}>
+                <Text style={[styles.currentPrice, { color: priceChange.color }]}>
+                    {referencePrice.toLocaleString()}
+                </Text>
+                <View style={[styles.changeBadge, { backgroundColor: priceChange.amount > 0 ? 'rgba(255,107,107,0.1)' : priceChange.amount < 0 ? 'rgba(52,152,219,0.1)' : Colors.background }]}>
+                    <Text style={[styles.changeBadgeText, { color: priceChange.color }]}>
+                        {priceChange.sign}{priceChange.amount !== 0 ? Math.abs(priceChange.amount).toLocaleString() : '0'} ({priceChange.sign}{priceChange.rate}%)
                     </Text>
-                    <View style={[styles.changeBadge, { backgroundColor: priceChange.amount > 0 ? 'rgba(255,107,107,0.1)' : priceChange.amount < 0 ? 'rgba(52,152,219,0.1)' : Colors.background }]}>
-                        <Text style={[styles.changeBadgeText, { color: priceChange.color }]}>
-                            {priceChange.sign}{priceChange.rate}%
-                        </Text>
-                    </View>
                 </View>
-            </TouchableOpacity>
+            </View>
 
             {/* 시세 정보 카드 */}
             <View style={styles.infoCard}>
@@ -183,19 +177,22 @@ export default function PriceScreen() {
                 ))}
             </View>
 
-            {/* 호가 테이블 */}
+            {/* 호가 테이블 - 좌우 배치 */}
             <FlatList
+                ref={flatListRef}
                 style={styles.orderBook}
-                contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}
+                contentContainerStyle={{ flexGrow: 1 }}
                 data={[]}
                 renderItem={() => null}
                 keyExtractor={() => ''}
-                contentOffset={scrollOffset}
                 onContentSizeChange={() => {
-                    setScrollOffset({ x: 0, y: 160 });
+                    if (!initialScrollDone.current) {
+                        initialScrollDone.current = true;
+                        scrollToCenter();
+                    }
                 }}
-                onScroll={handleScroll}
                 scrollEventThrottle={32}
+                bounces={false}
                 ListHeaderComponent={() => (
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                         <View style={{ flex: 2 }}>
@@ -215,24 +212,7 @@ export default function PriceScreen() {
                 )}
                 ListFooterComponent={() => (
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                        <View style={styles.footerSide}>
-                            <View style={styles.footerCard}>
-                                <View style={styles.footerIconWrap}>
-                                    <AntDesign name="dotchart" size={14} color={Colors.primary} />
-                                </View>
-                                <Text style={styles.footerLabel}>예상체결가</Text>
-                                <Text style={styles.footerValue}>{fmt(stockData?.output2?.antc_cnpr)}</Text>
-                            </View>
-                            <View style={[styles.footerCard, styles.footerCardAccent]}>
-                                <View style={styles.footerIconWrap}>
-                                    <AntDesign name="swap" size={14} color={Colors.primary} />
-                                </View>
-                                <Text style={styles.footerLabel}>예상대비</Text>
-                                <Text style={styles.footerValue}>
-                                    {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}
-                                </Text>
-                            </View>
-                        </View>
+                        <View style={{ flex: 1 }} />
                         <View style={{ flex: 2 }}>
                             {bidData.map((item, index) => (
                                 <OrderBookRow
@@ -243,12 +223,28 @@ export default function PriceScreen() {
                                     maxQuantity={maxBid}
                                     basePrice={stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : undefined}
                                 />
-
                             ))}
                         </View>
                     </View>
                 )}
             />
+
+            {/* 예상체결가 바 */}
+            <View style={styles.estimateBar}>
+                <View style={styles.estimateItem}>
+                    <AntDesign name="line-chart" size={13} color={Colors.primary} />
+                    <Text style={styles.estimateLabel}>예상체결가</Text>
+                    <Text style={styles.estimateValue}>{fmt(stockData?.output2?.antc_cnpr)}</Text>
+                </View>
+                <View style={styles.estimateDivider} />
+                <View style={styles.estimateItem}>
+                    <AntDesign name="swap" size={13} color={Colors.primary} />
+                    <Text style={styles.estimateLabel}>예상대비</Text>
+                    <Text style={styles.estimateValue}>
+                        {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}
+                    </Text>
+                </View>
+            </View>
 
             {/* 플러스 등록 버튼 */}
             <TouchableOpacity
@@ -277,37 +273,44 @@ const styles = StyleSheet.create({
 
     // 상단 헤더
     header: {
-        backgroundColor: Colors.cardBackground,
-        paddingHorizontal: Spacing.xl,
-        paddingTop: Spacing.lg,
-        paddingBottom: Spacing.xl,
-        borderBottomLeftRadius: BorderRadius.xl,
-        borderBottomRightRadius: BorderRadius.xl,
-        ...Shadows.medium,
-    },
-    headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        backgroundColor: Colors.cardBackground,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
+        gap: Spacing.sm,
+    },
+    headerLeft: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
     stockName: {
-        fontSize: FontSizes.xxl,
-        fontWeight: '800',
+        fontSize: FontSizes.xl,
+        fontWeight: '700',
         color: Colors.textPrimary,
     },
-    stockCode: {
+    codeBadge: {
+        backgroundColor: Colors.background,
+        borderRadius: BorderRadius.full,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: 2,
+    },
+    codeBadgeText: {
         fontSize: FontSizes.sm,
         color: Colors.textMuted,
-        marginTop: 2,
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     marketBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.xs,
-        paddingHorizontal: Spacing.md,
+        paddingHorizontal: Spacing.sm,
         borderRadius: BorderRadius.full,
-        gap: 5,
+        gap: 4,
     },
     badgeActive: {
         backgroundColor: 'rgba(76,175,80,0.1)',
@@ -315,43 +318,38 @@ const styles = StyleSheet.create({
     badgeInactive: {
         backgroundColor: Colors.borderLight,
     },
-    dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-    },
     badgeText: {
-        fontSize: FontSizes.xs,
+        fontSize: FontSizes.sm,
         fontWeight: '700',
     },
-    priceRow: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        marginTop: Spacing.md,
+    marketDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
     },
-    bigPrice: {
-        fontSize: 32,
-        fontWeight: '800',
-        letterSpacing: -0.5,
+    searchButton: {
+        padding: Spacing.xs,
     },
-    priceUnit: {
-        fontSize: FontSizes.lg,
-        fontWeight: '600',
-        marginLeft: 2,
-    },
-    changeRow: {
+
+    // 가격 정보 바
+    priceInfoBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: Spacing.xs,
+        backgroundColor: Colors.cardBackground,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
         gap: Spacing.sm,
     },
-    changeText: {
-        fontSize: FontSizes.md,
-        fontWeight: '600',
+    currentPrice: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: Colors.textPrimary,
     },
     changeBadge: {
-        paddingVertical: 2,
-        paddingHorizontal: Spacing.sm,
+        paddingVertical: 3,
+        paddingHorizontal: 10,
         borderRadius: BorderRadius.full,
     },
     changeBadgeText: {
@@ -399,45 +397,37 @@ const styles = StyleSheet.create({
         paddingTop: Spacing.sm,
     },
 
-    // Footer 사이드 (예상체결가/예상대비)
-    footerSide: {
-        flex: 1,
-        padding: Spacing.sm,
-        gap: Spacing.sm,
-    },
-    footerCard: {
-        backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.md,
-        padding: Spacing.md,
-        borderWidth: 1,
-        borderColor: Colors.borderLight,
-    },
-    footerCardAccent: {
-        borderColor: Colors.primary,
-        borderWidth: 1,
-        backgroundColor: 'rgba(78,205,196,0.04)',
-    },
-    footerIconWrap: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: 'rgba(78,205,196,0.12)',
+    // 예상체결가 바
+    estimateBar: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 6,
+        backgroundColor: Colors.cardBackground,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.lg,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
     },
-    footerLabel: {
-        fontSize: 10,
+    estimateItem: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    estimateLabel: {
+        fontSize: FontSizes.sm,
         color: Colors.textMuted,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 6,
+        fontWeight: '500',
     },
-    footerValue: {
-        fontSize: FontSizes.lg,
-        fontWeight: '800',
+    estimateValue: {
+        fontSize: FontSizes.sm,
+        fontWeight: '700',
         color: Colors.textPrimary,
+    },
+    estimateDivider: {
+        width: 1,
+        height: 16,
+        backgroundColor: Colors.borderLight,
+        marginHorizontal: Spacing.sm,
     },
 
     // FAB
@@ -448,7 +438,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: Colors.primary,
+        backgroundColor: Colors.primaryLight,
         justifyContent: 'center',
         alignItems: 'center',
         ...Shadows.large,
