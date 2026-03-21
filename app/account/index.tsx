@@ -38,7 +38,7 @@ export default function AccountListScreen() {
     const handleAccountPress = useCallback(async (account: AccountStatus) => {
         setAccount(account);
         await chooseAuth({AUTH_ID: account.AUTH_ID, ACCOUNT_NO: account.ACCOUNT_NO});
-        router.back();
+        router.push('home');
     }, [setAccount, router]);
 
     const handleDelete = useCallback((account: AccountStatus) => {
