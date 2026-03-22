@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { Colors, FontSizes, Spacing } from '../../constants/theme';
 
 interface RankingListItemProps {
@@ -14,6 +15,7 @@ interface RankingListItemProps {
     primaryMetricLabel?: string;
     buyVolume?: string;
     sellVolume?: string;
+    onPress?: (code: string, name: string) => void;
 }
 
 /** prdy_vrss_sign: 1=상한, 2=상승, 3=보합, 4=하한, 5=하락 */
@@ -55,6 +57,7 @@ function RankingListItem({
     primaryMetricLabel,
     buyVolume,
     sellVolume,
+    onPress,
 }: RankingListItemProps) {
     const signColor = getSignColor(changeSign);
     const signPrefix = getSignPrefix(changeSign);
@@ -62,7 +65,7 @@ function RankingListItem({
     const displayRate = changeRate.startsWith('-') ? changeRate : `${rateSign}${changeRate}`;
 
     return (
-        <View style={styles.container}>
+        <TouchableOpacity style={styles.container} onPress={() => onPress?.(code, name)} activeOpacity={0.7}>
             {/* 좌측: 순위 */}
             <View style={styles.rankContainer}>
                 <Text style={styles.rank}>{rank}</Text>
@@ -101,7 +104,7 @@ function RankingListItem({
                     </Text>
                 ) : null}
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }
 

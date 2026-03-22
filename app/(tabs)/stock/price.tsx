@@ -5,6 +5,7 @@ import {router, useLocalSearchParams, useFocusEffect} from 'expo-router';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { getStockPrice } from "../../../contexts/backEndApi";
 import { StockPriceResponse } from "../../../types/stock";
+import { Colors, Shadows, Spacing, BorderRadius, FontSizes } from '../../../constants/theme';
 
 
 
@@ -12,11 +13,26 @@ export default function PriceScreen() {
     const { stockName, stCode, mrktCode } = useLocalSearchParams();
     const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
     const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 160 });
-    
+
     // 현재가 (stockData가 없으면 기본값 10000)
     const referencePrice = stockData?.output2?.stck_prpr ? parseFloat(stockData.output2.stck_prpr) : 10000;
     // 기준가 (stockData가 없으면 기본값 10000)
     const basePrice = stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : 10000;
+
+    // 등락 계산
+    const priceChange = useMemo(() => {
+        if (!stockData?.output2) return { amount: 0, rate: '0.00', color: Colors.textPrimary, sign: '' };
+        const current = parseFloat(stockData.output2.stck_prpr);
+        const base = parseFloat(stockData.output2.stck_sdpr);
+        const change = current - base;
+        const rate = ((change / base) * 100).toFixed(2);
+        return {
+            amount: change,
+            rate,
+            color: change > 0 ? Colors.profit : change < 0 ? Colors.loss : Colors.textPrimary,
+            sign: change > 0 ? '+' : change < 0 ? '' : '',
+        };
+    }, [stockData?.output2?.stck_prpr, stockData?.output2?.stck_sdpr]);
 
     // 주식 장 시간인지 확인하는 함수 (useMemo로 메모이제이션)
     const isMarketTime = useMemo(() => {
@@ -24,15 +40,15 @@ export default function PriceScreen() {
         const currentTime = now.getHours() * 100 + now.getMinutes(); // HHMM 형식
         const marketStart = 830; // 8:30
         const marketEnd = 1530; // 15:30
-        
+
         // 주말 체크 (토요일: 6, 일요일: 0)
         const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-        
+
         if (isWeekend) {
             console.log('주말 - 주식 장 휴장');
             return false;
         }
-        
+
         const isInMarketTime = currentTime >= marketStart && currentTime <= marketEnd;
         const hour = currentTime.toString().slice(0, 2);
         const minute = currentTime.toString().slice(2, 4);
@@ -91,7 +107,7 @@ export default function PriceScreen() {
         const askQuantity = stockData.output1[`askp_rsqn${10 - i}` as keyof typeof stockData.output1];
         const price = askPrice ? parseFloat(askPrice) : 0;
         const quantity = askQuantity ? parseInt(askQuantity, 10) : 0;
-        
+
         return {
             quantity,
             price,
@@ -105,7 +121,7 @@ export default function PriceScreen() {
         const bidQuantity = stockData.output1[`bidp_rsqn${i + 1}` as keyof typeof stockData.output1];
         const price = bidPrice ? parseFloat(bidPrice) : 0;
         const quantity = bidQuantity ? parseInt(bidQuantity, 10) : 0;
-        
+
         return {
             quantity,
             price,
@@ -117,28 +133,59 @@ export default function PriceScreen() {
     const maxAsk = askData.length > 0 ? Math.max(...askData.map((a) => a.quantity)) : 0;
     const maxBid = bidData.length > 0 ? Math.max(...bidData.map((b) => b.quantity)) : 0;
 
+    const fmt = (v: string | undefined) => v ? parseInt(v).toLocaleString() : '-';
+
     return (
         <View style={styles.mainContainer}>
-            {/* Stock Search Input */}
-            <TouchableOpacity style={styles.searchContainer} onPress={() => router.back()}>
-                <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 8 }}>
-                    <View style={[styles.stockCodeText, { marginRight: 12 }]}>
-                        <Text>{stCode}</Text>
+            {/* 상단 종목 헤더 */}
+            <TouchableOpacity style={styles.header} onPress={() => router.back()} activeOpacity={0.7}>
+                <View style={styles.headerTop}>
+                    <Text style={styles.stockName}>{stockName}</Text>
+                    <View style={[styles.marketBadge, isMarketTime ? styles.badgeActive : styles.badgeInactive]}>
+                        <View style={[styles.dot, { backgroundColor: isMarketTime ? '#4CAF50' : Colors.textMuted }]} />
+                        <Text style={[styles.badgeText, { color: isMarketTime ? '#4CAF50' : Colors.textMuted }]}>
+                            {isMarketTime ? '실시간' : '장 마감'}
+                        </Text>
                     </View>
-                    <Text style={[styles.stockText, { flex: 1 }]}>{stockName}</Text>
                 </View>
-                <AntDesign name="search" size={24} color="black" />
+                <Text style={styles.stockCode}>{stCode}</Text>
+                {/* 현재가 대형 표시 */}
+                <View style={styles.priceRow}>
+                    <Text style={[styles.bigPrice, { color: priceChange.color }]}>
+                        {referencePrice.toLocaleString()}
+                    </Text>
+                    <Text style={[styles.priceUnit, { color: priceChange.color }]}>원</Text>
+                </View>
+                <View style={styles.changeRow}>
+                    <Text style={[styles.changeText, { color: priceChange.color }]}>
+                        {priceChange.sign}{priceChange.amount.toLocaleString()}원
+                    </Text>
+                    <View style={[styles.changeBadge, { backgroundColor: priceChange.amount > 0 ? 'rgba(255,107,107,0.1)' : priceChange.amount < 0 ? 'rgba(52,152,219,0.1)' : Colors.background }]}>
+                        <Text style={[styles.changeBadgeText, { color: priceChange.color }]}>
+                            {priceChange.sign}{priceChange.rate}%
+                        </Text>
+                    </View>
+                </View>
             </TouchableOpacity>
-            
-            {/* 연결 상태 표시 */}
-            <View style={[styles.statusBar, { backgroundColor: isMarketTime ? '#4CAF50' : '#9E9E9E' }]}>
-                <Text style={styles.statusText}>
-                    {isMarketTime ? '정규장 실시간' : '정규장 종료'}
-                </Text>
+
+            {/* 시세 정보 카드 */}
+            <View style={styles.infoCard}>
+                {[
+                    { label: '기준가', value: fmt(stockData?.output2?.stck_sdpr) },
+                    { label: '시가', value: fmt(stockData?.output2?.stck_oprc) },
+                    { label: '고가', value: fmt(stockData?.output2?.stck_hgpr), color: Colors.profit },
+                    { label: '저가', value: fmt(stockData?.output2?.stck_lwpr), color: Colors.loss },
+                ].map((info, i) => (
+                    <View key={info.label} style={[styles.infoItem, i < 3 && styles.infoItemBorder]}>
+                        <Text style={styles.infoLabel}>{info.label}</Text>
+                        <Text style={[styles.infoValue, info.color ? { color: info.color } : null]}>{info.value}</Text>
+                    </View>
+                ))}
             </View>
-            
-            <FlatList 
-                style={styles.container}
+
+            {/* 호가 테이블 */}
+            <FlatList
+                style={styles.orderBook}
                 contentContainerStyle={{ justifyContent: 'center', flexGrow: 1 }}
                 data={[]}
                 renderItem={() => null}
@@ -163,53 +210,26 @@ export default function PriceScreen() {
                                 />
                             ))}
                         </View>
-                        <View style={{ flex: 1, padding: 8 }}>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>현재가</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.stck_prpr ? parseInt(stockData.output2.stck_prpr).toLocaleString() : '-'}
-                                </Text>
-                            </View>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>기준가</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.stck_sdpr ? parseInt(stockData.output2.stck_sdpr).toLocaleString() : '-'}
-                                </Text>
-                            </View>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>시가</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.stck_oprc ? parseInt(stockData.output2.stck_oprc).toLocaleString() : '-'}
-                                </Text>
-                            </View>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>고가</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.stck_hgpr ? parseInt(stockData.output2.stck_hgpr).toLocaleString() : '-'}
-                                </Text>
-                            </View>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>저가</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.stck_lwpr ? parseInt(stockData.output2.stck_lwpr).toLocaleString() : '-'}
-                                </Text>
-                            </View>
-                        </View>
+                        <View style={{ flex: 1 }} />
                     </View>
                 )}
                 ListFooterComponent={() => (
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                        <View style={{ flex: 1 }}>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>예상체결가</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.antc_cnpr ? parseInt(stockData.output2.antc_cnpr).toLocaleString() : '-'}
-                                </Text>
+                        <View style={styles.footerSide}>
+                            <View style={styles.footerCard}>
+                                <View style={styles.footerIconWrap}>
+                                    <AntDesign name="dotchart" size={14} color={Colors.primary} />
+                                </View>
+                                <Text style={styles.footerLabel}>예상체결가</Text>
+                                <Text style={styles.footerValue}>{fmt(stockData?.output2?.antc_cnpr)}</Text>
                             </View>
-                            <View style={styles.additionalContainer}>
-                                <Text style={styles.additionalText}>예상대비</Text>
-                                <Text style={styles.additionalText}>
-                                    {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}%
+                            <View style={[styles.footerCard, styles.footerCardAccent]}>
+                                <View style={styles.footerIconWrap}>
+                                    <AntDesign name="swap" size={14} color={Colors.primary} />
+                                </View>
+                                <Text style={styles.footerLabel}>예상대비</Text>
+                                <Text style={styles.footerValue}>
+                                    {stockData?.output2?.antc_cntg_vrss ? parseInt(stockData.output2.antc_cntg_vrss).toLocaleString() : '-'}
                                 </Text>
                             </View>
                         </View>
@@ -229,10 +249,10 @@ export default function PriceScreen() {
                     </View>
                 )}
             />
-            
-            {/* 플러스 등록 버튼 - 화면 최하단 우측 고정 */}
-            <TouchableOpacity 
-                style={styles.floatingButton}
+
+            {/* 플러스 등록 버튼 */}
+            <TouchableOpacity
+                style={styles.fab}
                 onPress={() => router.push({
                     pathname: '/stock/add',
                     params: {
@@ -252,144 +272,186 @@ export default function PriceScreen() {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: Colors.background,
     },
-    container: {
+
+    // 상단 헤더
+    header: {
+        backgroundColor: Colors.cardBackground,
+        paddingHorizontal: Spacing.xl,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.xl,
+        borderBottomLeftRadius: BorderRadius.xl,
+        borderBottomRightRadius: BorderRadius.xl,
+        ...Shadows.medium,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    stockName: {
+        fontSize: FontSizes.xxl,
+        fontWeight: '800',
+        color: Colors.textPrimary,
+    },
+    stockCode: {
+        fontSize: FontSizes.sm,
+        color: Colors.textMuted,
+        marginTop: 2,
+        letterSpacing: 1,
+    },
+    marketBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: Spacing.xs,
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.full,
+        gap: 5,
+    },
+    badgeActive: {
+        backgroundColor: 'rgba(76,175,80,0.1)',
+    },
+    badgeInactive: {
+        backgroundColor: Colors.borderLight,
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    badgeText: {
+        fontSize: FontSizes.xs,
+        fontWeight: '700',
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        marginTop: Spacing.md,
+    },
+    bigPrice: {
+        fontSize: 32,
+        fontWeight: '800',
+        letterSpacing: -0.5,
+    },
+    priceUnit: {
+        fontSize: FontSizes.lg,
+        fontWeight: '600',
+        marginLeft: 2,
+    },
+    changeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: Spacing.xs,
+        gap: Spacing.sm,
+    },
+    changeText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+    },
+    changeBadge: {
+        paddingVertical: 2,
+        paddingHorizontal: Spacing.sm,
+        borderRadius: BorderRadius.full,
+    },
+    changeBadgeText: {
+        fontSize: FontSizes.sm,
+        fontWeight: '700',
+    },
+
+    // 시세 정보 카드
+    infoCard: {
+        flexDirection: 'row',
+        marginHorizontal: Spacing.lg,
+        marginTop: Spacing.md,
+        marginBottom: Spacing.sm,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.sm,
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.md,
+        ...Shadows.small,
+    },
+    infoItem: {
         flex: 1,
-        backgroundColor: '#f9f9f9',
-        padding: 16,
+        alignItems: 'center',
     },
-    floatingButton: {
+    infoItemBorder: {
+        borderRightWidth: 1,
+        borderRightColor: Colors.borderLight,
+    },
+    infoLabel: {
+        fontSize: FontSizes.xs,
+        color: Colors.textMuted,
+        marginBottom: 4,
+        fontWeight: '500',
+    },
+    infoValue: {
+        fontSize: FontSizes.sm,
+        fontWeight: '700',
+        color: Colors.textPrimary,
+    },
+
+    // 호가 테이블
+    orderBook: {
+        flex: 1,
+        backgroundColor: Colors.background,
+        paddingHorizontal: Spacing.sm,
+        paddingTop: Spacing.sm,
+    },
+
+    // Footer 사이드 (예상체결가/예상대비)
+    footerSide: {
+        flex: 1,
+        padding: Spacing.sm,
+        gap: Spacing.sm,
+    },
+    footerCard: {
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.md,
+        padding: Spacing.md,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+    },
+    footerCardAccent: {
+        borderColor: Colors.primary,
+        borderWidth: 1,
+        backgroundColor: 'rgba(78,205,196,0.04)',
+    },
+    footerIconWrap: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(78,205,196,0.12)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 6,
+    },
+    footerLabel: {
+        fontSize: 10,
+        color: Colors.textMuted,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 6,
+    },
+    footerValue: {
+        fontSize: FontSizes.lg,
+        fontWeight: '800',
+        color: Colors.textPrimary,
+    },
+
+    // FAB
+    fab: {
         position: 'absolute',
-        bottom: 30,
+        bottom: 24,
         right: 20,
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#B5EAD7',
+        backgroundColor: Colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        ...Shadows.large,
         zIndex: 1000,
-    },
-    statusBar: {
-        padding: 8,
-        alignItems: 'center',
-    },
-    statusText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    section: {
-        marginVertical: 8,
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ddd',
-        backgroundColor: '#ffffff',
-        borderRadius: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-        marginBottom: 8,
-    },
-    price: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        width: 80,
-        textAlign: 'center',
-    },
-    quantityContainer: {
-        flex: 0.5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    gauge: {
-        position: 'absolute',
-        height: '100%',
-        borderRadius: 4,
-    },
-    quantity: {
-        fontSize: 14,
-        color: '#333',
-        textAlign: 'right',
-        zIndex: 1,
-    },
-    additionalContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        padding: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    additionalText: {
-        padding:1,
-        fontSize: 12,
-        color: '#939393',
-        textAlign: 'left',
-    },
-    searchContainer: {
-        padding: 16,
-        paddingRight: 36,
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#ffffff",
-        borderBottomWidth: 1,
-        borderBottomColor: "#e0e0e0",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        borderRadius: 8,
-    },
-    searchInput: {
-        height: 40,
-        borderWidth: 1,
-        borderColor: '#B5EAD7',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        backgroundColor: '#F5F5F5',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    stockText: {
-        fontSize: 16,
-        color: "#333",
-    },
-    stockCodeText: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#333333",
-        backgroundColor: "#F5F5F5",
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        textAlign: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
     },
 });

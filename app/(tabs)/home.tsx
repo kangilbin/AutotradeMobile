@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
 import { Colors, FontSizes, Spacing } from '../../constants/theme';
 import { useFluctuationRank, useVolumeRank, useVolumePowerRank } from '../../hooks/useRanking';
 import {
@@ -108,8 +109,16 @@ export default function HomeScreen() {
         setRefreshing(false);
     }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket]);
 
+    const handleItemPress = useCallback((code: string, name: string) => {
+        router.push({
+            pathname: '/stock/price',
+            params: { stCode: code, stockName: name },
+        });
+    }, []);
+
     const renderItem = useCallback(({ item }: { item: RankItem }) => {
         const code = getItemCode(item, activeTab);
+        const name = item.hts_kor_isnm;
         let primaryMetric: string | undefined;
         let primaryMetricLabel: string | undefined;
 
@@ -132,7 +141,7 @@ export default function HomeScreen() {
             return (
                 <RankingListItem
                     rank={item.data_rank}
-                    name={item.hts_kor_isnm}
+                    name={name}
                     code={code}
                     price={item.stck_prpr}
                     changeRate={item.prdy_ctrt}
@@ -140,6 +149,7 @@ export default function HomeScreen() {
                     changeSign={item.prdy_vrss_sign}
                     buyVolume={vp.shnu_cnqn_smtn}
                     sellVolume={vp.seln_cnqn_smtn}
+                    onPress={handleItemPress}
                 />
             );
         }
@@ -147,7 +157,7 @@ export default function HomeScreen() {
         return (
             <RankingListItem
                 rank={item.data_rank}
-                name={item.hts_kor_isnm}
+                name={name}
                 code={code}
                 price={item.stck_prpr}
                 changeRate={item.prdy_ctrt}
@@ -155,9 +165,10 @@ export default function HomeScreen() {
                 changeSign={item.prdy_vrss_sign}
                 primaryMetric={primaryMetric}
                 primaryMetricLabel={primaryMetricLabel}
+                onPress={handleItemPress}
             />
         );
-    }, [activeTab, volumeBlng]);
+    }, [activeTab, volumeBlng, handleItemPress]);
 
     const keyExtractor = useCallback((item: RankItem) => {
         return `${activeTab}-${item.data_rank}-${getItemCode(item, activeTab)}`;
@@ -202,6 +213,7 @@ export default function HomeScreen() {
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     showsVerticalScrollIndicator={false}
+                    removeClippedSubviews
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
