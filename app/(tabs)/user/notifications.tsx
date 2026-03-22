@@ -16,24 +16,19 @@ import { getNotificationSettings, updateNotificationSetting } from '../../../con
 import { NotiSettingItem } from '../../../types/user';
 
 export default function NotificationsScreen() {
-    const [buyNoti, setBuyNoti] = useState(false);
-    const [sellNoti, setSellNoti] = useState(false);
+    const [tradeNoti, setTradeNoti] = useState(false);
     const [loading, setLoading] = useState(true);
     const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
 
     useEffect(() => {
         const init = async () => {
-            // 알림 권한 상태 확인
             const { status } = await Notifications.getPermissionsAsync();
             setPermissionGranted(status === 'granted');
 
-            // 알림 설정 조회 (백엔드: NotiSettingItem[])
             const settings = await getNotificationSettings();
             if (settings) {
-                const findSetting = (type: string) =>
-                    settings.find((item: NotiSettingItem) => item.NOTI_TYPE === type);
-                setBuyNoti(findSetting('BUY')?.USE_YN === 'Y');
-                setSellNoti(findSetting('SELL')?.USE_YN === 'Y');
+                const tradeSetting = settings.find((item: NotiSettingItem) => item.NOTI_TYPE === 'TRADE');
+                setTradeNoti(tradeSetting?.USE_YN === 'Y');
             }
             setLoading(false);
         };
@@ -58,35 +53,22 @@ export default function NotificationsScreen() {
         setPermissionGranted(newStatus === 'granted');
     }, []);
 
-    const handleToggleBuy = useCallback(async () => {
-        const newValue = !buyNoti;
-        setBuyNoti(newValue);
+    const handleToggleTrade = useCallback(async () => {
+        const newValue = !tradeNoti;
+        setTradeNoti(newValue);
 
         const success = await updateNotificationSetting({
-            NOTI_TYPE: 'BUY',
+            NOTI_TYPE: 'TRADE',
             USE_YN: newValue ? 'Y' : 'N',
         });
 
-        if (!success) {
-            setBuyNoti(!newValue);
+        if (success) {
+            Alert.alert('완료', `매매 알림이 ${newValue ? '활성화' : '비활성화'}되었습니다.`);
+        } else {
+            setTradeNoti(!newValue);
             Alert.alert('오류', '알림 설정 변경에 실패했습니다.');
         }
-    }, [buyNoti]);
-
-    const handleToggleSell = useCallback(async () => {
-        const newValue = !sellNoti;
-        setSellNoti(newValue);
-
-        const success = await updateNotificationSetting({
-            NOTI_TYPE: 'SELL',
-            USE_YN: newValue ? 'Y' : 'N',
-        });
-
-        if (!success) {
-            setSellNoti(!newValue);
-            Alert.alert('오류', '알림 설정 변경에 실패했습니다.');
-        }
-    }, [sellNoti]);
+    }, [tradeNoti]);
 
     if (loading) {
         return (
@@ -101,7 +83,6 @@ export default function NotificationsScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <View style={styles.content}>
-                {/* 알림 권한 상태 배너 */}
                 {permissionGranted === false && (
                     <Pressable style={styles.permissionBanner} onPress={handleRequestPermission}>
                         <Ionicons name="warning-outline" size={18} color="#E17055" />
@@ -120,29 +101,14 @@ export default function NotificationsScreen() {
 
                     <View style={styles.settingRow}>
                         <View style={styles.settingLabel}>
-                            <Text style={styles.settingTitle}>매수 알림</Text>
-                            <Text style={styles.settingDesc}>매수 체결 시 푸시 알림</Text>
+                            <Text style={styles.settingTitle}>매매 알림</Text>
+                            <Text style={styles.settingDesc}>매수/매도 체결 시 푸시 알림</Text>
                         </View>
                         <AuthToggle
-                            isOn={buyNoti}
+                            isOn={tradeNoti}
                             onText="ON"
                             offText="OFF"
-                            onToggle={handleToggleBuy}
-                        />
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.settingRow}>
-                        <View style={styles.settingLabel}>
-                            <Text style={styles.settingTitle}>매도 알림</Text>
-                            <Text style={styles.settingDesc}>매도 체결 시 푸시 알림</Text>
-                        </View>
-                        <AuthToggle
-                            isOn={sellNoti}
-                            onText="ON"
-                            offText="OFF"
-                            onToggle={handleToggleSell}
+                            onToggle={handleToggleTrade}
                         />
                     </View>
                 </View>
