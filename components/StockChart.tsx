@@ -287,7 +287,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
       // 프로그래밍적 스크롤(scrollToDate 등) 대응
       chart.timeScale().subscribeVisibleLogicalRangeChange(updateDots);
 
-      updateDots();
+      // updateDots는 setVisibleLogicalRange 이후 double rAF로 호출 (초기 좌표 오류 방지)
 
       // OHLC 표시 + 툴팁
       var oO=document.getElementById('ohlc-o');
@@ -454,6 +454,8 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
       var totalBars=RAW_DATA.length;
       var visibleCount=Math.min(50,totalBars);
       chart.timeScale().setVisibleLogicalRange({from:totalBars-visibleCount,to:totalBars});
+      // 차트 레이아웃 완료 후 도트 위치 계산 (double rAF로 렌더 사이클 보장)
+      requestAnimationFrame(function(){ requestAnimationFrame(updateDots); });
 
       // 초기화 완료 신호
       if(window.ReactNativeWebView){

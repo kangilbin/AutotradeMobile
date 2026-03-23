@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-
+import { Colors, Spacing, FontSizes, BorderRadius } from '../constants/theme';
 
 
 interface RowProps {
@@ -16,130 +16,118 @@ interface RowProps {
 }
 
 
-export default function OrderBookRow({ item, type, currentPrice, maxQuantity, basePrice }:RowProps) {
+export default function OrderBookRow({ item, type, currentPrice, maxQuantity, basePrice }: RowProps) {
     const priceColor = basePrice
         ? item.price > basePrice
-            ? '#E74C3C'
+            ? Colors.profit
             : item.price < basePrice
-                ? '#3498DB'
-                : '#666'
-        : '#666';
+                ? Colors.loss
+                : Colors.textSecondary
+        : Colors.textSecondary;
+
+    const isHighlighted = item.price === currentPrice;
+
+    const rowStyle = isHighlighted
+        ? styles.highlightedRow
+        : styles.row;
 
     return (
-        <View style={[
-            item.price === currentPrice 
-            ? (type === 'ask' ? styles.highlightedAsk : styles.highlightedBid) 
-            : styles.row
-        ]}>
-            {type === 'ask' ? (
-                <>
-                    <View style={styles.quantityContainer}>
-                        <Text style={[styles.quantity, { textAlign: 'right', flex: 1, color: '#3498DB' }]}>
-                            {item.quantity.toLocaleString()}
-                        </Text>
-                        <View
-                            style={[
-                                styles.gauge,
-                                { width: `${(item.quantity / maxQuantity) * 100}%`, backgroundColor: '#d8e7fc', right: 0 },
-                            ]}
-                        />
-                    </View>
-                    <View style={styles.priceContainer}>
-                        <Text style={[styles.price, { color: priceColor }]}>{item.price.toLocaleString()}</Text>
-                        <Text style={[styles.rateText, { color: priceColor }]}>
-                           {item.rate}%
-                        </Text>
-                    </View>
-                </>
-            ) : (
-                <>
-                    <View style={styles.priceContainer}>
-                        <Text style={[styles.price, { color: priceColor }]}>{item.price.toLocaleString()}</Text>
-                        <Text style={[styles.rateText, { color: priceColor }]}>
-                            {item.rate}%
-                        </Text>
-                    </View>
-                    <View style={styles.quantityContainer}>
-                        <View
-                            style={[
-                                styles.gauge,
-                                { width: `${(item.quantity / maxQuantity) * 100}%`, backgroundColor: '#fce1e1', left: 0 },
-                            ]}
-                        />
-                        <Text style={[styles.quantity, { color: '#E74C3C' }]}>{item.quantity.toLocaleString()}</Text>
-                    </View>
-                </>
-            )}
+        <View style={rowStyle}>
+            {/* Column 1: gauge + quantity (flex 0.35) */}
+            <View style={styles.quantityContainer}>
+                <View
+                    style={[
+                        styles.gauge,
+                        {
+                            width: `${(item.quantity / maxQuantity) * 100}%`,
+                            backgroundColor: type === 'ask'
+                                ? 'rgba(52,152,219,0.12)'
+                                : 'rgba(255,107,107,0.12)',
+                            right: type === 'ask' ? 0 : undefined,
+                            left: type === 'bid' ? 0 : undefined,
+                        },
+                    ]}
+                />
+                <Text style={[
+                    styles.quantity,
+                    { color: type === 'ask' ? Colors.loss : Colors.profit, textAlign: type === 'ask' ? 'right' : 'left' },
+                ]}>
+                    {item.quantity.toLocaleString()}
+                </Text>
+            </View>
+
+            {/* Column 2: price (flex 0.35) */}
+            <View style={styles.priceContainer}>
+                <Text style={[styles.price, { color: priceColor }]}>
+                    {item.price.toLocaleString()}
+                </Text>
+            </View>
+
+            {/* Column 3: rate (flex 0.3) */}
+            <View style={styles.rateContainer}>
+                <Text style={[styles.rateText, { color: priceColor }]}>
+                    {item.rate}%
+                </Text>
+            </View>
         </View>
     );
 }
 
-const styles= StyleSheet.create({
+const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
+        height: 40,
+        paddingVertical: 6,
+        paddingHorizontal: Spacing.lg,
         borderBottomWidth: 1,
-        borderBottomColor: '#ddd',
-        backgroundColor: '#ffffff',
-        borderRadius: 8,
-        marginBottom: 8,
+        borderBottomColor: Colors.borderLight,
+        backgroundColor: Colors.cardBackground,
     },
-    highlightedAsk: {
+    highlightedRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
-        borderWidth: 2,
-        borderColor: '#99c0f6',
-        backgroundColor: '#ffffff',
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-    highlightedBid: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 8,
-        borderWidth: 2,
-        borderColor: '#faacac',
-        backgroundColor: '#ffffff',
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-
-    priceContainer: {
-        flex: 0.5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    price: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
+        height: 40,
+        paddingVertical: 6,
+        paddingHorizontal: Spacing.lg,
+        backgroundColor: 'rgba(78,205,196,0.08)',
+        borderLeftWidth: 3,
+        borderLeftColor: Colors.primary,
     },
     quantityContainer: {
-        flex: 0.5,
+        flex: 0.35,
         flexDirection: 'row',
         alignItems: 'center',
         position: 'relative',
-        paddingHorizontal: 2,
     },
     gauge: {
         position: 'absolute',
         height: '100%',
-        borderRadius: 4,
+        borderRadius: 2,
     },
     quantity: {
-        fontSize: 14,
-        color: '#333',
-        textAlign: 'right',
+        fontSize: FontSizes.sm,
         zIndex: 1,
+        flex: 1,
+    },
+    priceContainer: {
+        flex: 0.35,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    price: {
+        fontSize: FontSizes.md,
+        fontWeight: '700',
+        color: Colors.textPrimary,
+    },
+    rateContainer: {
+        flex: 0.3,
+        alignItems: 'flex-end',
+        justifyContent: 'center',
     },
     rateText: {
-        fontSize: 10,
-        color: '#666',
-        textAlign: 'right',
-        zIndex: 1,
+        fontSize: 11,
+        fontWeight: '500',
+        color: Colors.textSecondary,
     },
 });
