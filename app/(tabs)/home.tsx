@@ -15,6 +15,7 @@ import {
 } from '../../types/ranking';
 import RankingTabSelector from '../../components/ranking/RankingTabSelector';
 import RankingFilterChips from '../../components/ranking/RankingFilterChips';
+import RankingTopCards from '../../components/ranking/RankingTopCards';
 import RankingListItem from '../../components/ranking/RankingListItem';
 
 type RankItem = FluctuationRankItem | VolumeRankItem | VolumePowerRankItem;
@@ -84,12 +85,16 @@ export default function HomeScreen() {
         setVolumePowerMarket(v);
     }, []);
 
-    // 현재 탭의 데이터와 로딩 상태
-    const listData = useMemo((): RankItem[] => {
+    // 현재 탭의 전체 데이터
+    const allData = useMemo((): RankItem[] => {
         if (activeTab === 'fluctuation') return fluctuation.data;
         if (activeTab === 'volume') return volume.data;
         return volumePower.data;
     }, [activeTab, fluctuation.data, volume.data, volumePower.data]);
+
+    // Top 3 / 나머지 분리
+    const top3 = useMemo(() => allData.slice(0, 3), [allData]);
+    const restData = useMemo(() => allData.slice(3), [allData]);
 
     const isLoading = activeTab === 'fluctuation'
         ? fluctuation.loading
@@ -186,12 +191,18 @@ export default function HomeScreen() {
         onVolumePowerMarketChange: handleVolumePowerMarketChange,
     };
 
+    const ListHeader = useMemo(() => (
+        <>
+            <RankingFilterChips {...filterChipsProps} />
+            <RankingTopCards items={top3} activeTab={activeTab} onItemPress={handleItemPress} />
+        </>
+    ), [filterChipsProps, top3, activeTab, handleItemPress]);
+
     // 초기 로딩 (데이터 없음 + 로딩 중)
-    if (isLoading && listData.length === 0 && !refreshing) {
+    if (isLoading && allData.length === 0 && !refreshing) {
         return (
             <View style={styles.container}>
                 <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
-                <RankingFilterChips {...filterChipsProps} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -202,16 +213,16 @@ export default function HomeScreen() {
     return (
         <View style={styles.container}>
             <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
-            <RankingFilterChips {...filterChipsProps} />
-            {listData.length === 0 ? (
+            {allData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>순위 데이터가 없습니다</Text>
                 </View>
             ) : (
                 <FlatList
-                    data={listData}
+                    data={restData}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
+                    ListHeaderComponent={ListHeader}
                     showsVerticalScrollIndicator={false}
                     removeClippedSubviews
                     refreshControl={

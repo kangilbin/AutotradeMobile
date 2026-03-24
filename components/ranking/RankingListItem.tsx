@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { Colors, FontSizes, Spacing } from '../../constants/theme';
+import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import VolumePowerBar from './VolumePowerBar';
 
 interface RankingListItemProps {
     rank: string;
@@ -18,11 +19,16 @@ interface RankingListItemProps {
     onPress?: (code: string, name: string) => void;
 }
 
-/** prdy_vrss_sign: 1=상한, 2=상승, 3=보합, 4=하한, 5=하락 */
 const getSignColor = (sign: string) => {
     if (sign === '1' || sign === '2') return Colors.profit;
     if (sign === '4' || sign === '5') return Colors.loss;
     return Colors.textSecondary;
+};
+
+const getSignBgColor = (sign: string) => {
+    if (sign === '1' || sign === '2') return Colors.profitBg;
+    if (sign === '4' || sign === '5') return Colors.lossBg;
+    return Colors.background;
 };
 
 const getSignPrefix = (sign: string) => {
@@ -60,50 +66,50 @@ function RankingListItem({
     onPress,
 }: RankingListItemProps) {
     const signColor = getSignColor(changeSign);
+    const signBg = getSignBgColor(changeSign);
     const signPrefix = getSignPrefix(changeSign);
-    const rateSign = changeSign === '1' || changeSign === '2' ? '+' : changeSign === '3' ? '' : '-';
+    const rateSign = changeSign === '1' || changeSign === '2' ? '+' : changeSign === '3' ? '' : '';
     const displayRate = changeRate.startsWith('-') ? changeRate : `${rateSign}${changeRate}`;
 
     return (
-        <TouchableOpacity style={styles.container} onPress={() => onPress?.(code, name)} activeOpacity={0.7}>
-            {/* 좌측: 순위 */}
-            <View style={styles.rankContainer}>
-                <Text style={styles.rank}>{rank}</Text>
-            </View>
-
-            {/* 중앙: 종목 정보 */}
-            <View style={styles.infoContainer}>
-                <Text style={styles.name} numberOfLines={1}>{name}</Text>
-                <View style={styles.subRow}>
-                    <Text style={styles.code}>{code}</Text>
-                    <Text style={[styles.changeRate, { color: signColor }]}>
-                        {displayRate}%
-                    </Text>
-                    <Text style={[styles.changeAmount, { color: signColor }]}>
-                        {signPrefix}{formatPrice(changeAmount.replace('-', ''))}
-                    </Text>
+        <TouchableOpacity
+            style={[styles.card, Shadows.small]}
+            onPress={() => onPress?.(code, name)}
+            activeOpacity={0.7}
+        >
+            {/* 상단 행: 순위 + 종목명 + 현재가 */}
+            <View style={styles.topRow}>
+                <View style={styles.rankCircle}>
+                    <Text style={styles.rankText}>{rank}</Text>
+                </View>
+                <View style={styles.infoContainer}>
+                    <Text style={styles.name} numberOfLines={1}>{name}</Text>
+                    <View style={styles.subRow}>
+                        <Text style={styles.code}>{code}</Text>
+                        <View style={[styles.rateBadge, { backgroundColor: signBg }]}>
+                            <Text style={[styles.rateText, { color: signColor }]}>
+                                {displayRate}%
+                            </Text>
+                        </View>
+                        <Text style={[styles.changeAmount, { color: signColor }]}>
+                            {signPrefix}{formatPrice(changeAmount.replace('-', ''))}
+                        </Text>
+                    </View>
+                </View>
+                <View style={styles.priceContainer}>
+                    <Text style={styles.price}>{formatPrice(price)}원</Text>
+                    {primaryMetric ? (
+                        <Text style={styles.metric}>
+                            {primaryMetricLabel} {primaryMetric.includes('.') ? primaryMetric : formatVolume(primaryMetric)}
+                        </Text>
+                    ) : null}
                 </View>
             </View>
 
-            {/* 우측: 현재가 + 메인 지표 */}
-            <View style={styles.priceContainer}>
-                <Text style={styles.price}>{formatPrice(price)}원</Text>
-                {buyVolume !== undefined && sellVolume !== undefined ? (
-                    <View style={styles.volumePowerRow}>
-                        <Text style={[styles.volumeLabel, { color: Colors.profit }]}>
-                            매수 {formatVolume(buyVolume)}
-                        </Text>
-                        <Text style={styles.volumeSeparator}>|</Text>
-                        <Text style={[styles.volumeLabel, { color: Colors.loss }]}>
-                            매도 {formatVolume(sellVolume)}
-                        </Text>
-                    </View>
-                ) : primaryMetric ? (
-                    <Text style={styles.metric}>
-                        {primaryMetricLabel} {primaryMetric.includes('.') ? primaryMetric : formatVolume(primaryMetric)}
-                    </Text>
-                ) : null}
-            </View>
+            {/* 체결강도 탭: 매수/매도 프로그레스바 */}
+            {buyVolume !== undefined && sellVolume !== undefined && (
+                <VolumePowerBar buyVolume={buyVolume} sellVolume={sellVolume} />
+            )}
         </TouchableOpacity>
     );
 }
@@ -111,22 +117,30 @@ function RankingListItem({
 export default React.memo(RankingListItem);
 
 const styles = StyleSheet.create({
-    container: {
+    card: {
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.md,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        marginHorizontal: Spacing.lg,
+        marginBottom: Spacing.sm,
+    },
+    topRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.xl,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.borderLight,
     },
-    rankContainer: {
-        width: 32,
+    rankCircle: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: Colors.background,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    rank: {
-        fontSize: FontSizes.lg,
+    rankText: {
+        fontSize: FontSizes.sm,
         fontWeight: 'bold',
-        color: Colors.textPrimary,
+        color: Colors.textSecondary,
     },
     infoContainer: {
         flex: 1,
@@ -147,7 +161,12 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
     },
-    changeRate: {
+    rateBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    rateText: {
         fontSize: FontSizes.md,
         fontWeight: '600',
     },
@@ -166,19 +185,5 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
         marginTop: 2,
-    },
-    volumePowerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 2,
-        gap: 4,
-    },
-    volumeLabel: {
-        fontSize: FontSizes.xs + 1,
-        fontWeight: '600',
-    },
-    volumeSeparator: {
-        fontSize: FontSizes.xs,
-        color: Colors.border,
     },
 });

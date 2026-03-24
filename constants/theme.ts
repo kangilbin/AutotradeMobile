@@ -49,6 +49,15 @@ export const Colors = {
     buttonPrimary: '#4ECDC4',
     buttonSecondary: '#667EEA',
     buttonDanger: '#E74C3C',
+
+    // 순위 뱃지 색상
+    rankGold: '#FFD700',
+    rankSilver: '#C0C0C0',
+    rankBronze: '#CD7F32',
+
+    // 등락률 뱃지 배경
+    profitBg: '#FFF0F0',
+    lossBg: '#F0F4FF',
 } as const;
 
 // 그림자 스타일
