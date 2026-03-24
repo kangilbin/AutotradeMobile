@@ -103,10 +103,29 @@ function processQueue(error: any, token: string | null) {
     failedQueue = [];
 }
 
+// --- Circuit Breaker: 연속 실패 시 API 호출 일시 차단 ---
+let consecutiveFailCount = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 5;
+const COOLDOWN_MS = 30_000; // 30초
+let cooldownUntil = 0;
+const BYPASS_URLS = ['/users/refresh', '/oauth/google/login', '/oauth/google/token'];
+
+const resetCircuitBreaker = () => {
+    consecutiveFailCount = 0;
+    cooldownUntil = 0;
+};
+
+const tripCircuitBreaker = () => {
+    consecutiveFailCount++;
+    if (consecutiveFailCount >= CIRCUIT_BREAKER_THRESHOLD) {
+        cooldownUntil = Date.now() + COOLDOWN_MS;
+        console.warn(`API circuit breaker 작동: ${COOLDOWN_MS / 1000}초 쿨다운`);
+    }
+};
+
 const api = axios.create({
-    baseURL: 'http://localhost:8000', // 공통 주소 설정
-    // timeout: 5000, // 타임아웃 설정
-    timeout: 50000, // 타임아웃 설정
+    baseURL: 'http://localhost:8000',
+    timeout: 50000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -114,7 +133,13 @@ const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
     async (config) => {
-        setApiLoading(true); // Show loading
+        // Circuit breaker 쿨다운 체크 (인증 관련 요청은 우회)
+        if (cooldownUntil > 0 && Date.now() < cooldownUntil
+            && !BYPASS_URLS.includes(config.url || '')) {
+            return Promise.reject(new axios.Cancel('서버 연결 불안정 — 잠시 후 재시도'));
+        }
+
+        setApiLoading(true);
 
         const accessToken = await SecureStore.getItemAsync('access_token');
         if (accessToken) {
@@ -140,11 +165,21 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response: AxiosResponse) => {
         setApiLoading(false);
-
+        resetCircuitBreaker();
         return response;
     },
     async (error: AxiosError) => {
         setApiLoading(false);
+
+        // Cancel된 요청(circuit breaker)은 바로 reject
+        if (axios.isCancel(error)) {
+            return Promise.reject(error);
+        }
+
+        // 네트워크 에러 또는 서버 에러(5xx) 시 카운터 증가
+        if (!error.response || (error.response.status >= 500)) {
+            tripCircuitBreaker();
+        }
 
         const originalRequest: any = error.config;
 
