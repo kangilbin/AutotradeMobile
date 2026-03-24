@@ -29,13 +29,11 @@ export const useSwingData = (accountNo: string | undefined): UseSwingDataReturn 
 
         try {
             setLoading(true);
-            const [listData] = await Promise.all([
-                getSwingList(accountNo),
-                // getSwingSummary()
-            ]);
+            const listData = await getSwingList(accountNo);
 
             if (listData) {
-                setSwingList(listData);
+                setSwingList(listData.list);
+                setSummary(listData.summary);
             }
         } catch (error) {
             console.error('스윙 데이터 로드 실패:', error);
