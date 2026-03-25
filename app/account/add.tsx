@@ -66,8 +66,9 @@ export default function AddAccountScreen() {
 
         try {
             const response = await addAuth(newAuth);
+            if (!response) return;
             setAuthList((prev) => [...prev, response as AuthStatus]);
-            handleChange('AUTH_ID', response!.AUTH_ID);
+            handleChange('AUTH_ID', response.AUTH_ID);
             setNewAuth({SIMULATION_YN: 'Y', AUTH_NAME: '', API_KEY: '', SECRET_KEY: ''});
             setIsAddModalVisible(false);
         } catch (error: any) {
