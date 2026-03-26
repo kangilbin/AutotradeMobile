@@ -14,7 +14,7 @@ import {
     StockStatus
 } from "../types/stock";
 import { SwingItem } from '../types/swing';
-import { UpdateUserProfileRequest, NotificationSettings, UpdateNotificationRequest } from '../types/user';
+import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 import {
     FluctuationRankItem,
@@ -539,7 +539,7 @@ export const getVolumePowerRank = async (
 };
 
 // 알림 설정 조회
-export const getNotificationSettings = async (): Promise<NotificationSettings | undefined> => {
+export const getNotificationSettings = async (): Promise<NotiSettingItem[] | undefined> => {
     try {
         const response = await api.get('/users/notification-settings');
         return response.data.data;
@@ -548,13 +548,35 @@ export const getNotificationSettings = async (): Promise<NotificationSettings | 
     }
 };
 
-// 알림 설정 변경
-export const updateNotificationSettings = async (param: UpdateNotificationRequest): Promise<boolean> => {
+// 알림 설정 변경 (개별 항목)
+export const updateNotificationSetting = async (param: UpdateNotificationRequest): Promise<boolean> => {
     try {
         await api.put('/users/notification-settings', param);
         return true;
     } catch (error: unknown) {
         handleApiError(error, '알림 설정 변경');
+        return false;
+    }
+};
+
+// 푸시 토큰 등록
+export const registerPushToken = async (param: PushTokenRegisterRequest): Promise<boolean> => {
+    try {
+        await api.post('/users/push-token', param);
+        return true;
+    } catch (error: unknown) {
+        handleApiError(error, '푸시 토큰 등록');
+        return false;
+    }
+};
+
+// 푸시 토큰 삭제
+export const deletePushToken = async (param: PushTokenDeleteRequest): Promise<boolean> => {
+    try {
+        await api.delete('/users/push-token', { data: param });
+        return true;
+    } catch (error: unknown) {
+        handleApiError(error, '푸시 토큰 삭제');
         return false;
     }
 };
