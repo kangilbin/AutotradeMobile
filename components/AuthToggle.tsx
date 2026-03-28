@@ -25,7 +25,7 @@ export default function AuthToggle({ isOn, onText, offText, onToggle}: AuthToggl
 
     const backgroundColor = animation.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#B5EAD7', '#ccc'],
+        outputRange: ['#ccc', '#B5EAD7'],
     });
 
     return (
