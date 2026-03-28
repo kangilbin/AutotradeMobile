@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
     Alert,
+    FlatList,
     Modal,
     Platform,
     Pressable,
@@ -11,7 +12,6 @@ import {
     View,
     ScrollView,
 } from 'react-native';
-import {Picker} from '@react-native-picker/picker';
 import {Ionicons} from '@expo/vector-icons';
 import {useRouter} from 'expo-router';
 import DismissKeyboardView from '../../components/DismissKeyboardView';
@@ -19,6 +19,7 @@ import {
     addAccount,
     AddAccountRequest,
     addAuth,
+    deleteAuth,
     getAuthList
 } from "../../contexts/backEndApi";
 import {AddAuthRequest, AuthStatus} from "../../types/auth";
@@ -74,6 +75,29 @@ export default function AddAccountScreen() {
         } catch (error: any) {
             Alert.alert('오류', error.response?.data || error.message);
         }
+    };
+
+    const handleDeleteAuth = (auth: AuthStatus) => {
+        Alert.alert(
+            '보안키 삭제',
+            `'${auth.AUTH_NAME}'를 삭제하시겠습니까?`,
+            [
+                {text: '취소', style: 'cancel'},
+                {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: async () => {
+                        const success = await deleteAuth(auth.AUTH_ID);
+                        if (success) {
+                            setAuthList(prev => prev.filter(a => a.AUTH_ID !== auth.AUTH_ID));
+                            if (form.AUTH_ID === auth.AUTH_ID) {
+                                handleChange('AUTH_ID', 0);
+                            }
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const isFormValid = form.ACCOUNT_NO.length > 0 && form.AUTH_ID > 0;
@@ -154,7 +178,7 @@ export default function AddAccountScreen() {
             </ScrollView>
         </SafeAreaView>
 
-            {/* Picker 모달 */}
+            {/* 보안키 선택 모달 */}
             <Modal
                 transparent
                 visible={pickerVisible}
@@ -169,18 +193,43 @@ export default function AddAccountScreen() {
                             <Ionicons name="close" size={24} color={Colors.textSecondary} />
                         </TouchableOpacity>
                     </View>
-                    <Picker
-                        selectedValue={form.AUTH_ID}
-                        onValueChange={v => {
-                            handleChange('AUTH_ID', v);
-                            setPickerVisible(false);
-                        }}
-                    >
-                        <Picker.Item label="보안키 선택" value={0} />
-                        {authList.map(a => (
-                            <Picker.Item key={a.AUTH_ID} label={a.AUTH_NAME} value={a.AUTH_ID} />
-                        ))}
-                    </Picker>
+                    <FlatList
+                        data={authList}
+                        keyExtractor={item => String(item.AUTH_ID)}
+                        renderItem={({item}) => (
+                            <Pressable
+                                style={[
+                                    styles.authListItem,
+                                    form.AUTH_ID === item.AUTH_ID && styles.authListItemSelected,
+                                ]}
+                                onPress={() => {
+                                    handleChange('AUTH_ID', item.AUTH_ID);
+                                    setPickerVisible(false);
+                                }}
+                            >
+                                <View style={styles.authListItemLeft}>
+                                    {form.AUTH_ID === item.AUTH_ID && (
+                                        <Ionicons name="checkmark" size={18} color={Colors.primary} />
+                                    )}
+                                    <Text style={[
+                                        styles.authListItemText,
+                                        form.AUTH_ID === item.AUTH_ID && styles.authListItemTextSelected,
+                                    ]}>
+                                        {item.AUTH_NAME}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => handleDeleteAuth(item)}
+                                    hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+                                >
+                                    <Ionicons name="trash-outline" size={18} color={Colors.error} />
+                                </TouchableOpacity>
+                            </Pressable>
+                        )}
+                        ListEmptyComponent={
+                            <Text style={styles.authListEmpty}>등록된 보안키가 없습니다</Text>
+                        }
+                    />
                 </View>
             </Modal>
 
@@ -448,6 +497,40 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.lg,
         fontWeight: '600',
         color: Colors.textPrimary,
+    },
+
+    /* 보안키 리스트 항목 */
+    authListItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.borderLight,
+    },
+    authListItemSelected: {
+        backgroundColor: 'rgba(59,130,246,0.08)',
+    },
+    authListItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        flex: 1,
+    },
+    authListItemText: {
+        fontSize: FontSizes.lg,
+        color: Colors.textPrimary,
+    },
+    authListItemTextSelected: {
+        color: Colors.primary,
+        fontWeight: '600',
+    },
+    authListEmpty: {
+        textAlign: 'center',
+        color: Colors.textMuted,
+        fontSize: FontSizes.md,
+        paddingVertical: Spacing.xl,
     },
 
     /* 권한 추가 모달 */
