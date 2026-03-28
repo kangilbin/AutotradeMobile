@@ -18,9 +18,11 @@ export const formatCurrency = (num: number): string => {
  * @param num 포맷팅할 숫자
  * @returns 포맷팅된 문자열
  */
-export const formatNumber = (num: number | undefined | null): string => {
+export const formatNumber = (num: number | string | undefined | null): string => {
     if (num === undefined || num === null) return '0';
-    return num.toLocaleString('ko-KR');
+    const n = typeof num === 'string' ? Number(num) : num;
+    if (isNaN(n)) return '0';
+    return n.toLocaleString('ko-KR');
 };
 
 /**
