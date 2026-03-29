@@ -330,6 +330,16 @@ export type AddAccountRequest = {
     AUTH_ID: number
 }
 
+// 계좌 검증
+export const verifyAccount = async (param: AddAccountRequest): Promise<boolean> => {
+    try {
+        const response = await api.post('/accounts/verify', param);
+        return !!response.data;
+    } catch {
+        return false;
+    }
+};
+
 // 계좌 추가
 export const addAccount = async (param: AddAccountRequest):Promise<AccountStatus | undefined> => {
     try {
