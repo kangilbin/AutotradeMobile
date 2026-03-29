@@ -34,9 +34,12 @@ export const useFluctuationRank = (): UseFluctuationReturn => {
 
     const fetch = useCallback(async (rankSort: FluctuationSortCode, prcCls: FluctuationPriceCode) => {
         setLoading(true);
-        const result = await getFluctuationRank(rankSort, prcCls);
-        setData(result ?? []);
-        setLoading(false);
+        try {
+            const result = await getFluctuationRank(rankSort, prcCls);
+            setData(result ?? []);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     return { data, loading, fetch };
@@ -48,9 +51,12 @@ export const useVolumeRank = (): UseVolumeReturn => {
 
     const fetch = useCallback(async (blngCls: VolumeBlngCode) => {
         setLoading(true);
-        const result = await getVolumeRank(blngCls);
-        setData(result ?? []);
-        setLoading(false);
+        try {
+            const result = await getVolumeRank(blngCls);
+            setData(result ?? []);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     return { data, loading, fetch };
@@ -62,9 +68,12 @@ export const useVolumePowerRank = (): UseVolumePowerReturn => {
 
     const fetch = useCallback(async (inputIscd: VolumePowerMarketCode) => {
         setLoading(true);
-        const result = await getVolumePowerRank(inputIscd);
-        setData(result ?? []);
-        setLoading(false);
+        try {
+            const result = await getVolumePowerRank(inputIscd);
+            setData(result ?? []);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     return { data, loading, fetch };

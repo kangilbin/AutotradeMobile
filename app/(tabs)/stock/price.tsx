@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -13,6 +13,8 @@ export default function PriceScreen() {
     const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
     const flatListRef = useRef<FlatList>(null);
     const initialScrollDone = useRef(false);
+    const failCountRef = useRef(0);
+    const MAX_FAIL = 3;
 
     // 현재가 (stockData가 없으면 기본값 10000)
     const referencePrice = stockData?.output2?.stck_prpr ? parseFloat(stockData.output2.stck_prpr) : 10000;
@@ -55,44 +57,49 @@ export default function PriceScreen() {
 
     // 주식 데이터 요청 함수
     const requestStockData = useCallback(async () => {
-        if (!stCode) return;
+        if (!stCode) return false;
 
         try {
             const response = await getStockPrice(stCode as string);
             if (response) {
                 setStockData(response);
+                failCountRef.current = 0;
+                return true;
             }
+            failCountRef.current++;
+            return false;
         } catch (error) {
             console.error('API 호출 중 오류:', error);
+            failCountRef.current++;
+            return false;
         }
-    }, [stCode, isMarketTime]);
-
-    // stCode가 변경되거나 장 시간 상태가 변경될 때 데이터 요청
-    useEffect(() => {
-        requestStockData();
-    }, [stCode, requestStockData]);
-
-    // 주식 장 시간일 때만 1초마다 반복 통신
-    useEffect(() => {
-        if (!isMarketTime || !stCode) return;
-
-        const interval = setInterval(() => {
-            requestStockData();
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [isMarketTime, stCode, requestStockData]);
+    }, [stCode]);
 
     // 초기 스크롤 위치 설정 (중앙으로)
     const scrollToCenter = useCallback(() => {
         flatListRef.current?.scrollToOffset({ offset: 160, animated: false });
     }, []);
 
-    // 화면이 포커스될 때마다 스크롤 위치를 중앙으로 복원
+    // 화면 포커스 시 데이터 요청 + 장 시간이면 1초 폴링, 포커스 해제 시 정리
     useFocusEffect(
         useCallback(() => {
+            failCountRef.current = 0;
             scrollToCenter();
-        }, [scrollToCenter])
+            requestStockData();
+
+            if (!isMarketTime || !stCode) return;
+
+            const interval = setInterval(async () => {
+                if (failCountRef.current >= MAX_FAIL) {
+                    clearInterval(interval);
+                    console.warn(`연속 ${MAX_FAIL}회 실패로 폴링 중단`);
+                    return;
+                }
+                await requestStockData();
+            }, 1000);
+
+            return () => clearInterval(interval);
+        }, [stCode, isMarketTime, requestStockData, scrollToCenter])
     );
 
     // 실제 데이터가 있으면 사용, 없으면 빈 배열
