@@ -1,6 +1,7 @@
 // 스윙 목록 조회 응답 타입
 export type SwingListResponse = {
-    data: SwingItem[];
+    list: SwingItem[];
+    summary: SwingSummary;
 }
 
 // 스윙 아이템 타입

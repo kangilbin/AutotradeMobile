@@ -13,7 +13,7 @@ import {
     BacktestingResponse,
     StockStatus
 } from "../types/stock";
-import { SwingItem } from '../types/swing';
+import { SwingItem, SwingListResponse } from '../types/swing';
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 import {
@@ -426,7 +426,7 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
 };
 
 // 스윙 목록 조회
-export const getSwingList = async (account_no: string): Promise<SwingItem[] | undefined> => {
+export const getSwingList = async (account_no: string): Promise<SwingListResponse | undefined> => {
     try {
         const response = await api.get('/swing/list', { params: { account_no }});
         return response.data.data;
