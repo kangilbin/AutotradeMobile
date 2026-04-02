@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -9,10 +9,12 @@ import { Colors, FontSizes, Spacing, BorderRadius } from '../../../constants';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import SwingCard from '../../../components/swing/SwingCard';
 import SwingSummaryCard from '../../../components/swing/SwingSummaryCard';
+import { useMarketStore } from '../../../utils/useMarketStore';
 
 export default function SwingScreen() {
     const router = useRouter();
     const account = useAccountStore((state) => state.account);
+    const mrktCode = useMarketStore((s) => s.mrktCode);
 
     const {
         swingList,
@@ -21,13 +23,18 @@ export default function SwingScreen() {
         refreshing,
         loadData,
         onRefresh
-    } = useSwingData(account?.ACCOUNT_NO);
+    } = useSwingData(account?.ACCOUNT_NO, mrktCode);
 
     useFocusEffect(
         useCallback(() => {
             loadData();
         }, [loadData])
     );
+
+    // 마켓 변경 시 스윙 목록 자동 재조회
+    useEffect(() => {
+        loadData();
+    }, [mrktCode]);
 
     const handleSwingPress = useCallback((swing: SwingItem) => {
         router.push({

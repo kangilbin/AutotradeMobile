@@ -5,9 +5,11 @@ import { StockStatus } from '../../../types/stock';
 import { useStockSearch } from '../../../hooks';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants';
 import StockListItem from '../../../components/stock/StockListItem';
+import { useMarketStore } from '../../../utils/useMarketStore';
 
 export default function SearchStockScreen() {
-    const { searchQuery, setSearchQuery, stocks, isSearching } = useStockSearch(300);
+    const mrktCode = useMarketStore((s) => s.mrktCode);
+    const { searchQuery, setSearchQuery, stocks, isSearching } = useStockSearch(300, mrktCode);
 
     const handleStockPress = useCallback((stockName: string, stCode: string, mrktCode: string) => {
         router.push({

@@ -15,7 +15,7 @@ interface UseSwingDataReturn {
  * 스윙 데이터를 관리하는 커스텀 훅
  * @param accountNo 계좌번호
  */
-export const useSwingData = (accountNo: string | undefined): UseSwingDataReturn => {
+export const useSwingData = (accountNo: string | undefined, mrktCode: string = 'J'): UseSwingDataReturn => {
     const [swingList, setSwingList] = useState<SwingItem[]>([]);
     const [summary, setSummary] = useState<SwingSummary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export const useSwingData = (accountNo: string | undefined): UseSwingDataReturn 
 
         try {
             setLoading(true);
-            const listData = await getSwingList(accountNo);
+            const listData = await getSwingList(accountNo, mrktCode);
 
             if (listData) {
                 setSwingList(listData.list);
@@ -40,7 +40,7 @@ export const useSwingData = (accountNo: string | undefined): UseSwingDataReturn 
         } finally {
             setLoading(false);
         }
-    }, [accountNo]);
+    }, [accountNo, mrktCode]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
