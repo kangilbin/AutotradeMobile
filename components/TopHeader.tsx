@@ -1,16 +1,25 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAccountStore } from '../stores/useAccountStore';
+import { useMarketStore } from '../utils/useMarketStore';
+import { MARKETS, MarketCode } from '../types/market';
 import * as SecureStore from 'expo-secure-store';
 import { jwtDecode } from 'jwt-decode';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { JwtPayload } from '../types/auth';
 import { router, useFocusEffect } from 'expo-router';
 import { Colors, FontSizes, Spacing, BorderRadius } from '../constants/theme';
 
+const TOGGLE_WIDTH = 120;
+const TAB_WIDTH = TOGGLE_WIDTH / 2;
+const MARKETS_ORDER: MarketCode[] = ['J', 'NASD'];
+
 export default function TopHeader() {
     const account = useAccountStore((state) => state.account);
+    const mrktCode = useMarketStore((state) => state.mrktCode);
+    const setMrktCode = useMarketStore((state) => state.setMrktCode);
     const [userName, setUserName] = useState<string>('');
+    const slideAnim = useRef(new Animated.Value(mrktCode === 'J' ? 0 : 1)).current;
 
     useFocusEffect(
         useCallback(() => {
@@ -31,9 +40,27 @@ export default function TopHeader() {
         }
     }, [account]);
 
+    useEffect(() => {
+        Animated.spring(slideAnim, {
+            toValue: mrktCode === 'J' ? 0 : 1,
+            useNativeDriver: true,
+            tension: 300,
+            friction: 25,
+        }).start();
+    }, [mrktCode, slideAnim]);
+
     const handleAccountPress = useCallback(() => {
         router.push('account');
     }, []);
+
+    const handleMarketSelect = useCallback((code: MarketCode) => {
+        if (code !== mrktCode) setMrktCode(code);
+    }, [mrktCode, setMrktCode]);
+
+    const translateX = slideAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [2, TAB_WIDTH + 2],
+    });
 
     return (
         <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -51,8 +78,31 @@ export default function TopHeader() {
                                 {account?.SIMULATION_YN === 'Y' ? '모의투자' : '실전투자'}
                             </Text>
                         </View>
-                        <Text style={styles.userName}>{userName}님</Text>
+                        <View style={styles.toggleContainer}>
+                            <Animated.View
+                                style={[
+                                    styles.toggleIndicator,
+                                    { transform: [{ translateX }] },
+                                ]}
+                            />
+                            {MARKETS_ORDER.map((code) => (
+                                <TouchableOpacity
+                                    key={code}
+                                    style={styles.toggleTab}
+                                    onPress={() => handleMarketSelect(code)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={[
+                                        styles.toggleText,
+                                        mrktCode === code && styles.toggleTextActive,
+                                    ]}>
+                                        {MARKETS[code].flag} {MARKETS[code].label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
+                    <Text style={styles.userName}>{userName}님</Text>
                 </View>
                 <TouchableOpacity style={styles.rightSection} onPress={handleAccountPress}>
                     <Text style={styles.accountLabel}>계좌번호</Text>
@@ -85,6 +135,7 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: 2,
     },
     modeBadge: {
         paddingHorizontal: Spacing.sm,
@@ -108,6 +159,43 @@ const styles = StyleSheet.create({
     },
     realText: {
         color: '#0C5460',
+    },
+    toggleContainer: {
+        width: TOGGLE_WIDTH + 4,
+        height: 28,
+        backgroundColor: Colors.background,
+        borderRadius: BorderRadius.full,
+        flexDirection: 'row',
+        alignItems: 'center',
+        position: 'relative',
+        padding: 2,
+    },
+    toggleIndicator: {
+        position: 'absolute',
+        width: TAB_WIDTH - 2,
+        height: 24,
+        backgroundColor: Colors.cardBackground,
+        borderRadius: BorderRadius.full,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 3,
+        elevation: 2,
+    },
+    toggleTab: {
+        width: TAB_WIDTH,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    toggleText: {
+        fontSize: FontSizes.xs + 1,
+        fontWeight: '500',
+        color: Colors.textMuted,
+    },
+    toggleTextActive: {
+        fontWeight: '700',
+        color: Colors.textPrimary,
     },
     userName: {
         fontSize: FontSizes.xl,
