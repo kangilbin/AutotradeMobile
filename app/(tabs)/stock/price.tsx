@@ -224,6 +224,7 @@ export default function PriceScreen() {
                                     type="ask"
                                     maxQuantity={maxAsk}
                                     basePrice={stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : undefined}
+                                    mrktCode={activeMrktCode as 'J' | 'NASD'}
                                 />
                             ))}
                         </View>
@@ -242,6 +243,7 @@ export default function PriceScreen() {
                                     type="bid"
                                     maxQuantity={maxBid}
                                     basePrice={stockData?.output2?.stck_sdpr ? parseFloat(stockData.output2.stck_sdpr) : undefined}
+                                    mrktCode={activeMrktCode as 'J' | 'NASD'}
                                 />
                             ))}
                         </View>

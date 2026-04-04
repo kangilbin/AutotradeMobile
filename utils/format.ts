@@ -90,3 +90,47 @@ export const formatPrice = (price: number | string, mrktCode: MarketCode): strin
 export const getCurrencySymbol = (mrktCode: MarketCode): string => {
     return mrktCode === 'NASD' ? '$' : '\u{20A9}';
 };
+
+/**
+ * 금액을 마켓에 맞는 통화 단위와 함께 포맷팅
+ * 국내: "1,234,567원"
+ * 미국: "$1,234.56"
+ */
+export const formatAmountWithUnit = (
+    amount: number | string | undefined | null,
+    mrktCode: MarketCode = 'J'
+): string => {
+    if (amount === undefined || amount === null) {
+        return mrktCode === 'NASD' ? '$0.00' : '0원';
+    }
+    const num = typeof amount === 'string' ? Number(amount) : amount;
+    if (isNaN(num)) {
+        return mrktCode === 'NASD' ? '$0.00' : '0원';
+    }
+
+    if (mrktCode === 'NASD') {
+        return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `${Math.round(num).toLocaleString('ko-KR')}원`;
+};
+
+/**
+ * 부호가 필요한 금액 포맷팅 (손익 표시용)
+ * 국내: "+1,234,567원" / "-500,000원"
+ * 미국: "+$1,234.56" / "-$1,234.56"
+ */
+export const formatSignedAmountWithUnit = (
+    amount: number | string | undefined | null,
+    mrktCode: MarketCode = 'J'
+): string => {
+    const num = typeof amount === 'string' ? Number(amount) : (amount ?? 0);
+    if (isNaN(num)) return formatAmountWithUnit(0, mrktCode);
+
+    if (mrktCode === 'NASD') {
+        const abs = Math.abs(num);
+        const formatted = abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return num < 0 ? `-$${formatted}` : `+$${formatted}`;
+    }
+    const sign = num >= 0 ? '+' : '';
+    return `${sign}${Math.round(num).toLocaleString('ko-KR')}원`;
+};

@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TradeItemData } from '../../types/tradeItem';
+import { MarketCode } from '../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
-import { formatCurrency, getProfitLossColor, formatProfitRate } from '../../utils/format';
+import { formatAmountWithUnit, formatSignedAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../utils/format';
 
 interface TradeHistoryItemProps {
     trade: TradeItemData;
     index: number;
+    mrktCode?: MarketCode;
 }
 
 const formatDate = (dateString: string): string => {
@@ -18,7 +20,7 @@ const formatDate = (dateString: string): string => {
     return `${y}.${m}.${d}`;
 };
 
-const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) => {
+const TradeHistoryItem = React.memo(({ trade, index, mrktCode = 'J' }: TradeHistoryItemProps) => {
     const accentColor = trade.isBuy ? Colors.profit : Colors.loss;
 
     return (
@@ -41,7 +43,7 @@ const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) =>
             <View style={styles.tradeStats}>
                 <View style={styles.tradeStat}>
                     <Text style={styles.tradeStatLabel}>단가</Text>
-                    <Text style={styles.tradeStatValue}>{formatCurrency(Math.round(trade.price))}</Text>
+                    <Text style={styles.tradeStatValue}>{formatAmountWithUnit(trade.price, mrktCode)}</Text>
                 </View>
                 <View style={styles.tradeStatDivider} />
                 <View style={styles.tradeStat}>
@@ -51,7 +53,7 @@ const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) =>
                 <View style={styles.tradeStatDivider} />
                 <View style={styles.tradeStat}>
                     <Text style={styles.tradeStatLabel}>금액</Text>
-                    <Text style={styles.tradeStatValue}>{formatCurrency(Math.round(trade.amount))}</Text>
+                    <Text style={styles.tradeStatValue}>{formatAmountWithUnit(trade.amount, mrktCode)}</Text>
                 </View>
             </View>
 
@@ -63,7 +65,7 @@ const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) =>
                     <View style={styles.pnlRow}>
                         <Text style={styles.pnlLabel}>실현손익</Text>
                         <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.realizedPnl) }]}>
-                            {trade.realizedPnl >= 0 ? '+' : ''}{formatCurrency(Math.round(trade.realizedPnl))}원
+                            {formatSignedAmountWithUnit(trade.realizedPnl, mrktCode)}
                         </Text>
                     </View>
                     {trade.realizedPnlPct != null && (
@@ -78,7 +80,7 @@ const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) =>
                         <View style={styles.pnlRow}>
                             <Text style={styles.pnlLabel}>수수료+세금</Text>
                             <Text style={styles.pnlFeeValue}>
-                                {formatCurrency(Math.round(trade.totalFee))}원
+                                {formatAmountWithUnit(trade.totalFee, mrktCode)}
                             </Text>
                         </View>
                     )}
@@ -90,7 +92,7 @@ const TradeHistoryItem = React.memo(({ trade, index }: TradeHistoryItemProps) =>
                 <View style={styles.capitalRow}>
                     <Text style={styles.capitalLabel}>거래 후 잔고</Text>
                     <Text style={styles.capitalValue}>
-                        {formatCurrency(Math.round(trade.currentCapital))}원
+                        {formatAmountWithUnit(trade.currentCapital, mrktCode)}
                     </Text>
                 </View>
             )}

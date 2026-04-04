@@ -1,9 +1,12 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SwingItem } from '../../types/swing';
+import { MarketCode } from '../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
 import {
     formatNumber,
+    formatAmountWithUnit,
+    formatSignedAmountWithUnit,
     formatProfitRate,
     getProfitLossColor,
     getSwingTypeText,
@@ -13,9 +16,10 @@ import {
 interface SwingCardProps {
     item: SwingItem;
     onPress: (item: SwingItem) => void;
+    mrktCode?: MarketCode;
 }
 
-function SwingCard({ item, onPress }: SwingCardProps) {
+function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
     const profitColor = getProfitLossColor(item.EVLU_PFLS_AMT);
     const isProfit = item.EVLU_PFLS_AMT >= 0;
 
@@ -55,7 +59,7 @@ function SwingCard({ item, onPress }: SwingCardProps) {
             <View style={styles.evalSection}>
                 <View style={styles.evalItem}>
                     <Text style={styles.evalLabel}>평가금액</Text>
-                    <Text style={styles.evalValue}>{formatNumber(item.EVLU_AMT)}원</Text>
+                    <Text style={styles.evalValue}>{formatAmountWithUnit(item.EVLU_AMT, mrktCode)}</Text>
                 </View>
                 <View style={styles.evalDivider} />
                 <View style={styles.evalItem}>
@@ -69,7 +73,7 @@ function SwingCard({ item, onPress }: SwingCardProps) {
                 <View style={styles.profitRow}>
                     <Text style={styles.profitLabel}>평가손익</Text>
                     <Text style={[styles.profitValue, { color: profitColor }]}>
-                        {isProfit ? '+' : ''}{formatNumber(item.EVLU_PFLS_AMT)}원
+                        {formatSignedAmountWithUnit(item.EVLU_PFLS_AMT, mrktCode)}
                     </Text>
                 </View>
                 <View style={styles.profitRow}>

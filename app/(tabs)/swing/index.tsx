@@ -44,8 +44,8 @@ export default function SwingScreen() {
     }, [router]);
 
     const renderSwingItem = useCallback(({ item }: { item: SwingItem }) => (
-        <SwingCard item={item} onPress={handleSwingPress} />
-    ), [handleSwingPress]);
+        <SwingCard item={item} onPress={handleSwingPress} mrktCode={mrktCode} />
+    ), [handleSwingPress, mrktCode]);
 
     const keyExtractor = useCallback((item: SwingItem) => item.SWING_ID.toString(), []);
 
@@ -77,7 +77,7 @@ export default function SwingScreen() {
 
     return (
         <View style={styles.container}>
-            <SwingSummaryCard summary={summary} />
+            <SwingSummaryCard summary={summary} mrktCode={mrktCode} />
             <FlatList
                 style={styles.listContainer}
                 data={swingList}
