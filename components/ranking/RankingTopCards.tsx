@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { RankingTab, FluctuationRankItem, VolumeRankItem, VolumePowerRankItem } from '../../types/ranking';
+import { formatPrice } from '../../utils/format';
+import { useMarketStore } from '../../utils/useMarketStore';
 
 type RankItem = FluctuationRankItem | VolumeRankItem | VolumePowerRankItem;
 
@@ -19,10 +21,9 @@ const getSignBgColor = (sign: string) => {
     return Colors.background;
 };
 
-const formatPrice = (price: string) => {
-    const num = parseInt(price, 10);
-    if (isNaN(num)) return price;
-    return num.toLocaleString('ko-KR');
+const formatPriceLabel = (price: string, mrktCode: string) => {
+    const formatted = formatPrice(price, mrktCode as any);
+    return mrktCode === 'J' ? `${formatted}원` : formatted;
 };
 
 const formatRate = (rate: string, sign: string) => {
@@ -43,6 +44,7 @@ interface RankingTopCardsProps {
 }
 
 function RankingTopCards({ items, activeTab, onItemPress }: RankingTopCardsProps) {
+    const mrktCode = useMarketStore((s) => s.mrktCode);
     if (items.length === 0) return null;
 
     const first = items[0];
@@ -71,7 +73,7 @@ function RankingTopCards({ items, activeTab, onItemPress }: RankingTopCardsProps
                             <Text style={styles.firstCode}>{code}</Text>
                         </View>
                         <View style={styles.firstCardRight}>
-                            <Text style={styles.firstPrice}>{formatPrice(first.stck_prpr)}원</Text>
+                            <Text style={styles.firstPrice}>{formatPriceLabel(first.stck_prpr, mrktCode)}</Text>
                             <View style={[styles.rateBadge, { backgroundColor: signBg }]}>
                                 <Text style={[styles.firstRate, { color: signColor }]}>{rate}</Text>
                             </View>
@@ -99,7 +101,7 @@ function RankingTopCards({ items, activeTab, onItemPress }: RankingTopCardsProps
                     {renderRankBadge(rankIndex, 24)}
                     <Text style={styles.smallName} numberOfLines={1}>{item.hts_kor_isnm}</Text>
                 </View>
-                <Text style={styles.smallPrice}>{formatPrice(item.stck_prpr)}원</Text>
+                <Text style={styles.smallPrice}>{formatPriceLabel(item.stck_prpr, mrktCode)}</Text>
                 <View style={[styles.rateBadgeSmall, { backgroundColor: signBg }]}>
                     <Text style={[styles.smallRate, { color: signColor }]}>{rate}</Text>
                 </View>

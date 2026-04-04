@@ -37,6 +37,20 @@ export interface VolumeRankItem {
     acml_tr_pbmn: string;     // 누적 거래대금
 }
 
+// 해외 등락률 원본 타입
+export interface OverseasFluctuationRawItem {
+    symb: string;      // 종목코드 (PFSA)
+    knam: string;      // 한글 종목명
+    enam: string;      // 영문 종목명
+    last: string;      // 현재가 (소수점, 달러)
+    diff: string;      // 전일대비 (소수점)
+    sign: string;      // 등락부호 (2:상승, 3:보합, 5:하락)
+    rate: string;      // 등락률 (부호 포함 "+30.98")
+    tvol: string;      // 거래량
+    excd: string;      // 거래소 코드 (NAS, NYS)
+    rsym: string;      // 풀 심볼 (DNASPFSA)
+}
+
 // 체결강도 순위 아이템
 export interface VolumePowerRankItem {
     stck_shrn_iscd: string;   // 종목코드

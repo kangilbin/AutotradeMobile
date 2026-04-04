@@ -14,9 +14,10 @@ const TABS: RankingTab[] = ['fluctuation', 'volume', 'volume_power'];
 interface RankingTabSelectorProps {
     activeTab: RankingTab;
     onTabChange: (tab: RankingTab) => void;
+    disabledTabs?: RankingTab[];
 }
 
-function RankingTabSelector({ activeTab, onTabChange }: RankingTabSelectorProps) {
+function RankingTabSelector({ activeTab, onTabChange, disabledTabs = [] }: RankingTabSelectorProps) {
     const tabWidth = useRef(0);
     const translateX = useRef(new Animated.Value(0)).current;
 
@@ -41,14 +42,15 @@ function RankingTabSelector({ activeTab, onTabChange }: RankingTabSelectorProps)
         <View style={styles.container} onLayout={handleLayout}>
             {TABS.map((tab) => {
                 const isActive = tab === activeTab;
+                const isDisabled = disabledTabs.includes(tab);
                 return (
                     <TouchableOpacity
                         key={tab}
-                        style={styles.tab}
-                        onPress={() => onTabChange(tab)}
-                        activeOpacity={0.7}
+                        style={[styles.tab, isDisabled && styles.disabledTab]}
+                        onPress={() => !isDisabled && onTabChange(tab)}
+                        activeOpacity={isDisabled ? 1 : 0.7}
                     >
-                        <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+                        <Text style={[styles.tabText, isActive && styles.activeTabText, isDisabled && styles.disabledTabText]}>
                             {TAB_LABELS[tab]}
                         </Text>
                     </TouchableOpacity>
@@ -89,6 +91,12 @@ const styles = StyleSheet.create({
     activeTabText: {
         fontWeight: 'bold',
         color: Colors.textPrimary,
+    },
+    disabledTab: {
+        opacity: 0.3,
+    },
+    disabledTabText: {
+        color: Colors.textSecondary,
     },
     indicator: {
         position: 'absolute',

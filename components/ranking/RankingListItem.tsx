@@ -3,6 +3,8 @@ import { StyleSheet, View, Text } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import VolumePowerBar from './VolumePowerBar';
+import { formatPrice as formatPriceUtil } from '../../utils/format';
+import { MarketCode } from '../../types/market';
 
 interface RankingListItemProps {
     rank: string;
@@ -16,6 +18,7 @@ interface RankingListItemProps {
     primaryMetricLabel?: string;
     buyVolume?: string;
     sellVolume?: string;
+    mrktCode?: MarketCode;
     onPress?: (code: string, name: string) => void;
 }
 
@@ -37,10 +40,9 @@ const getSignPrefix = (sign: string) => {
     return '';
 };
 
-const formatPrice = (price: string) => {
-    const num = parseInt(price, 10);
-    if (isNaN(num)) return price;
-    return num.toLocaleString('ko-KR');
+const formatPriceLabel = (price: string, mrktCode: MarketCode = 'J') => {
+    const formatted = formatPriceUtil(price, mrktCode);
+    return mrktCode === 'J' ? `${formatted}원` : formatted;
 };
 
 const formatVolume = (vol: string) => {
@@ -63,6 +65,7 @@ function RankingListItem({
     primaryMetricLabel,
     buyVolume,
     sellVolume,
+    mrktCode = 'J',
     onPress,
 }: RankingListItemProps) {
     const signColor = getSignColor(changeSign);
@@ -92,12 +95,12 @@ function RankingListItem({
                             </Text>
                         </View>
                         <Text style={[styles.changeAmount, { color: signColor }]}>
-                            {signPrefix}{formatPrice(changeAmount.replace('-', ''))}
+                            {signPrefix}{formatPriceLabel(changeAmount.replace('-', ''), mrktCode)}
                         </Text>
                     </View>
                 </View>
                 <View style={styles.priceContainer}>
-                    <Text style={styles.price}>{formatPrice(price)}원</Text>
+                    <Text style={styles.price}>{formatPriceLabel(price, mrktCode)}</Text>
                     {primaryMetric ? (
                         <Text style={styles.metric}>
                             {primaryMetricLabel} {primaryMetric.includes('.') ? primaryMetric : formatVolume(primaryMetric)}
