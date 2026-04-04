@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import OrderBookRow from '../../../components/OrderBookRow';
@@ -75,16 +75,22 @@ export default function PriceScreen() {
         }
     }, [stCode]);
 
-    // 초기 스크롤 위치 설정 (중앙으로)
-    const scrollToCenter = useCallback(() => {
-        flatListRef.current?.scrollToOffset({ offset: 160, animated: false });
+    const ROW_HEIGHT = 40; // OrderBookRow height
+    const listHeightRef = useRef(0);
+
+    // 현재가 행이 화면 중앙에 오도록 스크롤
+    const scrollToCurrentPrice = useCallback(() => {
+        // 매도 10행 아래가 현재가 경계 → 현재가 행이 화면 중앙에 오도록
+        const currentPriceOffset = ROW_HEIGHT * 10;
+        const centerOffset = Math.max(0, currentPriceOffset - listHeightRef.current / 2);
+        flatListRef.current?.scrollToOffset({ offset: centerOffset, animated: false });
     }, []);
 
     // 화면 포커스 시 데이터 요청 + 장 시간이면 1초 폴링, 포커스 해제 시 정리
     useFocusEffect(
         useCallback(() => {
             failCountRef.current = 0;
-            scrollToCenter();
+            initialScrollDone.current = false;
             requestStockData();
 
             if (!isMarketTime || !stCode) return;
@@ -99,7 +105,7 @@ export default function PriceScreen() {
             }, 1000);
 
             return () => clearInterval(interval);
-        }, [stCode, isMarketTime, requestStockData, scrollToCenter])
+        }, [stCode, isMarketTime, requestStockData, scrollToCurrentPrice])
     );
 
     // 실제 데이터가 있으면 사용, 없으면 빈 배열
@@ -192,10 +198,13 @@ export default function PriceScreen() {
                 data={[]}
                 renderItem={() => null}
                 keyExtractor={() => ''}
+                onLayout={(e: LayoutChangeEvent) => {
+                    listHeightRef.current = e.nativeEvent.layout.height;
+                }}
                 onContentSizeChange={() => {
                     if (!initialScrollDone.current) {
                         initialScrollDone.current = true;
-                        scrollToCenter();
+                        scrollToCurrentPrice();
                     }
                 }}
                 scrollEventThrottle={32}
