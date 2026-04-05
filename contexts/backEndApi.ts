@@ -351,6 +351,17 @@ export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undef
     }
 };
 
+// 권한 삭제
+export const deleteAuth = async (authId: number): Promise<boolean> => {
+    try {
+        await api.delete(`/auths/${authId}`);
+        return true;
+    } catch (error: unknown) {
+        handleApiError(error, '권한 삭제');
+        return false;
+    }
+};
+
 // 권한 목록 조회
 export const getAuthList = async (): Promise<AuthStatus[] | undefined> => {
     try {
