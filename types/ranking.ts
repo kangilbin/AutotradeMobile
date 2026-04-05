@@ -51,6 +51,23 @@ export interface OverseasFluctuationRawItem {
     rsym: string;      // 풀 심볼 (DNASPFSA)
 }
 
+// 해외 거래량 원본 타입 (등락률과 유사 구조 + n_tvol, n_rate, n_diff)
+export interface OverseasVolumeRawItem {
+    symb: string;       // 종목코드
+    knam: string;       // 한글 종목명
+    enam: string;       // 영문 종목명
+    last: string;       // 현재가
+    diff: string;       // 전일대비
+    sign: string;       // 등락부호
+    rate: string;       // 등락률
+    tvol: string;       // 거래량
+    n_tvol: string;     // 전일 거래량
+    n_rate: string;     // 거래량 증가율
+    n_diff: string;     // 거래량 차이
+    excd: string;       // 거래소 코드
+    rsym: string;       // 풀 심볼
+}
+
 // 체결강도 순위 아이템
 export interface VolumePowerRankItem {
     stck_shrn_iscd: string;   // 종목코드

@@ -130,7 +130,7 @@ function RankingFilterChips({
                     )}
                 </>
             )}
-            {activeTab === 'volume' && (
+            {activeTab === 'volume' && !isOverseas && (
                 <>
                     {VOLUME_BLNG_OPTIONS.map((opt) => (
                         <Chip

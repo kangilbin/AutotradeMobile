@@ -1,6 +1,6 @@
 // app/_layout.tsx
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,18 +12,19 @@ export default function RootLayout() {
     const [loaded, error] = useFonts({
         'Nanum-Regular': require('../assets/fonts/NanumBrushScript-Regular.ttf'),
     });
+    const [marketReady, setMarketReady] = useState(false);
 
     useEffect(() => {
-        useMarketStore.getState().loadSavedMarket();
+        useMarketStore.getState().loadSavedMarket().then(() => setMarketReady(true));
     }, []);
 
     useEffect(() => {
-        if (loaded || error) {
+        if ((loaded || error) && marketReady) {
             SplashScreen.hideAsync();
         }
-    }, [loaded, error]);
+    }, [loaded, error, marketReady]);
 
-    if (!loaded && !error) {
+    if (!loaded && !error || !marketReady) {
         return <LoadingIndicator />;
     }
 

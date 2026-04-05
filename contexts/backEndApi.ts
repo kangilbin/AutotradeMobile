@@ -9,6 +9,7 @@ import { AccountStatus, ChooseAccountRequest} from "../types/account";
 import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginResponse} from "../types/auth";
 import {
     StockPriceResponse,
+    NasdStockPriceResponse,
     AddStockAutoRequest,
     BacktestingResponse,
     StockStatus
@@ -426,7 +427,7 @@ export const searchStock = async (query: string, mrktCode: string = 'J'): Promis
 
 
 // 주식 호가 조회
-export const getStockPrice = async (st_code: string, mrktCode: string = 'J'): Promise<StockPriceResponse | undefined> => {
+export const getStockPrice = async (st_code: string, mrktCode: string = 'J'): Promise<StockPriceResponse | NasdStockPriceResponse | undefined> => {
     try {
         const response = await api.get('/stocks/price', { params: { st_code, mrkt_code: mrktCode } });
         return response.data.data;
