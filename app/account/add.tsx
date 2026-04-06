@@ -20,7 +20,8 @@ import {
     AddAccountRequest,
     addAuth,
     deleteAuth,
-    getAuthList
+    getAuthList,
+    verifyAccount,
 } from "../../contexts/backEndApi";
 import {AddAuthRequest, AuthStatus} from "../../types/auth";
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -37,6 +38,7 @@ export default function AddAccountScreen() {
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [newAuth, setNewAuth] = useState<AddAuthRequest>({ SIMULATION_YN: 'N', AUTH_NAME: '', API_KEY: '', SECRET_KEY: '' });
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     /* ─ 권한 목록 불러오기 ─ */
     useEffect(() => {
@@ -55,9 +57,20 @@ export default function AddAccountScreen() {
         if (!form.ACCOUNT_NO) return (acctRef.current as TextInput)?.focus();
         if (!form.AUTH_ID) return Alert.alert('알림', '보안 키를 선택하세요.');
 
-        await addAccount(form);
-        Alert.alert('완료', '계좌가 추가되었습니다.');
-        router.back();
+        setIsSubmitting(true);
+        try {
+            const isValid = await verifyAccount(form);
+            if (!isValid) {
+                Alert.alert('검증 실패', '계좌번호 또는 보안키를 확인해주세요.');
+                return;
+            }
+
+            await addAccount(form);
+            Alert.alert('완료', '계좌가 추가되었습니다.');
+            router.back();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleAddAuth = async () => {
@@ -160,18 +173,18 @@ export default function AddAccountScreen() {
 
                 {/* 등록 버튼 */}
                 <TouchableOpacity
-                    style={[styles.submitButton, isFormValid ? styles.submitEnabled : styles.submitDisabled]}
-                    disabled={!isFormValid}
+                    style={[styles.submitButton, isFormValid && !isSubmitting ? styles.submitEnabled : styles.submitDisabled]}
+                    disabled={!isFormValid || isSubmitting}
                     onPress={handleSave}
                     activeOpacity={0.8}
                 >
                     <Ionicons
-                        name="checkmark-circle-outline"
+                        name={isSubmitting ? "hourglass-outline" : "checkmark-circle-outline"}
                         size={20}
                         color={Colors.textWhite}
                         style={styles.submitIcon}
                     />
-                    <Text style={styles.submitText}>계좌 등록</Text>
+                    <Text style={styles.submitText}>{isSubmitting ? '검증 중...' : '계좌 등록'}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.bottomSpacing} />
