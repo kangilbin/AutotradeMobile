@@ -15,6 +15,7 @@ import {addStockAuto, useApiLoading} from "../../../contexts/backEndApi";
 import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import { useAccountStore } from '../../../stores/useAccountStore';
+import { useMarketStore } from '../../../utils/useMarketStore';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
 
 // 스윙 타입 상수
@@ -55,10 +56,11 @@ export default function AddStockScreen() {
     const buyRatioRef = useRef<TextInput | null>(null);
     const sellRatioRef = useRef<TextInput | null>(null);
     const account = useAccountStore((state) => state.account);
+    const currentMrktCode = useMarketStore((s) => s.mrktCode);
 
     const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
-        MRKT_CODE: mrktCode as string || '',
+        MRKT_CODE: (mrktCode as string) || currentMrktCode,
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
         SWING_TYPE: SWING_TYPES.SINGLE_MA,

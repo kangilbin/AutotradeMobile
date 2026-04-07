@@ -6,10 +6,13 @@ import OrderBookRow from '../../../components/OrderBookRow';
 import { getStockPrice } from '../../../contexts/backEndApi';
 import { StockPriceResponse } from '../../../types/stock';
 import { Colors, Shadows, Spacing, BorderRadius, FontSizes } from '../../../constants/theme';
+import { useMarketStore } from '../../../utils/useMarketStore';
+import { formatPrice } from '../../../utils/format';
 
 
 export default function PriceScreen() {
     const { stockName, stCode, mrktCode } = useLocalSearchParams();
+    const currentMrktCode = useMarketStore((s) => s.mrktCode);
     const [stockData, setStockData] = useState<StockPriceResponse | null>(null);
     const flatListRef = useRef<FlatList>(null);
     const initialScrollDone = useRef(false);
@@ -60,7 +63,7 @@ export default function PriceScreen() {
         if (!stCode) return false;
 
         try {
-            const response = await getStockPrice(stCode as string);
+            const response = await getStockPrice(stCode as string, (mrktCode as string) || currentMrktCode);
             if (response) {
                 setStockData(response);
                 failCountRef.current = 0;
@@ -140,7 +143,8 @@ export default function PriceScreen() {
     const maxAsk = askData.length > 0 ? Math.max(...askData.map((a) => a.quantity)) : 0;
     const maxBid = bidData.length > 0 ? Math.max(...bidData.map((b) => b.quantity)) : 0;
 
-    const fmt = (v: string | undefined) => v ? parseInt(v).toLocaleString() : '-';
+    const activeMrktCode = (mrktCode as string) || currentMrktCode;
+    const fmt = (v: string | undefined) => v ? formatPrice(v, activeMrktCode as 'J' | 'NASD') : '-';
 
     return (
         <View style={styles.mainContainer}>
@@ -166,7 +170,7 @@ export default function PriceScreen() {
             {/* 가격 정보 바 */}
             <View style={styles.priceInfoBar}>
                 <Text style={[styles.currentPrice, { color: priceChange.color }]}>
-                    {referencePrice.toLocaleString()}
+                    {formatPrice(referencePrice, activeMrktCode as 'J' | 'NASD')}
                 </Text>
                 <View style={[styles.changeBadge, { backgroundColor: priceChange.amount > 0 ? 'rgba(255,107,107,0.1)' : priceChange.amount < 0 ? 'rgba(52,152,219,0.1)' : Colors.background }]}>
                     <Text style={[styles.changeBadgeText, { color: priceChange.color }]}>

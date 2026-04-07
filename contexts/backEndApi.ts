@@ -13,7 +13,7 @@ import {
     BacktestingResponse,
     StockStatus
 } from "../types/stock";
-import { SwingItem, SwingListResponse } from '../types/swing';
+import { SwingListResponse } from '../types/swing';
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 import {
@@ -415,9 +415,9 @@ export const deleteAccount = async (accountId: number): Promise<boolean> => {
 
 
 // 주식 검색
-export const searchStock = async (query: string): Promise<StockStatus[] | undefined> => {
+export const searchStock = async (query: string, mrktCode: string = 'J'): Promise<StockStatus[] | undefined> => {
     try {
-        const response = await api.get('/stocks', { params: { query } });
+        const response = await api.get('/stocks', { params: { query, mrkt_code: mrktCode } });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 검색');
@@ -426,9 +426,9 @@ export const searchStock = async (query: string): Promise<StockStatus[] | undefi
 
 
 // 주식 호가 조회
-export const getStockPrice = async (st_code: string): Promise<StockPriceResponse | undefined> => {
+export const getStockPrice = async (st_code: string, mrktCode: string = 'J'): Promise<StockPriceResponse | undefined> => {
     try {
-        const response = await api.get('/stocks/price', { params: { st_code } });
+        const response = await api.get('/stocks/price', { params: { st_code, mrkt_code: mrktCode } });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '주식 시세 조회');
@@ -447,9 +447,9 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
 };
 
 // 스윙 목록 조회
-export const getSwingList = async (account_no: string): Promise<SwingListResponse | undefined> => {
+export const getSwingList = async (account_no: string, mrktCode: string = 'J'): Promise<SwingListResponse | undefined> => {
     try {
-        const response = await api.get('/swing/list', { params: { account_no }});
+        const response = await api.get('/swing/list', { params: { account_no, mrkt_code: mrktCode }});
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '스윙 목록 조회');
@@ -555,10 +555,11 @@ export const getTradeHistoryList = async (
 export const getFluctuationRank = async (
     rankSort: FluctuationSortCode = '0',
     prcCls: FluctuationPriceCode = '1',
+    mrktCode: string = 'J',
 ): Promise<FluctuationRankItem[] | undefined> => {
     try {
         const response = await api.get('/stocks/ranking/fluctuation', {
-            params: { rank_sort: rankSort, prc_cls: prcCls },
+            params: { rank_sort: rankSort, prc_cls: prcCls, mrkt_code: mrktCode },
         });
         return response.data.data;
     } catch (error: unknown) {
@@ -569,10 +570,11 @@ export const getFluctuationRank = async (
 // 거래량 순위 조회
 export const getVolumeRank = async (
     blngCls: VolumeBlngCode = '3',
+    mrktCode: string = 'J',
 ): Promise<VolumeRankItem[] | undefined> => {
     try {
         const response = await api.get('/stocks/ranking/volume', {
-            params: { blng_cls: blngCls },
+            params: { blng_cls: blngCls, mrkt_code: mrktCode },
         });
         return response.data.data;
     } catch (error: unknown) {
@@ -583,10 +585,11 @@ export const getVolumeRank = async (
 // 체결강도 순위 조회
 export const getVolumePowerRank = async (
     inputIscd: VolumePowerMarketCode = '0000',
+    mrktCode: string = 'J',
 ): Promise<VolumePowerRankItem[] | undefined> => {
     try {
         const response = await api.get('/stocks/ranking/volume-power', {
-            params: { input_iscd: inputIscd },
+            params: { input_iscd: inputIscd, mrkt_code: mrktCode },
         });
         return response.data.data;
     } catch (error: unknown) {

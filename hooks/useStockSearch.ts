@@ -13,7 +13,7 @@ interface UseStockSearchReturn {
  * 주식 검색을 위한 커스텀 훅 (디바운스 적용)
  * @param debounceMs 디바운스 시간 (ms)
  */
-export const useStockSearch = (debounceMs: number = 300): UseStockSearchReturn => {
+export const useStockSearch = (debounceMs: number = 300, mrktCode: string = 'J'): UseStockSearchReturn => {
     const [searchQuery, setSearchQuery] = useState('');
     const [stocks, setStocks] = useState<StockStatus[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -27,7 +27,7 @@ export const useStockSearch = (debounceMs: number = 300): UseStockSearchReturn =
 
         setIsSearching(true);
         try {
-            const response = await searchStock(query);
+            const response = await searchStock(query, mrktCode);
             setStocks(response || []);
         } catch (error) {
             console.error('주식 검색 실패:', error);
@@ -35,7 +35,7 @@ export const useStockSearch = (debounceMs: number = 300): UseStockSearchReturn =
         } finally {
             setIsSearching(false);
         }
-    }, []);
+    }, [mrktCode]);
 
     useEffect(() => {
         // 이전 타이머 클리어
@@ -54,7 +54,7 @@ export const useStockSearch = (debounceMs: number = 300): UseStockSearchReturn =
                 clearTimeout(debounceRef.current);
             }
         };
-    }, [searchQuery, debounceMs, fetchStocks]);
+    }, [searchQuery, debounceMs, fetchStocks, mrktCode]);
 
     return {
         searchQuery,

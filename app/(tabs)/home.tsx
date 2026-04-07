@@ -17,6 +17,7 @@ import RankingTabSelector from '../../components/ranking/RankingTabSelector';
 import RankingFilterChips from '../../components/ranking/RankingFilterChips';
 import RankingTopCards from '../../components/ranking/RankingTopCards';
 import RankingListItem from '../../components/ranking/RankingListItem';
+import { useMarketStore } from '../../utils/useMarketStore';
 
 type RankItem = FluctuationRankItem | VolumeRankItem | VolumePowerRankItem;
 
@@ -35,36 +36,49 @@ export default function HomeScreen() {
     const [volumeBlng, setVolumeBlng] = useState<VolumeBlngCode>('3');
     const [volumePowerMarket, setVolumePowerMarket] = useState<VolumePowerMarketCode>('0000');
 
+    const mrktCode = useMarketStore((s) => s.mrktCode);
+
     // 각 순위별 개별 훅
     const fluctuation = useFluctuationRank();
     const volume = useVolumeRank();
     const volumePower = useVolumePowerRank();
 
+    // 마켓 변경 시 현재 탭 데이터 재조회
+    useEffect(() => {
+        if (activeTab === 'fluctuation') {
+            fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
+        } else if (activeTab === 'volume') {
+            volume.fetch(volumeBlng, mrktCode);
+        } else {
+            volumePower.fetch(volumePowerMarket, mrktCode);
+        }
+    }, [mrktCode]);
+
     // 탭 전환 시 데이터 없으면 최초 1회 fetch
     useEffect(() => {
         if (activeTab === 'volume' && volume.data.length === 0) {
-            volume.fetch(volumeBlng);
+            volume.fetch(volumeBlng, mrktCode);
         } else if (activeTab === 'volume_power' && volumePower.data.length === 0) {
-            volumePower.fetch(volumePowerMarket);
+            volumePower.fetch(volumePowerMarket, mrktCode);
         }
     }, [activeTab]);
 
     // 등락률 필터 변경 시 재조회
     useEffect(() => {
-        fluctuation.fetch(fluctuationSort, fluctuationPrice);
+        fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
     }, [fluctuationSort, fluctuationPrice]);
 
     // 거래량 필터 변경 시 재조회
     useEffect(() => {
         if (volume.data.length > 0 || activeTab === 'volume') {
-            volume.fetch(volumeBlng);
+            volume.fetch(volumeBlng, mrktCode);
         }
     }, [volumeBlng]);
 
     // 체결강도 시장 필터 변경 시 재조회
     useEffect(() => {
         if (volumePower.data.length > 0 || activeTab === 'volume_power') {
-            volumePower.fetch(volumePowerMarket);
+            volumePower.fetch(volumePowerMarket, mrktCode);
         }
     }, [volumePowerMarket]);
 
@@ -105,14 +119,14 @@ export default function HomeScreen() {
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         if (activeTab === 'fluctuation') {
-            await fluctuation.fetch(fluctuationSort, fluctuationPrice);
+            await fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
         } else if (activeTab === 'volume') {
-            await volume.fetch(volumeBlng);
+            await volume.fetch(volumeBlng, mrktCode);
         } else {
-            await volumePower.fetch(volumePowerMarket);
+            await volumePower.fetch(volumePowerMarket, mrktCode);
         }
         setRefreshing(false);
-    }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket]);
+    }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket, mrktCode]);
 
     const handleItemPress = useCallback((code: string, name: string) => {
         router.push({

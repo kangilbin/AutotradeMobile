@@ -3,6 +3,7 @@
  */
 
 import { Colors } from '../constants';
+import { MarketCode } from '../types/market';
 
 /**
  * 숫자를 한국어 통화 형식으로 포맷팅
@@ -66,4 +67,26 @@ export const getSwingTypeText = (type: string): string => {
  */
 export const getActiveBadgeColor = (isActive: string): string => {
     return isActive === 'Y' ? Colors.active : Colors.inactive;
+};
+
+/**
+ * 마켓에 맞는 가격 포맷
+ * 국내: 정수 + 천단위 구분 (10,500)
+ * 미국: 소수점 2자리 ($150.25)
+ */
+export const formatPrice = (price: number | string, mrktCode: MarketCode): string => {
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(num)) return '-';
+
+    if (mrktCode === 'NASD') {
+        return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return Math.round(num).toLocaleString('ko-KR');
+};
+
+/**
+ * 통화 기호 반환
+ */
+export const getCurrencySymbol = (mrktCode: MarketCode): string => {
+    return mrktCode === 'NASD' ? '$' : '\u{20A9}';
 };
