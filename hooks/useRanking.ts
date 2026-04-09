@@ -9,6 +9,8 @@ import {
     VolumePowerMarketCode,
 } from '../types/ranking';
 import { getFluctuationRank, getVolumeRank, getVolumePowerRank } from '../contexts/backEndApi';
+import { OverseasFluctuationRawItem } from '../types/ranking';
+import { normalizeOverseasFluctuation } from '../utils/normalizeRanking';
 
 interface UseFluctuationReturn {
     data: FluctuationRankItem[];
@@ -35,8 +37,15 @@ export const useFluctuationRank = (): UseFluctuationReturn => {
     const fetch = useCallback(async (rankSort: FluctuationSortCode, prcCls: FluctuationPriceCode, mrktCode: string = 'J') => {
         setLoading(true);
         try {
-            const result = await getFluctuationRank(rankSort, prcCls, mrktCode);
-            setData(result ?? []);
+            if (mrktCode === 'NASD') {
+                // 국내: 0=상승, 1=하락 / 미국: 0=급락, 1=급등 → 반전
+                const overseasSort: FluctuationSortCode = rankSort === '0' ? '1' : '0';
+                const raw = await getFluctuationRank(overseasSort, prcCls, mrktCode) as unknown as OverseasFluctuationRawItem[] | undefined;
+                setData(raw ? normalizeOverseasFluctuation(raw) : []);
+            } else {
+                const result = await getFluctuationRank(rankSort, prcCls, mrktCode);
+                setData(result ?? []);
+            }
         } finally {
             setLoading(false);
         }

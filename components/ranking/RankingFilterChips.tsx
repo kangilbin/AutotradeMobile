@@ -57,6 +57,7 @@ interface RankingFilterChipsProps {
     onFluctuationPriceChange: (v: FluctuationPriceCode) => void;
     onVolumeBlngChange: (v: VolumeBlngCode) => void;
     onVolumePowerMarketChange: (v: VolumePowerMarketCode) => void;
+    isOverseas?: boolean;
 }
 
 function Chip<T extends string>({
@@ -91,6 +92,7 @@ function RankingFilterChips({
     onFluctuationPriceChange,
     onVolumeBlngChange,
     onVolumePowerMarketChange,
+    isOverseas,
 }: RankingFilterChipsProps) {
     const priceOptions = fluctuationSort === '0'
         ? FLUCTUATION_PRICE_OPTIONS_ASC
@@ -113,15 +115,19 @@ function RankingFilterChips({
                             onPress={onFluctuationSortChange}
                         />
                     ))}
-                    <View style={styles.separator} />
-                    {priceOptions.map((opt) => (
-                        <Chip
-                            key={`price-${opt.value}`}
-                            option={opt}
-                            isActive={fluctuationPrice === opt.value}
-                            onPress={onFluctuationPriceChange}
-                        />
-                    ))}
+                    {!isOverseas && (
+                        <>
+                            <View style={styles.separator} />
+                            {priceOptions.map((opt) => (
+                                <Chip
+                                    key={`price-${opt.value}`}
+                                    option={opt}
+                                    isActive={fluctuationPrice === opt.value}
+                                    onPress={onFluctuationPriceChange}
+                                />
+                            ))}
+                        </>
+                    )}
                 </>
             )}
             {activeTab === 'volume' && (
