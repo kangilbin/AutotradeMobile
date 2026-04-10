@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSizes, BorderRadius } from '../constants/theme';
+import { MarketCode } from '../types/market';
+import { formatPrice } from '../utils/format';
 
 
 interface RowProps {
@@ -13,10 +15,11 @@ interface RowProps {
     currentPrice: number;
     maxQuantity: number;
     basePrice?: number;
+    mrktCode?: MarketCode;
 }
 
 
-export default function OrderBookRow({ item, type, currentPrice, maxQuantity, basePrice }: RowProps) {
+export default function OrderBookRow({ item, type, currentPrice, maxQuantity, basePrice, mrktCode = 'J' }: RowProps) {
     const priceColor = basePrice
         ? item.price > basePrice
             ? Colors.profit
@@ -59,7 +62,7 @@ export default function OrderBookRow({ item, type, currentPrice, maxQuantity, ba
             {/* Column 2: price (flex 0.35) */}
             <View style={styles.priceContainer}>
                 <Text style={[styles.price, { color: priceColor }]}>
-                    {item.price.toLocaleString()}
+                    {formatPrice(item.price, mrktCode)}
                 </Text>
             </View>
 

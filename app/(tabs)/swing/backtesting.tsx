@@ -14,7 +14,8 @@ import { TradeItemData, fromBacktestingTrade } from '../../../types/tradeItem';
 import TradeHistoryItem from '../../../components/swing/TradeHistoryItem';
 import { backtesting } from '../../../contexts/backEndApi';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants';
-import { formatCurrency, getProfitLossColor, formatProfitRate } from '../../../utils/format';
+import { formatAmountWithUnit, formatSignedAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../../utils/format';
+import { useMarketStore } from '../../../utils/useMarketStore';
 
 // --- 유틸 함수 (컴포넌트 외부) ---
 
@@ -147,6 +148,7 @@ const useBacktesting = () => {
 // --- 메인 화면 컴포넌트 ---
 
 export default function BacktestingResultScreen() {
+    const mrktCode = useMarketStore((s) => s.mrktCode);
     const {
         stockName, loading, error, result,
         profitLoss, totalReturnPct, stats,
@@ -159,8 +161,8 @@ export default function BacktestingResultScreen() {
     );
 
     const renderTradeItem = useCallback(({ item, index }: { item: TradeItemData; index: number }) => (
-        <TradeHistoryItem trade={item} index={index} />
-    ), []);
+        <TradeHistoryItem trade={item} index={index} mrktCode={mrktCode} />
+    ), [mrktCode]);
 
     const keyExtractor = useCallback((item: TradeItemData) => item.id, []);
 
@@ -193,21 +195,21 @@ export default function BacktestingResultScreen() {
                         <View style={styles.returnCol}>
                             <Text style={styles.returnLabel}>초기 자본금</Text>
                             <Text style={styles.returnValue}>
-                                {formatCurrency(result.initial_capital)}원
+                                {formatAmountWithUnit(result.initial_capital, mrktCode)}
                             </Text>
                         </View>
                         <View style={styles.returnColDivider} />
                         <View style={styles.returnCol}>
                             <Text style={styles.returnLabel}>최종 자본금</Text>
                             <Text style={[styles.returnValue, { color: getProfitLossColor(profitLoss) }]}>
-                                {formatCurrency(Math.round(result.final_capital))}원
+                                {formatAmountWithUnit(result.final_capital, mrktCode)}
                             </Text>
                         </View>
                     </View>
                     <View style={styles.profitLossRow}>
                         <Text style={styles.returnLabel}>손익</Text>
                         <Text style={[styles.profitLossValue, { color: getProfitLossColor(profitLoss) }]}>
-                            {profitLoss >= 0 ? '+' : ''}{formatCurrency(Math.round(profitLoss))}원
+                            {formatSignedAmountWithUnit(profitLoss, mrktCode)}
                         </Text>
                     </View>
                 </View>

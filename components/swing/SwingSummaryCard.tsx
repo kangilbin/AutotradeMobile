@@ -1,11 +1,13 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SwingSummary } from '../../types/swing';
+import { MarketCode } from '../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants/theme';
-import { formatNumber, getProfitLossColor, formatProfitRate } from '../../utils/format';
+import { formatAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../utils/format';
 
 interface SwingSummaryCardProps {
     summary: SwingSummary | null;
+    mrktCode?: MarketCode;
 }
 
 const PLACEHOLDER = '-';
@@ -13,14 +15,14 @@ const PLACEHOLDER = '-';
 /**
  * 스윙 요약 카드 컴포넌트 (Presentational)
  */
-function SwingSummaryCard({ summary }: SwingSummaryCardProps) {
+function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
     return (
         <View style={styles.container}>
             {/* 메인 투자 금액 */}
             <View style={styles.mainSection}>
                 <Text style={styles.mainLabel}>내 투자</Text>
                 <Text style={styles.mainValue}>
-                    {summary ? `${formatNumber(summary.TOTAL_INVESTMENT_AMOUNT)}원` : PLACEHOLDER}
+                    {summary ? formatAmountWithUnit(summary.TOTAL_INVESTMENT_AMOUNT, mrktCode) : PLACEHOLDER}
                 </Text>
             </View>
 
@@ -28,14 +30,14 @@ function SwingSummaryCard({ summary }: SwingSummaryCardProps) {
             <View style={styles.subInfoContainer}>
                 <SummaryItem
                     label="원금"
-                    value={summary ? `${formatNumber(summary.TOTAL_PRINCIPAL)}원` : PLACEHOLDER}
+                    value={summary ? formatAmountWithUnit(summary.TOTAL_PRINCIPAL, mrktCode) : PLACEHOLDER}
                 />
 
                 <View style={styles.subInfoItem}>
                     <Text style={styles.subInfoLabel}>총 수익</Text>
                     <View style={styles.profitInfo}>
                         <Text style={[styles.subInfoValue, summary && { color: getProfitLossColor(summary.TOTAL_PROFIT) }]}>
-                            {summary ? `${formatNumber(summary.TOTAL_PROFIT)}원` : PLACEHOLDER}
+                            {summary ? formatAmountWithUnit(summary.TOTAL_PROFIT, mrktCode) : PLACEHOLDER}
                         </Text>
                         {summary && (
                             <Text style={[styles.profitRate, { color: getProfitLossColor(summary.TOTAL_PROFIT_RATE) }]}>
@@ -47,7 +49,7 @@ function SwingSummaryCard({ summary }: SwingSummaryCardProps) {
 
                 <SummaryItem
                     label="현금 자산"
-                    value={summary ? `${formatNumber(summary.CASH_ASSET)}원` : PLACEHOLDER}
+                    value={summary ? formatAmountWithUnit(summary.CASH_ASSET, mrktCode) : PLACEHOLDER}
                 />
             </View>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, FontSizes, Spacing } from '../../constants/theme';
@@ -37,13 +37,22 @@ export default function HomeScreen() {
     const [volumePowerMarket, setVolumePowerMarket] = useState<VolumePowerMarketCode>('0000');
 
     const mrktCode = useMarketStore((s) => s.mrktCode);
+    const isOverseas = useMarketStore((s) => s.isOverseas);
 
     // 각 순위별 개별 훅
     const fluctuation = useFluctuationRank();
     const volume = useVolumeRank();
     const volumePower = useVolumePowerRank();
 
-    // 마켓 변경 시 현재 탭 데이터 재조회
+    // 미국장 전환 시 등락률 탭으로 강제 이동 (거래량/체결강도 API 없음)
+    useEffect(() => {
+        if (isOverseas && activeTab !== 'fluctuation') {
+            setActiveTab('fluctuation');
+        }
+    }, [isOverseas]);
+
+    // 마켓 변경 시 현재 탭 데이터 재조회 (초기 로딩 포함)
+    const isFirstMount = useRef(true);
     useEffect(() => {
         if (activeTab === 'fluctuation') {
             fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
@@ -63,8 +72,12 @@ export default function HomeScreen() {
         }
     }, [activeTab]);
 
-    // 등락률 필터 변경 시 재조회
+    // 등락률 필터 변경 시 재조회 (마운트 시 제외 - useEffect #1이 초기 로딩 담당)
     useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            return;
+        }
         fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
     }, [fluctuationSort, fluctuationPrice]);
 
@@ -168,6 +181,7 @@ export default function HomeScreen() {
                     changeSign={item.prdy_vrss_sign}
                     buyVolume={vp.shnu_cnqn_smtn}
                     sellVolume={vp.seln_cnqn_smtn}
+                    mrktCode={mrktCode}
                     onPress={handleItemPress}
                 />
             );
@@ -184,10 +198,11 @@ export default function HomeScreen() {
                 changeSign={item.prdy_vrss_sign}
                 primaryMetric={primaryMetric}
                 primaryMetricLabel={primaryMetricLabel}
+                mrktCode={mrktCode}
                 onPress={handleItemPress}
             />
         );
-    }, [activeTab, volumeBlng, handleItemPress]);
+    }, [activeTab, volumeBlng, handleItemPress, mrktCode]);
 
     const keyExtractor = useCallback((item: RankItem) => {
         return `${activeTab}-${item.data_rank}-${getItemCode(item, activeTab)}`;
@@ -203,6 +218,7 @@ export default function HomeScreen() {
         onFluctuationPriceChange: handleFluctuationPriceChange,
         onVolumeBlngChange: handleVolumeBlngChange,
         onVolumePowerMarketChange: handleVolumePowerMarketChange,
+        isOverseas,
     };
 
     const ListHeader = useMemo(() => (
@@ -216,7 +232,7 @@ export default function HomeScreen() {
     if (isLoading && allData.length === 0 && !refreshing) {
         return (
             <View style={styles.container}>
-                <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
+                <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={isOverseas ? ['volume', 'volume_power'] : []} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -226,13 +242,14 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
+            <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={isOverseas ? ['volume', 'volume_power'] : []} />
             {allData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>순위 데이터가 없습니다</Text>
                 </View>
             ) : (
                 <FlatList
+                    style={{ opacity: isLoading ? 0.5 : 1 }}
                     data={restData}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
