@@ -216,4 +216,82 @@ export type BacktestingTrade = {
     tax?: number;
 }
 
+// ─── 미국장(NASD) 시세 API 응답 타입 ───
 
+export type NasdStockPriceResponse = {
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+    output1: NasdStockPriceOutput1;
+    output2: NasdStockPriceOutput2;
+    output3: NasdStockPriceOutput3;
+};
+
+export type NasdStockPriceOutput1 = {
+    code: string;       // 종목코드 (e.g., "AAPL")
+    rsym: string;       // 실시간 심볼 (e.g., "DNASAAPL")
+    curr: string;       // 통화 (e.g., "USD")
+    zdiv: string;       // 소수점 자릿수
+    base: string;       // 기준가 (전일 종가)
+    last: string;       // 현재가
+    open: string;       // 시가
+    high: string;       // 고가
+    low: string;        // 저가
+    rclose: string;     // 종가 대비 등락률 (e.g., "+0.11")
+    ropen: string;      // 시가 대비 등락률
+    rhigh: string;      // 고가 대비 등락률
+    rlow: string;       // 저가 대비 등락률
+    dymd: string;       // 일자 (e.g., "20260403")
+    dhms: string;       // 시간 (e.g., "090000")
+    avol: string;       // 매도 잔량
+    bvol: string;       // 매수 잔량
+    advl: string;       // 매도 건수
+    bdvl: string;       // 매수 건수
+};
+
+export type NasdStockPriceOutput2 = {
+    pask1: string; pask2: string; pask3: string; pask4: string; pask5: string;
+    pask6: string; pask7: string; pask8: string; pask9: string; pask10: string;
+    pbid1: string; pbid2: string; pbid3: string; pbid4: string; pbid5: string;
+    pbid6: string; pbid7: string; pbid8: string; pbid9: string; pbid10: string;
+    vask1: string; vask2: string; vask3: string; vask4: string; vask5: string;
+    vask6: string; vask7: string; vask8: string; vask9: string; vask10: string;
+    vbid1: string; vbid2: string; vbid3: string; vbid4: string; vbid5: string;
+    vbid6: string; vbid7: string; vbid8: string; vbid9: string; vbid10: string;
+    dask1: string; dask2: string; dask3: string; dask4: string; dask5: string;
+    dask6: string; dask7: string; dask8: string; dask9: string; dask10: string;
+    dbid1: string; dbid2: string; dbid3: string; dbid4: string; dbid5: string;
+    dbid6: string; dbid7: string; dbid8: string; dbid9: string; dbid10: string;
+};
+
+export type NasdStockPriceOutput3 = {
+    iep: string;        // 예상체결가
+    iev: string;        // 예상체결량
+    csbp: string;       // 예상매도
+    cshi: string;       // 예상고가
+    cslo: string;       // 예상저가
+    vetm: string;
+    vstm: string;
+};
+
+// ─── 국내/미국 통합 정규화 타입 ───
+
+export type OrderBookEntry = {
+    price: number;
+    quantity: number;
+    rate: string;       // 기준가 대비 등락률 (%)
+};
+
+export type UnifiedStockPrice = {
+    currentPrice: number;
+    basePrice: number;
+    openPrice: number;
+    highPrice: number;
+    lowPrice: number;
+    changeAmount: number;
+    changeRate: string;
+    asks: OrderBookEntry[];
+    bids: OrderBookEntry[];
+    estimatedPrice?: number;
+    estimatedChange?: number;
+};

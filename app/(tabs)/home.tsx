@@ -18,6 +18,7 @@ import RankingFilterChips from '../../components/ranking/RankingFilterChips';
 import RankingTopCards from '../../components/ranking/RankingTopCards';
 import RankingListItem from '../../components/ranking/RankingListItem';
 import { useMarketStore } from '../../utils/useMarketStore';
+import { useAccountStore } from '../../stores/useAccountStore';
 
 type RankItem = FluctuationRankItem | VolumeRankItem | VolumePowerRankItem;
 
@@ -38,18 +39,27 @@ export default function HomeScreen() {
 
     const mrktCode = useMarketStore((s) => s.mrktCode);
     const isOverseas = useMarketStore((s) => s.isOverseas);
+    const account = useAccountStore((s) => s.account);
+    const isSimulation = account?.SIMULATION_YN === 'Y';
+
+    // 체결강도: 모의투자 또는 미국장이면 비활성
+    const disabledTabs: RankingTab[] = useMemo(() => {
+        const disabled: RankingTab[] = [];
+        if (isSimulation || isOverseas) disabled.push('volume_power');
+        return disabled;
+    }, [isSimulation, isOverseas]);
 
     // 각 순위별 개별 훅
     const fluctuation = useFluctuationRank();
     const volume = useVolumeRank();
     const volumePower = useVolumePowerRank();
 
-    // 미국장 전환 시 등락률 탭으로 강제 이동 (거래량/체결강도 API 없음)
+    // 비활성 탭에 있으면 등락률 탭으로 강제 이동
     useEffect(() => {
-        if (isOverseas && activeTab !== 'fluctuation') {
+        if (disabledTabs.includes(activeTab)) {
             setActiveTab('fluctuation');
         }
-    }, [isOverseas]);
+    }, [disabledTabs]);
 
     // 마켓 변경 시 현재 탭 데이터 재조회 (초기 로딩 포함)
     const isFirstMount = useRef(true);
@@ -156,7 +166,11 @@ export default function HomeScreen() {
 
         if (activeTab === 'volume') {
             const v = item as VolumeRankItem;
-            if (volumeBlng === '0') {
+            if (isOverseas) {
+                // 미국장: 필터 없이 거래량만 표시
+                primaryMetric = v.acml_vol;
+                primaryMetricLabel = '';
+            } else if (volumeBlng === '0') {
                 primaryMetric = v.acml_vol;
                 primaryMetricLabel = '';
             } else if (volumeBlng === '1') {
@@ -232,7 +246,7 @@ export default function HomeScreen() {
     if (isLoading && allData.length === 0 && !refreshing) {
         return (
             <View style={styles.container}>
-                <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={isOverseas ? ['volume', 'volume_power'] : []} />
+                <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={disabledTabs} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -242,7 +256,7 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={isOverseas ? ['volume', 'volume_power'] : []} />
+            <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={disabledTabs} />
             {allData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>순위 데이터가 없습니다</Text>

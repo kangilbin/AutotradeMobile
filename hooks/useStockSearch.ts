@@ -19,6 +19,11 @@ export const useStockSearch = (debounceMs: number = 300, mrktCode: string = 'J')
     const [isSearching, setIsSearching] = useState(false);
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+    // 마켓 전환 시 검색 결과 초기화 후 재검색
+    useEffect(() => {
+        setStocks([]);
+    }, [mrktCode]);
+
     const fetchStocks = useCallback(async (query: string) => {
         if (!query.trim()) {
             setStocks([]);
