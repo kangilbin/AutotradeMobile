@@ -68,6 +68,22 @@ export interface OverseasVolumeRawItem {
     rsym: string;       // 풀 심볼
 }
 
+// 해외 체결강도 원본 타입
+export interface OverseasVolumePowerRawItem {
+    symb: string;       // 종목코드 (DVLT)
+    name: string;       // 한글 종목명
+    ename: string;      // 영문 종목명
+    last: string;       // 현재가
+    diff: string;       // 전일대비
+    sign: string;       // 등락부호
+    rate: string;       // 등락률
+    tvol: string;       // 거래량
+    powx: string;       // 당일 체결강도
+    tpow: string;       // 전일 체결강도
+    excd: string;       // 거래소 코드
+    rsym: string;       // 풀 심볼
+}
+
 // 체결강도 순위 아이템
 export interface VolumePowerRankItem {
     stck_shrn_iscd: string;   // 종목코드

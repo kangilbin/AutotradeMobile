@@ -9,8 +9,8 @@ import {
     VolumePowerMarketCode,
 } from '../types/ranking';
 import { getFluctuationRank, getVolumeRank, getVolumePowerRank } from '../contexts/backEndApi';
-import { OverseasFluctuationRawItem, OverseasVolumeRawItem } from '../types/ranking';
-import { normalizeOverseasFluctuation, normalizeOverseasVolume } from '../utils/normalizeRanking';
+import { OverseasFluctuationRawItem, OverseasVolumeRawItem, OverseasVolumePowerRawItem } from '../types/ranking';
+import { normalizeOverseasFluctuation, normalizeOverseasVolume, normalizeOverseasVolumePower } from '../utils/normalizeRanking';
 
 interface UseFluctuationReturn {
     data: FluctuationRankItem[];
@@ -83,8 +83,13 @@ export const useVolumePowerRank = (): UseVolumePowerReturn => {
     const fetch = useCallback(async (inputIscd: VolumePowerMarketCode, mrktCode: string = 'J') => {
         setLoading(true);
         try {
-            const result = await getVolumePowerRank(inputIscd, mrktCode);
-            setData(result ?? []);
+            if (mrktCode === 'NASD') {
+                const raw = await getVolumePowerRank(inputIscd, mrktCode) as unknown as OverseasVolumePowerRawItem[] | undefined;
+                setData(raw ? normalizeOverseasVolumePower(raw) : []);
+            } else {
+                const result = await getVolumePowerRank(inputIscd, mrktCode);
+                setData(result ?? []);
+            }
         } finally {
             setLoading(false);
         }

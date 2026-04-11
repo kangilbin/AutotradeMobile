@@ -142,7 +142,7 @@ function RankingFilterChips({
                     ))}
                 </>
             )}
-            {activeTab === 'volume_power' && (
+            {activeTab === 'volume_power' && !isOverseas && (
                 <>
                     {VOLUME_POWER_MARKET_OPTIONS.map((opt) => (
                         <Chip
