@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -16,6 +16,14 @@ export default function PriceScreen() {
     const { stockName, stCode, mrktCode } = useLocalSearchParams();
     const currentMrktCode = useMarketStore((s) => s.mrktCode);
     const activeMrktCode: MarketCode = (mrktCode as MarketCode) || currentMrktCode;
+
+    // 글로벌 마켓 변경 시: 진입 마켓과 달라지면 종목 검색 화면으로 이동
+    useEffect(() => {
+        if (mrktCode && currentMrktCode !== mrktCode) {
+            router.dismissAll();
+            router.replace('/stock');
+        }
+    }, [currentMrktCode]);
 
     const [unified, setUnified] = useState<UnifiedStockPrice | null>(null);
     const flatListRef = useRef<FlatList>(null);

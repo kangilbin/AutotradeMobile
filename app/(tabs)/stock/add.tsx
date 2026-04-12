@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
     StyleSheet,
     Text,
@@ -16,6 +16,7 @@ import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
+import { MarketCode } from '../../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
 
 // 스윙 타입 상수
@@ -33,11 +34,17 @@ const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string; icon: string }
     // { value: SWING_TYPES.ICHIMOKU, label: '일목균형표', icon: 'grid-outline' },
 ];
 
-// 금액 프리셋
-const AMOUNT_PRESETS = [
+// 금액 프리셋 (마켓별)
+const AMOUNT_PRESETS_KR = [
     { label: '100만', value: 1000000 },
     { label: '500만', value: 5000000 },
     { label: '1000만', value: 10000000 },
+];
+
+const AMOUNT_PRESETS_US = [
+    { label: '$1,000', value: 1000 },
+    { label: '$5,000', value: 5000 },
+    { label: '$10,000', value: 10000 },
 ];
 
 interface FormState extends AddStockAutoRequest {
@@ -57,6 +64,18 @@ export default function AddStockScreen() {
     const sellRatioRef = useRef<TextInput | null>(null);
     const account = useAccountStore((state) => state.account);
     const currentMrktCode = useMarketStore((s) => s.mrktCode);
+
+    const effectiveMrktCode: MarketCode = (mrktCode as MarketCode) || currentMrktCode;
+    const isOverseas = effectiveMrktCode === 'NASD';
+    const amountPresets = isOverseas ? AMOUNT_PRESETS_US : AMOUNT_PRESETS_KR;
+
+    // 글로벌 마켓 변경 시: 진입 마켓과 달라지면 종목 검색 화면으로 이동
+    useEffect(() => {
+        if (mrktCode && currentMrktCode !== mrktCode) {
+            router.dismissAll();
+            router.replace('/stock');
+        }
+    }, [currentMrktCode]);
 
     const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
@@ -216,7 +235,9 @@ export default function AddStockScreen() {
                         <Text style={styles.stockCodeText}>{stCode}</Text>
                     </View>
                     <View style={styles.stockInfo}>
-                        <Text style={styles.stockNameText}>{stockName}</Text>
+                        <Text style={styles.stockNameText}>
+                            {stockName} {isOverseas && <Text style={styles.marketBadgeText}>US</Text>}
+                        </Text>
                         <Text style={styles.stockSubText}>스윙 매매 설정</Text>
                     </View>
                 </View>
@@ -303,25 +324,41 @@ export default function AddStockScreen() {
                         <Text style={styles.sectionTitle}>스윙 금액</Text>
                     </View>
                     <View style={styles.amountDisplay}>
+                        {isOverseas && <Text style={styles.amountPrefix}>$</Text>}
                         <TextInput
                             ref={swingAmountRef}
                             style={styles.amountInput}
                             placeholder="0"
                             placeholderTextColor={Colors.textMuted}
-                            value={form.INIT_AMOUNT ? form.INIT_AMOUNT.toLocaleString() : ''}
+                            value={
+                                form.INIT_AMOUNT
+                                    ? isOverseas
+                                        ? form.INIT_AMOUNT.toLocaleString('en-US', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })
+                                        : form.INIT_AMOUNT.toLocaleString()
+                                    : ''
+                            }
                             onChangeText={(text) => {
-                                const numericValue = text.replace(/,/g, '');
-                                const number = parseInt(numericValue) || 0;
-                                handleChange('INIT_AMOUNT', number);
+                                if (isOverseas) {
+                                    const cleaned = text.replace(/[$,]/g, '');
+                                    const number = parseFloat(cleaned) || 0;
+                                    handleChange('INIT_AMOUNT', number);
+                                } else {
+                                    const numericValue = text.replace(/,/g, '');
+                                    const number = parseInt(numericValue) || 0;
+                                    handleChange('INIT_AMOUNT', number);
+                                }
                             }}
-                            keyboardType="number-pad"
+                            keyboardType={isOverseas ? 'decimal-pad' : 'number-pad'}
                             onFocus={() => handleFocus('swingAmount')}
                             onBlur={handleBlur}
                         />
-                        <Text style={styles.amountUnit}>원</Text>
+                        {!isOverseas && <Text style={styles.amountUnit}>원</Text>}
                     </View>
                     <View style={styles.presetContainer}>
-                        {AMOUNT_PRESETS.map((preset) => (
+                        {amountPresets.map((preset) => (
                             <TouchableOpacity
                                 key={preset.value}
                                 style={[
@@ -342,14 +379,14 @@ export default function AddStockScreen() {
                         <TouchableOpacity
                             style={[
                                 styles.presetButton,
-                                !AMOUNT_PRESETS.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetButtonActive,
+                                !amountPresets.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetButtonActive,
                             ]}
                             onPress={() => swingAmountRef.current?.focus()}
                             activeOpacity={0.7}
                         >
                             <Text style={[
                                 styles.presetText,
-                                !AMOUNT_PRESETS.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetTextActive,
+                                !amountPresets.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetTextActive,
                             ]}>
                                 직접입력
                             </Text>
@@ -524,6 +561,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.textPrimary,
     },
+    marketBadgeText: {
+        fontSize: FontSizes.sm,
+        color: Colors.primary,
+        fontWeight: '600',
+    },
     stockSubText: {
         fontSize: FontSizes.sm,
         color: Colors.textMuted,
@@ -650,6 +692,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.borderLight,
         marginBottom: Spacing.lg,
+    },
+    amountPrefix: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: Colors.textPrimary,
+        marginRight: Spacing.xs,
     },
     amountInput: {
         fontSize: 32,
