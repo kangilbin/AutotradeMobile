@@ -42,12 +42,18 @@ export default function HomeScreen() {
     const account = useAccountStore((s) => s.account);
     const isSimulation = account?.SIMULATION_YN === 'Y';
 
-    // 체결강도: 모의투자 또는 미국장이면 비활성
+    // 모의투자: 거래량+체결강도 비활성
     const disabledTabs: RankingTab[] = useMemo(() => {
         const disabled: RankingTab[] = [];
-        if (isSimulation || isOverseas) disabled.push('volume_power');
+        if (isSimulation) disabled.push('volume', 'volume_power');
         return disabled;
-    }, [isSimulation, isOverseas]);
+    }, [isSimulation]);
+
+    const simulationBanner = isSimulation && !isOverseas ? (
+        <View style={styles.simulationBanner}>
+            <Text style={styles.simulationBannerText}>ℹ  모의투자에서는 거래량/체결강도 순위를 지원하지 않습니다</Text>
+        </View>
+    ) : null;
 
     // 각 순위별 개별 훅
     const fluctuation = useFluctuationRank();
@@ -216,13 +222,13 @@ export default function HomeScreen() {
                 onPress={handleItemPress}
             />
         );
-    }, [activeTab, volumeBlng, handleItemPress, mrktCode]);
+    }, [activeTab, volumeBlng, handleItemPress, mrktCode, isOverseas]);
 
     const keyExtractor = useCallback((item: RankItem) => {
         return `${activeTab}-${item.data_rank}-${getItemCode(item, activeTab)}`;
     }, [activeTab]);
 
-    const filterChipsProps = {
+    const filterChipsProps = useMemo(() => ({
         activeTab,
         fluctuationSort,
         fluctuationPrice,
@@ -233,7 +239,9 @@ export default function HomeScreen() {
         onVolumeBlngChange: handleVolumeBlngChange,
         onVolumePowerMarketChange: handleVolumePowerMarketChange,
         isOverseas,
-    };
+    }), [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket,
+        handleFluctuationSortChange, handleFluctuationPriceChange,
+        handleVolumeBlngChange, handleVolumePowerMarketChange, isOverseas]);
 
     const ListHeader = useMemo(() => (
         <>
@@ -247,6 +255,7 @@ export default function HomeScreen() {
         return (
             <View style={styles.container}>
                 <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={disabledTabs} />
+                {simulationBanner}
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -257,6 +266,7 @@ export default function HomeScreen() {
     return (
         <View style={styles.container}>
             <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={disabledTabs} />
+            {simulationBanner}
             {allData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>순위 데이터가 없습니다</Text>
@@ -300,6 +310,17 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: FontSizes.lg,
+        color: Colors.textSecondary,
+    },
+    simulationBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F4FF',
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+    },
+    simulationBannerText: {
+        fontSize: FontSizes.sm,
         color: Colors.textSecondary,
     },
 });
