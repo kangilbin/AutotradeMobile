@@ -11,13 +11,14 @@ import {
 import {useRouter, useLocalSearchParams} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
-import {addStockAuto, useApiLoading} from "../../../contexts/backEndApi";
+import {addStockAuto, getAvailableCapital, useApiLoading} from "../../../contexts/backEndApi";
 import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
 import { MarketCode } from '../../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
+import { AvailableCapitalResponse } from '../../../types/swing';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
@@ -77,6 +78,23 @@ export default function AddStockScreen() {
         }
     }, [currentMrktCode]);
 
+    const [capitalInfo, setCapitalInfo] = useState<AvailableCapitalResponse | null>(null);
+    const [capitalLoading, setCapitalLoading] = useState(true);
+
+    // 가용 자본 조회
+    useEffect(() => {
+        const fetchCapital = async () => {
+            if (!account?.ACCOUNT_NO) return;
+            setCapitalLoading(true);
+            const result = await getAvailableCapital(account.ACCOUNT_NO, effectiveMrktCode);
+            if (result) {
+                setCapitalInfo(result);
+            }
+            setCapitalLoading(false);
+        };
+        fetchCapital();
+    }, [account?.ACCOUNT_NO, effectiveMrktCode]);
+
     const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
         MRKT_CODE: (mrktCode as string) || currentMrktCode,
@@ -90,6 +108,7 @@ export default function AddStockScreen() {
         LONG_MA: 60,
     });
     const [focusedField, setFocusedField] = useState<string | null>(null);
+
     const [validationErrors, setValidationErrors] = useState<{[key: string]: boolean}>({});
     const loading = useApiLoading();
 
@@ -220,6 +239,11 @@ export default function AddStockScreen() {
         return baseValid;
     };
 
+    const formatCapitalAmount = (amount: number) => {
+        if (isOverseas) return `$${amount.toLocaleString('en-US')}`;
+        return `${amount.toLocaleString()}원`;
+    };
+
     return (
         <DismissKeyboardView style={styles.container}>
             {loading && <LoadingIndicator />}
@@ -322,6 +346,11 @@ export default function AddStockScreen() {
                     <View style={styles.sectionHeader}>
                         <Ionicons name="wallet-outline" size={18} color={Colors.primary} />
                         <Text style={styles.sectionTitle}>스윙 금액</Text>
+                        {capitalInfo && !capitalLoading && (
+                            <Text style={styles.availableCapitalBadge}>
+                                등록 가능: {formatCapitalAmount(capitalInfo.available_capital)}
+                            </Text>
+                        )}
                     </View>
                     <View style={styles.amountDisplay}>
                         {isOverseas && <Text style={styles.amountPrefix}>$</Text>}
@@ -392,6 +421,14 @@ export default function AddStockScreen() {
                             </Text>
                         </TouchableOpacity>
                     </View>
+                    {capitalInfo && !capitalLoading && form.INIT_AMOUNT > capitalInfo.available_capital && (
+                        <View style={styles.capitalWarning}>
+                            <Ionicons name="information-circle-outline" size={14} color={Colors.warning} />
+                            <Text style={[styles.capitalWarningText, { color: Colors.warning }]}>
+                                가용 자본을 초과하는 금액입니다 (가용: {formatCapitalAmount(capitalInfo.available_capital)})
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* 분할 비율 설정 */}
@@ -850,6 +887,29 @@ const styles = StyleSheet.create({
         color: Colors.textWhite,
         fontWeight: 'bold',
         fontSize: FontSizes.lg,
+    },
+
+    availableCapitalBadge: {
+        marginLeft: 'auto',
+        fontSize: FontSizes.sm,
+        color: Colors.primary,
+        fontWeight: '600',
+    },
+    capitalWarning: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+        marginTop: Spacing.md,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        backgroundColor: Colors.errorLight,
+        borderRadius: BorderRadius.sm,
+    },
+    capitalWarningText: {
+        fontSize: FontSizes.sm,
+        color: Colors.error,
+        fontWeight: '500',
+        flex: 1,
     },
 
     bottomSpacer: {

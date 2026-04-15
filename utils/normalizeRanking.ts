@@ -8,9 +8,19 @@ import {
 } from '../types/ranking';
 
 export function normalizeOverseasFluctuation(
-    items: OverseasFluctuationRawItem[]
+    items: OverseasFluctuationRawItem[],
+    descending: boolean = true,
 ): FluctuationRankItem[] {
-    return items.map((item, index) => ({
+    const filtered = items.filter((item) => {
+        const r = parseFloat(item.rate) || 0;
+        return descending ? r > 0 : r < 0;
+    });
+    const sorted = filtered.sort((a, b) => {
+        const aRate = parseFloat(a.rate) || 0;
+        const bRate = parseFloat(b.rate) || 0;
+        return descending ? bRate - aRate : aRate - bRate;
+    });
+    return sorted.map((item, index) => ({
         stck_shrn_iscd: item.symb,
         data_rank: String(index + 1),
         hts_kor_isnm: item.knam,

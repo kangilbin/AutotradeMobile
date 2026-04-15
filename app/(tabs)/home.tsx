@@ -51,7 +51,7 @@ export default function HomeScreen() {
 
     const simulationBanner = isSimulation && !isOverseas ? (
         <View style={styles.simulationBanner}>
-            <Text style={styles.simulationBannerText}>ℹ  모의투자에서는 거래량/체결강도 순위를 지원하지 않습니다</Text>
+            <Text style={styles.simulationBannerText}>모의투자에서는 거래량/체결강도 순위를 지원하지 않습니다</Text>
         </View>
     ) : null;
 

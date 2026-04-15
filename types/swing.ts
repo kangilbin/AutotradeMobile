@@ -25,6 +25,13 @@ export type SwingItem = {
     // DEL_YN: string
 }
 
+// 가용 자본 조회 응답 타입
+export type AvailableCapitalResponse = {
+    total_capital: number       // 총 자본 (예수금 + 주식평가)
+    allocated: number           // 기존 할당 합계
+    available_capital: number   // 가용 자본
+}
+
 // 스윙 요약 정보 타입
 export type SwingSummary = {
     TOTAL_INVESTMENT_AMOUNT: number  // 내 투자 금액

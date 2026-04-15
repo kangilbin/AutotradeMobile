@@ -41,7 +41,7 @@ export const useFluctuationRank = (): UseFluctuationReturn => {
                 // 국내: 0=상승, 1=하락 / 미국: 0=급락, 1=급등 → 반전
                 const overseasSort: FluctuationSortCode = rankSort === '0' ? '1' : '0';
                 const raw = await getFluctuationRank(overseasSort, prcCls, mrktCode) as unknown as OverseasFluctuationRawItem[] | undefined;
-                setData(raw ? normalizeOverseasFluctuation(raw) : []);
+                setData(raw ? normalizeOverseasFluctuation(raw, rankSort === '0') : []);
             } else {
                 const result = await getFluctuationRank(rankSort, prcCls, mrktCode);
                 setData(result ?? []);
