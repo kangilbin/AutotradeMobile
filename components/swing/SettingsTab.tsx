@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SwingItem } from '../../types/swing';
-import { updateSwingSettings } from '../../contexts/backEndApi';
+import { SwingItem, AvailableCapitalResponse } from '../../types/swing';
+import { updateSwingSettings, getAvailableCapital } from '../../contexts/backEndApi';
+import { useAccountStore } from '../../stores/useAccountStore';
+import axios from 'axios';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
@@ -44,6 +46,9 @@ interface ValidationErrors {
 
 export default function SettingsTab({ swingData, onStatusChange }: SettingsTabProps) {
     const [isEditMode, setIsEditMode] = useState(false);
+    const account = useAccountStore((state) => state.account);
+    const [capitalInfo, setCapitalInfo] = useState<AvailableCapitalResponse | null>(null);
+    const [capitalLoading, setCapitalLoading] = useState(false);
     const [form, setForm] = useState<FormState>({
         ST_CODE: '',
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
@@ -76,7 +81,21 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         }
     }, [swingData]);
 
-    const handleEdit = () => setIsEditMode(true);
+    // 수정 시 가용 자본 = API 가용 자본 + 현재 스윙 INIT_AMOUNT (자기 자신은 가용 범위에 포함)
+    const effectiveAvailable = capitalInfo
+        ? capitalInfo.available_capital + (swingData?.INIT_AMOUNT || 0)
+        : null;
+    const isOverCapital = effectiveAvailable != null && form.INIT_AMOUNT > effectiveAvailable;
+
+    const handleEdit = async () => {
+        setIsEditMode(true);
+        if (!account?.ACCOUNT_NO || !swingData) return;
+        setCapitalLoading(true);
+        const mrktCode = (swingData as any).MRKT_CODE || 'J';
+        const result = await getAvailableCapital(account.ACCOUNT_NO, mrktCode);
+        if (result) setCapitalInfo(result);
+        setCapitalLoading(false);
+    };
 
     const handleCancel = () => {
         setIsEditMode(false);
@@ -99,7 +118,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         const isMultiMA = form.SWING_TYPE === SWING_TYPES.MULTI_MA;
 
         const errors: ValidationErrors = {
-            swingAmount: form.INIT_AMOUNT <= 0,
+            swingAmount: form.INIT_AMOUNT <= 0 || isOverCapital,
             ratio: form.BUY_RATIO <= 0 || form.SELL_RATIO <= 0,
             movingAverage: isMultiMA && (
                 form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA
@@ -141,6 +160,18 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
             setIsEditMode(false);
             onStatusChange(updateData);
         } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 400) {
+                const detail = error.response.data?.detail;
+                if (detail?.available_capital != null) {
+                    const available = detail.available_capital.toLocaleString();
+                    const requested = (detail.requested_amount || form.INIT_AMOUNT).toLocaleString();
+                    Alert.alert(
+                        '금액 초과',
+                        `가용 자본이 부족합니다\n(가용: ${available}원, 필요: ${requested}원)`
+                    );
+                    return;
+                }
+            }
             Alert.alert('오류', '설정 저장에 실패했습니다.');
         }
     };
@@ -195,13 +226,25 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                     <View style={styles.settingRow}>
                         <Text style={styles.label}>스윙 금액</Text>
                         {isEditMode ? (
-                            <TextInput
-                                style={[styles.input, validationErrors.swingAmount && styles.inputError]}
-                                value={form.INIT_AMOUNT.toString()}
-                                onChangeText={(text) => updateForm('INIT_AMOUNT', parseInt(text) || 0)}
-                                keyboardType="numeric"
-                                placeholder="금액 입력"
-                            />
+                            <View style={styles.amountEditContainer}>
+                                <TextInput
+                                    style={[styles.input, (validationErrors.swingAmount || isOverCapital) && styles.inputError]}
+                                    value={form.INIT_AMOUNT.toString()}
+                                    onChangeText={(text) => updateForm('INIT_AMOUNT', parseInt(text) || 0)}
+                                    keyboardType="numeric"
+                                    placeholder="금액 입력"
+                                />
+                                {effectiveAvailable != null && !capitalLoading && (
+                                    <Text style={styles.availableCapitalHint}>
+                                        등록 가능: {effectiveAvailable.toLocaleString()}원
+                                    </Text>
+                                )}
+                                {isOverCapital && effectiveAvailable != null && (
+                                    <Text style={styles.overCapitalText}>
+                                        보유 자본을 초과합니다
+                                    </Text>
+                                )}
+                            </View>
                         ) : (
                             <Text style={styles.value}>{form.INIT_AMOUNT.toLocaleString()}원</Text>
                         )}
@@ -491,6 +534,23 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontWeight: '500',
         width: 40,
+    },
+
+    // 금액 편집 컨테이너
+    amountEditContainer: {
+        alignItems: 'flex-end',
+    },
+    availableCapitalHint: {
+        fontSize: 11,
+        color: '#4ECDC4',
+        fontWeight: '500',
+        marginTop: 4,
+    },
+    overCapitalText: {
+        fontSize: 11,
+        color: '#E74C3C',
+        fontWeight: '500',
+        marginTop: 2,
     },
 
     // 에러 메시지

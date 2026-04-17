@@ -14,7 +14,7 @@ import {
     BacktestingResponse,
     StockStatus
 } from "../types/stock";
-import { SwingListResponse } from '../types/swing';
+import { SwingListResponse, AvailableCapitalResponse } from '../types/swing';
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 import {
@@ -436,6 +436,18 @@ export const getStockPrice = async (st_code: string, mrktCode: string = 'J'): Pr
     }
 };
 
+// 가용 자본 조회
+export const getAvailableCapital = async (accountNo: string, mrktCode: string = 'J'): Promise<AvailableCapitalResponse | undefined> => {
+    try {
+        const response = await api.get('/swing/available-capital', {
+            params: { account_no: accountNo, mrkt_code: mrktCode }
+        });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '가용 자본 조회');
+    }
+};
+
 // 주식 오토 설정 추가
 export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | undefined> => {
     try {
@@ -459,19 +471,14 @@ export const getSwingList = async (account_no: string, mrktCode: string = 'J'): 
 
 // 스윙 설정 업데이트
 export const updateSwingSettings = async (swingId: number, settings: {
-    SWING_TYPE: string;
-    BUY_RATIO: number;
-    SELL_RATIO: number;
-    INIT_AMOUNT: number;
-    USE_YN: string;
+    SWING_TYPE?: string;
+    BUY_RATIO?: number;
+    SELL_RATIO?: number;
+    INIT_AMOUNT?: number;
+    USE_YN?: string;
 }): Promise<boolean> => {
-    try {
-        const response = await api.put(`/swing/${swingId}/settings`, settings);
-        return response.data.data || false;
-    } catch (error: unknown) {
-        handleApiError(error, '스윙 설정 업데이트');
-        return false;
-    }
+    const response = await api.put(`/swing/${swingId}/settings`, settings);
+    return response.data.data || true;
 };
 
 // 스윙 삭제

@@ -12,6 +12,7 @@ import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
 import { updateSwingSettings, deleteSwing } from '../../../contexts/backEndApi';
 import { AddStockAutoRequest } from '../../../types/stock';
+import axios from 'axios';
 import SettingsTab from '../../../components/swing/SettingsTab';
 import ChartTab from '../../../components/swing/ChartTab';
 import HistoryTab from '../../../components/swing/HistoryTab';
@@ -68,36 +69,26 @@ export default function SwingDetailScreen() {
                     text: '확인',
                     onPress: async () => {
                         try {
-                            const success = await updateSwingSettings(swingData.SWING_ID, {
-                                SWING_TYPE: swingData.SWING_TYPE,
-                                BUY_RATIO: swingData.BUY_RATIO,
-                                SELL_RATIO: swingData.SELL_RATIO,
-                                INIT_AMOUNT: swingData.INIT_AMOUNT,
+                            await updateSwingSettings(swingData.SWING_ID, {
                                 USE_YN: newActiveYn,
                             });
-                            if (success) {
-                                // 로컬 상태 업데이트
-                                setSwingData(prev => prev ? { ...prev, USE_YN: newActiveYn } : null);
-                                
-                                // 성공 알림
-                                Alert.alert(
-                                    '성공',
-                                    `스윙이 ${action}되었습니다.`,
-                                    [{ text: '확인' }]
-                                );
-                            } else {
-                                Alert.alert(
-                                    '오류',
-                                    '스윙 상태 변경에 실패했습니다.',
-                                    [{ text: '확인' }]
-                                );
-                            }
+                            setSwingData(prev => prev ? { ...prev, USE_YN: newActiveYn } : null);
+                            Alert.alert('성공', `스윙이 ${action}되었습니다.`, [{ text: '확인' }]);
                         } catch (error) {
-                            Alert.alert(
-                                '오류',
-                                '스윙 상태 변경 중 오류가 발생했습니다.',
-                                [{ text: '확인' }]
-                            );
+                            if (axios.isAxiosError(error) && error.response?.status === 400) {
+                                const detail = error.response.data?.detail;
+                                if (detail?.available_capital != null) {
+                                    const available = detail.available_capital.toLocaleString();
+                                    const requested = (detail.requested_amount || swingData.INIT_AMOUNT).toLocaleString();
+                                    Alert.alert(
+                                        '활성화 불가',
+                                        `가용 자본이 부족합니다\n(가용: ${available}원, 필요: ${requested}원)`,
+                                        [{ text: '확인' }]
+                                    );
+                                    return;
+                                }
+                            }
+                            Alert.alert('오류', '스윙 상태 변경 중 오류가 발생했습니다.', [{ text: '확인' }]);
                         }
                     },
                 },
