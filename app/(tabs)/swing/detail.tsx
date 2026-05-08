@@ -156,8 +156,6 @@ export default function SwingDetailScreen() {
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
                                 INIT_AMOUNT: swingData.INIT_AMOUNT,
                                 SWING_TYPE: swingData.SWING_TYPE,
-                                BUY_RATIO: swingData.BUY_RATIO,
-                                SELL_RATIO: swingData.SELL_RATIO,
                             };
                             
                             // 백트레이딩 결과 화면으로 이동

@@ -17,8 +17,6 @@ export type AddStockAutoRequest = {
     ACCOUNT_NO: string
     INIT_AMOUNT: number
     SWING_TYPE: string  // 'S' 단일 이평선, 'B' 일목균형표
-    BUY_RATIO: number   // 매수 비율
-    SELL_RATIO: number  // 매도 비율
 }
 
 // 주식 오토 설정 상태 타입
@@ -29,8 +27,6 @@ export type StockAutoStatus = {
     SHORT_MA: number
     MID_MA: number
     LONG_MA: number
-    BUY_RATIO: number
-    SELL_RATIO: number
     DEL_YN: string
 }
 

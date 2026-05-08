@@ -472,8 +472,6 @@ export const getSwingList = async (account_no: string, mrktCode: string = 'J'): 
 // 스윙 설정 업데이트
 export const updateSwingSettings = async (swingId: number, settings: {
     SWING_TYPE?: string;
-    BUY_RATIO?: number;
-    SELL_RATIO?: number;
     INIT_AMOUNT?: number;
     USE_YN?: string;
 }): Promise<boolean> => {
