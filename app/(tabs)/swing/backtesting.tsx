@@ -52,8 +52,6 @@ const useBacktesting = () => {
                     ACCOUNT_NO: formParams.ACCOUNT_NO as string,
                     INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
                     SWING_TYPE: formParams.SWING_TYPE as string,
-                    BUY_RATIO: Number(formParams.BUY_RATIO),
-                    SELL_RATIO: Number(formParams.SELL_RATIO),
                 };
 
                 const response = await backtesting(backtestingParams);

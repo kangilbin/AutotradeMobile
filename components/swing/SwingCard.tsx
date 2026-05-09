@@ -51,8 +51,6 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
             {/* 설정 태그들 */}
             <View style={styles.tagRow}>
                 <Tag label={getSwingTypeText(item.SWING_TYPE)} />
-                <Tag label={`매수 ${item.BUY_RATIO}%`} />
-                <Tag label={`매도 ${item.SELL_RATIO}%`} />
             </View>
 
             {/* 평가 정보 */}
@@ -210,11 +208,6 @@ const styles = StyleSheet.create({
     profitRate: {
         fontSize: FontSizes.md,
         fontWeight: '600',
-    },
-    chevron: {
-        position: 'absolute',
-        right: Spacing.md,
-        top: Spacing.lg + 2,
     },
 });
 

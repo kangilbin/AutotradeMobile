@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-04-15T10:43:40.169Z",
+  "lastUpdated": "2026-05-08T13:01:05.935Z",
   "activeFeatures": [
     "stock-add-theme-unify",
     "stock",
@@ -52,7 +52,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-03T12:33:15.721Z",
-        "lastUpdated": "2026-04-15T10:39:14.029Z"
+        "lastUpdated": "2026-05-07T13:12:07.368Z"
       },
       "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/app/(tabs)/stock/add.tsx"
     },
@@ -65,7 +65,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-10T10:22:54.425Z",
-        "lastUpdated": "2026-04-15T10:07:19.185Z"
+        "lastUpdated": "2026-05-07T13:09:29.188Z"
       },
       "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/types/swing.ts"
     },
@@ -78,9 +78,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-10T10:23:02.010Z",
-        "lastUpdated": "2026-04-15T10:43:40.169Z"
+        "lastUpdated": "2026-05-08T13:01:05.934Z"
       },
-      "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/app/(tabs)/swing/detail.tsx"
+      "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/components/swing/SwingCard.tsx"
     },
     "contexts": {
       "phase": "do",
@@ -91,7 +91,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-13T07:19:16.736Z",
-        "lastUpdated": "2026-04-15T10:43:34.086Z"
+        "lastUpdated": "2026-05-07T13:09:41.071Z"
       },
       "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/contexts/backEndApi.ts"
     },
@@ -297,7 +297,7 @@
   "session": {
     "startedAt": "2026-02-28T07:14:59.049Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-04-15T10:43:40.169Z"
+    "lastActivity": "2026-05-08T13:01:05.935Z"
   },
   "history": [
     {
@@ -2987,6 +2987,204 @@
     },
     {
       "timestamp": "2026-04-15T10:43:40.169Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:09:05.004Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:09:17.730Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:09:29.188Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:09:41.071Z",
+      "feature": "contexts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:09:52.525Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:01.207Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:10.171Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:18.562Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:28.930Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:37.701Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:46.774Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:10:57.733Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:11:07.515Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:11:17.854Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:11:40.365Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-07T13:12:07.368Z",
+      "feature": "stock",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:35:11.136Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:36:43.137Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:42:05.452Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:42:27.954Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:42:56.190Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:44:18.586Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:45:34.712Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:46:01.683Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:51:17.552Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:52:31.571Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:53:17.190Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:53:53.489Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T12:59:35.298Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T13:00:11.645Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T13:00:33.027Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T13:00:52.352Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-08T13:01:05.934Z",
       "feature": "swing",
       "phase": "do",
       "action": "updated"

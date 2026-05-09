@@ -61,8 +61,6 @@ export default function AddStockScreen() {
     const shortMaRef = useRef<TextInput | null>(null);
     const midMaRef = useRef<TextInput | null>(null);
     const longMaRef = useRef<TextInput | null>(null);
-    const buyRatioRef = useRef<TextInput | null>(null);
-    const sellRatioRef = useRef<TextInput | null>(null);
     const account = useAccountStore((state) => state.account);
     const currentMrktCode = useMarketStore((s) => s.mrktCode);
 
@@ -101,8 +99,6 @@ export default function AddStockScreen() {
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
-        BUY_RATIO: 0,
-        SELL_RATIO: 0,
         SHORT_MA: 5,
         MID_MA: 20,
         LONG_MA: 60,
@@ -124,7 +120,6 @@ export default function AddStockScreen() {
 
     const getSectionByField = (field: string) => {
         if (["SHORT_MA", "MID_MA", "LONG_MA"].includes(field)) return 'movingAverage';
-        if (["buyRatio", "sellRatio"].includes(field)) return 'ratio';
         if (field === 'INIT_AMOUNT' || field === 'swingAmount') return 'swingAmount';
         return '';
     };
@@ -148,9 +143,6 @@ export default function AddStockScreen() {
         if (field === 'INIT_AMOUNT') {
             setValidationErrors(prev => ({ ...prev, swingAmount: false }));
         }
-        if (field === 'BUY_RATIO' || field === 'SELL_RATIO') {
-            setValidationErrors(prev => ({ ...prev, ratio: false }));
-        }
         if (field === 'SHORT_MA' || field === 'MID_MA' || field === 'LONG_MA') {
             setValidationErrors(prev => ({ ...prev, movingAverage: false }));
         }
@@ -161,9 +153,6 @@ export default function AddStockScreen() {
 
         if (!form.INIT_AMOUNT) {
             errors.swingAmount = true;
-        }
-        if (!form.BUY_RATIO || !form.SELL_RATIO) {
-            errors.ratio = true;
         }
 
         // 이동평균선 타입일 때 MA 검증
@@ -182,21 +171,7 @@ export default function AddStockScreen() {
                 swingAmountRef.current?.focus();
             } else if (errors.movingAverage) {
                 shortMaRef.current?.focus();
-            } else if (errors.ratio) {
-                buyRatioRef.current?.focus();
             }
-            return;
-        }
-
-        // 비율 검증
-        if (form.BUY_RATIO < 0 || form.BUY_RATIO > 100) {
-            setValidationErrors({ratio: true});
-            buyRatioRef.current?.focus();
-            return;
-        }
-        if (form.SELL_RATIO < 0 || form.SELL_RATIO > 100) {
-            setValidationErrors({ratio: true});
-            sellRatioRef.current?.focus();
             return;
         }
 
@@ -207,8 +182,6 @@ export default function AddStockScreen() {
                 ACCOUNT_NO: form.ACCOUNT_NO,
                 INIT_AMOUNT: form.INIT_AMOUNT,
                 SWING_TYPE: form.SWING_TYPE,
-                BUY_RATIO: form.BUY_RATIO,
-                SELL_RATIO: form.SELL_RATIO,
             };
 
             // 이동평균선 타입일 때만 MA 값 추가
@@ -227,7 +200,7 @@ export default function AddStockScreen() {
     };
 
     const isFormValid = () => {
-        const baseValid = form.INIT_AMOUNT > 0 && form.BUY_RATIO > 0 && form.SELL_RATIO > 0;
+        const baseValid = form.INIT_AMOUNT > 0;
 
         if (isMultiMA) {
             const short = form.SHORT_MA || 0;
@@ -429,106 +402,6 @@ export default function AddStockScreen() {
                             </Text>
                         </View>
                     )}
-                </View>
-
-                {/* 분할 비율 설정 */}
-                <View style={getSectionStyle('ratio')}>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="pie-chart-outline" size={18} color={Colors.primary} />
-                        <Text style={styles.sectionTitle}>분할 비율</Text>
-                    </View>
-
-                    {/* 매수 비율 */}
-                    <View style={styles.ratioRow}>
-                        <View style={styles.ratioLabelContainer}>
-                            <View style={[styles.ratioDot, { backgroundColor: Colors.profit }]} />
-                            <Text style={styles.ratioLabel}>매수</Text>
-                        </View>
-                        <View style={styles.ratioBarContainer}>
-                            <View style={styles.ratioBarTrack}>
-                                <View
-                                    style={[
-                                        styles.ratioBarFill,
-                                        {
-                                            width: `${Math.min(form.BUY_RATIO, 100)}%`,
-                                            backgroundColor: Colors.profit,
-                                        }
-                                    ]}
-                                />
-                            </View>
-                        </View>
-                        <TouchableOpacity
-                            style={[
-                                styles.ratioInputBox,
-                                focusedField === 'buyRatio' && styles.ratioInputBoxFocused,
-                            ]}
-                            onPress={() => buyRatioRef.current?.focus()}
-                            activeOpacity={0.8}
-                        >
-                            <TextInput
-                                ref={buyRatioRef}
-                                style={styles.ratioInput}
-                                placeholder="0"
-                                placeholderTextColor={Colors.textMuted}
-                                value={form.BUY_RATIO ? form.BUY_RATIO.toString() : ''}
-                                onChangeText={t => {
-                                    if (/^[0-9]*$/.test(t)) {
-                                        handleChange('BUY_RATIO', t === '' ? 0 : parseInt(t, 10));
-                                    }
-                                }}
-                                keyboardType="number-pad"
-                                onFocus={() => handleFocus('buyRatio')}
-                                onBlur={handleBlur}
-                            />
-                            <Text style={styles.ratioPercent}>%</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* 매도 비율 */}
-                    <View style={styles.ratioRow}>
-                        <View style={styles.ratioLabelContainer}>
-                            <View style={[styles.ratioDot, { backgroundColor: Colors.loss }]} />
-                            <Text style={styles.ratioLabel}>매도</Text>
-                        </View>
-                        <View style={styles.ratioBarContainer}>
-                            <View style={styles.ratioBarTrack}>
-                                <View
-                                    style={[
-                                        styles.ratioBarFill,
-                                        {
-                                            width: `${Math.min(form.SELL_RATIO, 100)}%`,
-                                            backgroundColor: Colors.loss,
-                                        }
-                                    ]}
-                                />
-                            </View>
-                        </View>
-                        <TouchableOpacity
-                            style={[
-                                styles.ratioInputBox,
-                                focusedField === 'sellRatio' && styles.ratioInputBoxFocused,
-                            ]}
-                            onPress={() => sellRatioRef.current?.focus()}
-                            activeOpacity={0.8}
-                        >
-                            <TextInput
-                                ref={sellRatioRef}
-                                style={styles.ratioInput}
-                                placeholder="0"
-                                placeholderTextColor={Colors.textMuted}
-                                value={form.SELL_RATIO ? form.SELL_RATIO.toString() : ''}
-                                onChangeText={t => {
-                                    if (/^[0-9]*$/.test(t)) {
-                                        handleChange('SELL_RATIO', t === '' ? 0 : parseInt(t, 10));
-                                    }
-                                }}
-                                keyboardType="number-pad"
-                                onFocus={() => handleFocus('sellRatio')}
-                                onBlur={handleBlur}
-                            />
-                            <Text style={styles.ratioPercent}>%</Text>
-                        </TouchableOpacity>
-                    </View>
                 </View>
 
                 {/* 등록 버튼 */}
@@ -779,75 +652,6 @@ const styles = StyleSheet.create({
     },
     presetTextActive: {
         color: Colors.primary,
-    },
-
-    // 비율 입력
-    ratioRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: Spacing.lg,
-        gap: Spacing.md,
-    },
-    ratioLabelContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: 52,
-        gap: Spacing.sm,
-    },
-    ratioDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
-    ratioLabel: {
-        fontSize: FontSizes.md,
-        color: Colors.textPrimary,
-        fontWeight: '600',
-    },
-    ratioBarContainer: {
-        flex: 1,
-    },
-    ratioBarTrack: {
-        height: 8,
-        backgroundColor: Colors.background,
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    ratioBarFill: {
-        height: '100%',
-        borderRadius: 4,
-        minWidth: 0,
-    },
-    ratioInputBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: Colors.inputBorder,
-        borderRadius: BorderRadius.sm,
-        paddingVertical: Spacing.sm,
-        paddingHorizontal: Spacing.md,
-        backgroundColor: Colors.inputBackground,
-        width: 72,
-    },
-    ratioInputBoxFocused: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.cardBackground,
-    },
-    ratioInput: {
-        borderWidth: 0,
-        paddingVertical: 0,
-        paddingHorizontal: 0,
-        fontSize: FontSizes.lg,
-        fontWeight: '700',
-        backgroundColor: 'transparent',
-        color: Colors.textPrimary,
-        flex: 1,
-        textAlign: 'center',
-    },
-    ratioPercent: {
-        fontSize: FontSizes.sm,
-        color: Colors.textMuted,
-        fontWeight: '600',
     },
 
     // 등록 버튼

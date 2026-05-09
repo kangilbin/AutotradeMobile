@@ -31,8 +31,6 @@ interface FormState {
     ST_CODE: string;
     SWING_TYPE: SwingTypeValue;
     INIT_AMOUNT: number;
-    BUY_RATIO: number;
-    SELL_RATIO: number;
     SHORT_MA: number;
     MID_MA: number;
     LONG_MA: number;
@@ -40,7 +38,6 @@ interface FormState {
 
 interface ValidationErrors {
     swingAmount: boolean;
-    ratio: boolean;
     movingAverage: boolean;
 }
 
@@ -53,15 +50,12 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         ST_CODE: '',
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
         INIT_AMOUNT: 0,
-        BUY_RATIO: 0,
-        SELL_RATIO: 0,
         SHORT_MA: 5,
         MID_MA: 20,
         LONG_MA: 60,
     });
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
         swingAmount: false,
-        ratio: false,
         movingAverage: false,
     });
 
@@ -72,8 +66,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                 ST_CODE: swingData.ST_CODE || '',
                 SWING_TYPE: (swingData.SWING_TYPE as SwingTypeValue) || SWING_TYPES.SINGLE_MA,
                 INIT_AMOUNT: swingData.INIT_AMOUNT || 0,
-                BUY_RATIO: swingData.BUY_RATIO || 0,
-                SELL_RATIO: swingData.SELL_RATIO || 0,
                 SHORT_MA: (swingData as any).SHORT_MA || 5,
                 MID_MA: (swingData as any).MID_MA || 20,
                 LONG_MA: (swingData as any).LONG_MA || 60,
@@ -104,14 +96,12 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                 ST_CODE: swingData.ST_CODE || '',
                 SWING_TYPE: (swingData.SWING_TYPE as SwingTypeValue) || SWING_TYPES.SINGLE_MA,
                 INIT_AMOUNT: swingData.INIT_AMOUNT || 0,
-                BUY_RATIO: swingData.BUY_RATIO || 0,
-                SELL_RATIO: swingData.SELL_RATIO || 0,
                 SHORT_MA: (swingData as any).SHORT_MA || 5,
                 MID_MA: (swingData as any).MID_MA || 20,
                 LONG_MA: (swingData as any).LONG_MA || 60,
             });
         }
-        setValidationErrors({ swingAmount: false, ratio: false, movingAverage: false });
+        setValidationErrors({ swingAmount: false, movingAverage: false });
     };
 
     const validateForm = (): boolean => {
@@ -119,7 +109,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
 
         const errors: ValidationErrors = {
             swingAmount: form.INIT_AMOUNT <= 0 || isOverCapital,
-            ratio: form.BUY_RATIO <= 0 || form.SELL_RATIO <= 0,
             movingAverage: isMultiMA && (
                 form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA
             ),
@@ -143,8 +132,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         try {
             const updateData: any = {
                 SWING_TYPE: form.SWING_TYPE,
-                BUY_RATIO: form.BUY_RATIO,
-                SELL_RATIO: form.SELL_RATIO,
                 INIT_AMOUNT: form.INIT_AMOUNT,
             };
 
@@ -223,7 +210,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                     </View>
 
                     {/* 스윙 금액 */}
-                    <View style={styles.settingRow}>
+                    <View style={[styles.settingRow, styles.settingRowLast]}>
                         <Text style={styles.label}>스윙 금액</Text>
                         {isEditMode ? (
                             <View style={styles.amountEditContainer}>
@@ -250,43 +237,6 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                         )}
                     </View>
 
-                    {/* 매수 비율 */}
-                    <View style={styles.settingRow}>
-                        <Text style={styles.label}>매수 비율</Text>
-                        {isEditMode ? (
-                            <View style={styles.inputWithUnit}>
-                                <TextInput
-                                    style={[styles.input, styles.inputSmall, validationErrors.ratio && styles.inputError]}
-                                    value={form.BUY_RATIO.toString()}
-                                    onChangeText={(text) => updateForm('BUY_RATIO', parseInt(text) || 0)}
-                                    keyboardType="numeric"
-                                    placeholder="비율"
-                                />
-                                <Text style={styles.unit}>%</Text>
-                            </View>
-                        ) : (
-                            <Text style={styles.value}>{form.BUY_RATIO}%</Text>
-                        )}
-                    </View>
-
-                    {/* 매도 비율 */}
-                    <View style={[styles.settingRow, styles.settingRowLast]}>
-                        <Text style={styles.label}>매도 비율</Text>
-                        {isEditMode ? (
-                            <View style={styles.inputWithUnit}>
-                                <TextInput
-                                    style={[styles.input, styles.inputSmall, validationErrors.ratio && styles.inputError]}
-                                    value={form.SELL_RATIO.toString()}
-                                    onChangeText={(text) => updateForm('SELL_RATIO', parseInt(text) || 0)}
-                                    keyboardType="numeric"
-                                    placeholder="비율"
-                                />
-                                <Text style={styles.unit}>%</Text>
-                            </View>
-                        ) : (
-                            <Text style={styles.value}>{form.SELL_RATIO}%</Text>
-                        )}
-                    </View>
                 </View>
 
                 {/* 스윙 전략 섹션 */}
@@ -417,9 +367,6 @@ const styles = StyleSheet.create({
     settingRowLast: {
         borderBottomWidth: 0,
     },
-    settingRowPlaceholder: {
-        height: 0,
-    },
     label: {
         fontSize: 15,
         color: '#475569',
@@ -445,28 +392,10 @@ const styles = StyleSheet.create({
         minWidth: 100,
         textAlign: 'right',
     },
-    inputSmall: {
-        minWidth: 70,
-    },
-    inputMa: {
-        minWidth: 60,
-        textAlign: 'center',
-    },
     inputError: {
         borderColor: '#E74C3C',
         backgroundColor: '#FEF2F2',
     },
-    inputWithUnit: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    unit: {
-        fontSize: 14,
-        color: '#64748B',
-        fontWeight: '500',
-    },
-
     // 라디오 버튼
     radioGroup: {
         flexDirection: 'row',
@@ -511,29 +440,6 @@ const styles = StyleSheet.create({
     radioLabelSelected: {
         color: '#4ECDC4',
         fontWeight: '600',
-    },
-
-    // 이동평균선 섹션
-    maSection: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: 12,
-    },
-    maInputGroup: {
-        width: '100%',
-        gap: 10,
-        marginTop: 8,
-    },
-    maInputRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    maLabel: {
-        fontSize: 14,
-        color: '#64748B',
-        fontWeight: '500',
-        width: 40,
     },
 
     // 금액 편집 컨테이너

@@ -11,18 +11,11 @@ export type SwingItem = {
     ST_NM: string
     SWING_TYPE: string
     INIT_AMOUNT: number  // 원금
-    // CUR_AMOUNT: number
     EVLU_AMT: number  // 평가금액
     EVLU_PFLS_AMT: number  // 평가손익금액
     EVLU_PFLS_RT: number  // 평가손익율
     HLDG_QTY: number  // 보유수량
     USE_YN: string  // 스윙 활성화 여부 ('Y' | 'N')
-    // SHORT_MA: number
-    // MID_MA: number
-    // LONG_MA: number
-    BUY_RATIO: number
-    SELL_RATIO: number
-    // DEL_YN: string
 }
 
 // 가용 자본 조회 응답 타입
