@@ -20,7 +20,7 @@ export type SwingItem = {
 
 // 가용 자본 조회 응답 타입
 export type AvailableCapitalResponse = {
-    total_capital: number       // 총 자본 (예수금 + 주식평가)
+    total_capital: number       // 예수금 (현금)
     allocated: number           // 기존 할당 합계
     available_capital: number   // 가용 자본
 }

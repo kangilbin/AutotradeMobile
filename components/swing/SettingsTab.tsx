@@ -25,6 +25,7 @@ const SWING_TYPE_LABELS: Record<SwingTypeValue, string> = {
 interface SettingsTabProps {
     swingData: SwingItem | null;
     onStatusChange: (updatedData: Partial<SwingItem>) => void;
+    onSellAll: () => void;
 }
 
 interface FormState {
@@ -41,7 +42,7 @@ interface ValidationErrors {
     movingAverage: boolean;
 }
 
-export default function SettingsTab({ swingData, onStatusChange }: SettingsTabProps) {
+export default function SettingsTab({ swingData, onStatusChange, onSellAll }: SettingsTabProps) {
     const [isEditMode, setIsEditMode] = useState(false);
     const account = useAccountStore((state) => state.account);
     const [capitalInfo, setCapitalInfo] = useState<AvailableCapitalResponse | null>(null);
@@ -73,10 +74,7 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
         }
     }, [swingData]);
 
-    // 수정 시 가용 자본 = API 가용 자본 + 현재 스윙 INIT_AMOUNT (자기 자신은 가용 범위에 포함)
-    const effectiveAvailable = capitalInfo
-        ? capitalInfo.available_capital + (swingData?.INIT_AMOUNT || 0)
-        : null;
+    const effectiveAvailable = capitalInfo ? capitalInfo.available_capital : null;
     const isOverCapital = effectiveAvailable != null && form.INIT_AMOUNT > effectiveAvailable;
 
     const handleEdit = async () => {
@@ -276,6 +274,24 @@ export default function SettingsTab({ swingData, onStatusChange }: SettingsTabPr
                         )}
                     </View>
                 </View>
+
+                {/* 전량 매도 섹션 */}
+                {swingData.HLDG_QTY > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>주문</Text>
+                        <View style={styles.settingRow}>
+                            <Text style={styles.label}>보유수량</Text>
+                            <Text style={styles.value}>{swingData.HLDG_QTY.toLocaleString()}주</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.sellAllButton}
+                            onPress={onSellAll}
+                        >
+                            <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
+                            <Text style={styles.sellAllButtonText}>전량 매도</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
         </ScrollView>
     );
@@ -457,6 +473,23 @@ const styles = StyleSheet.create({
         color: '#E74C3C',
         fontWeight: '500',
         marginTop: 2,
+    },
+
+    // 전량 매도 버튼
+    sellAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 16,
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: '#FF9500',
+    },
+    sellAllButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '600',
     },
 
     // 에러 메시지
