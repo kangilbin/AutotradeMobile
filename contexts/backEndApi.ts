@@ -17,6 +17,7 @@ import {
 import { SwingListResponse, AvailableCapitalResponse } from '../types/swing';
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
+import { SellAllRequest } from '../types/order';
 import {
     FluctuationRankItem,
     VolumeRankItem,
@@ -487,6 +488,16 @@ export const deleteSwing = async (swingId: number, swingType: string): Promise<b
     } catch (error: unknown) {
         handleApiError(error, '스윙 삭제');
         return false;
+    }
+};
+
+// 전량 매도 주문
+export const sellAll = async (param: SellAllRequest): Promise<any | undefined> => {
+    try {
+        const response = await api.post('/orders/sell-all', param);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '전량 매도');
     }
 };
 

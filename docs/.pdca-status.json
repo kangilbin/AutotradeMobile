@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-05-08T13:01:05.935Z",
+  "lastUpdated": "2026-05-10T05:16:36.422Z",
   "activeFeatures": [
     "stock-add-theme-unify",
     "stock",
@@ -19,7 +19,8 @@
     "constants",
     "auth-key - Gap 분석",
     "foreign-stock Gap 분석",
-    "stock-price"
+    "stock-price",
+    "swing-sell-all Gap 분석 완료"
   ],
   "primaryFeature": "AutotradeMobile",
   "features": {
@@ -65,7 +66,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-10T10:22:54.425Z",
-        "lastUpdated": "2026-05-07T13:09:29.188Z"
+        "lastUpdated": "2026-05-10T05:11:58.527Z"
       },
       "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/types/swing.ts"
     },
@@ -78,9 +79,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-10T10:23:02.010Z",
-        "lastUpdated": "2026-05-08T13:01:05.934Z"
+        "lastUpdated": "2026-05-10T05:16:36.422Z"
       },
-      "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/components/swing/SwingCard.tsx"
+      "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/components/swing/SettingsTab.tsx"
     },
     "contexts": {
       "phase": "do",
@@ -91,7 +92,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-13T07:19:16.736Z",
-        "lastUpdated": "2026-05-07T13:09:41.071Z"
+        "lastUpdated": "2026-05-10T04:22:57.580Z"
       },
       "lastFile": "/Users/apple/WebstormProjects/AutotradeMobile/contexts/backEndApi.ts"
     },
@@ -287,6 +288,14 @@
       },
       "previousPhase": "check",
       "autoAdvanced": true
+    },
+    "swing-sell-all": {
+      "phase": "archived",
+      "matchRate": 97,
+      "iterationCount": 0,
+      "startedAt": "2026-05-10T00:00:00.000Z",
+      "archivedAt": "2026-05-10T15:00:00.000Z",
+      "archivedTo": "docs/archive/2026-05/swing-sell-all/"
     }
   },
   "pipeline": {
@@ -297,7 +306,7 @@
   "session": {
     "startedAt": "2026-02-28T07:14:59.049Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-05-08T13:01:05.935Z"
+    "lastActivity": "2026-05-10T05:16:36.422Z"
   },
   "history": [
     {
@@ -3185,6 +3194,162 @@
     },
     {
       "timestamp": "2026-05-08T13:01:05.934Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-09T10:32:05.948Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-09T10:32:37.874Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T03:23:59.799Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T03:25:12.101Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:21:51.561Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:22:38.684Z",
+      "feature": "contexts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:22:57.580Z",
+      "feature": "contexts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:23:14.061Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:23:27.779Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:23:42.304Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:24:25.243Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:25:00.045Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:25:15.213Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:27:29.532Z",
+      "feature": "swing-sell-all Gap 분석 완료",
+      "phase": "act",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:30:05.182Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:30:16.882Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:30:30.575Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:30:42.054Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:30:53.143Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:31:07.379Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:31:21.322Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T04:32:27.343Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T05:10:39.645Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T05:11:48.450Z",
+      "feature": "swing",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T05:11:58.527Z",
+      "feature": "AutotradeMobile",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-05-10T05:16:36.422Z",
       "feature": "swing",
       "phase": "do",
       "action": "updated"

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { getSwingList } from '../contexts/backEndApi';
 import { SwingItem, SwingSummary } from '../types/swing';
 
@@ -20,6 +20,7 @@ export const useSwingData = (accountNo: string | undefined, mrktCode: string = '
     const [summary, setSummary] = useState<SwingSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const isInitialLoad = useRef(true);
 
     const loadData = useCallback(async () => {
         if (!accountNo) {
@@ -28,7 +29,9 @@ export const useSwingData = (accountNo: string | undefined, mrktCode: string = '
         }
 
         try {
-            setLoading(true);
+            if (isInitialLoad.current) {
+                setLoading(true);
+            }
             const listData = await getSwingList(accountNo, mrktCode);
 
             if (listData) {
@@ -39,6 +42,7 @@ export const useSwingData = (accountNo: string | undefined, mrktCode: string = '
             console.error('스윙 데이터 로드 실패:', error);
         } finally {
             setLoading(false);
+            isInitialLoad.current = false;
         }
     }, [accountNo, mrktCode]);
 

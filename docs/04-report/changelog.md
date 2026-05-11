@@ -4,6 +4,55 @@ All notable changes to AutotradeMobile project PDCA completions are documented h
 
 ---
 
+## [2026-05-10] - swing-sell-all
+
+### Added
+- **Sell all feature** for swing trading portfolio positions
+  - New SellAllRequest type in `types/order.ts` (ST_CODE, MRKT_CODE, QTY)
+  - sellAll() API function in `contexts/backEndApi.ts` → POST /orders/sell-all
+  - Two-step confirmation alert with destructive action warning
+  - Automatic data update: HLDG_QTY, EVLU_AMT, EVLU_PFLS_AMT, EVLU_PFLS_RT → 0
+
+- **"주문" (Order) section** in SettingsTab
+  - Conditional rendering: only visible when HLDG_QTY > 0
+  - One-click sell all button with orange (#FF9500) styling
+  - Cash-outline icon for visual clarity
+
+### Changed
+- `types/order.ts`: New file with SellAllRequest type definition
+- `contexts/backEndApi.ts`: Added sellAll() export + SellAllRequest import
+- `app/(tabs)/swing/detail.tsx`: Added handleSellAll() handler (lines 140-175)
+  - Integrated useMarketStore for MRKT_CODE fallback
+  - Two-stage alert: confirmation + result feedback
+  - Immediate swingData state update on success
+
+- `components/swing/SettingsTab.tsx`: Added onSellAll prop and UI section
+  - SettingsTabProps interface extended with onSellAll callback
+  - "주문" section with sell all button (lines 282-297)
+  - sellAllButton styling with icon and text (lines 482-496)
+
+### Design Decisions (Intentional Changes)
+- **UI Location**: SettingsTab interior ("주문" section) instead of bottomActions
+  - Reasoning: Sell all affects current holdings only, not swing configuration
+  - Improves UX clarity and reduces button clutter in bottomActions
+
+- **Zero Holdings Handling**: Section hidden when HLDG_QTY ≤ 0 instead of button disabled
+  - Reasoning: "주문" section becomes meaningless without holdings
+  - Cleaner UI when position is closed
+
+- **Button Text**: "전량 매도" only (without quantity) to avoid redundancy
+  - Reasoning: Quantity already displayed in section header
+  - Maintains visual simplicity
+
+### Technical Details
+- Design Match Rate: 97% (7/7 comparison items + 4 intentional changes)
+- Implementation: 4 files, ~50 LOC added
+- Breaking Changes: None (additive only)
+- Error Handling: Integrated with existing handleApiError pattern
+- Data Flow: detail.tsx handleSellAll → sellAll() API → SettingsTab update
+
+---
+
 ## [2026-03-24] - api-retry-prevention
 
 ### Added

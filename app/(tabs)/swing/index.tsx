@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -32,9 +32,13 @@ export default function SwingScreen() {
     );
 
     // 마켓 변경 시 스윙 목록 자동 재조회
+    const prevMrktCode = useRef(mrktCode);
     useEffect(() => {
-        loadData();
-    }, [mrktCode]);
+        if (prevMrktCode.current !== mrktCode) {
+            prevMrktCode.current = mrktCode;
+            loadData();
+        }
+    }, [mrktCode, loadData]);
 
     const handleSwingPress = useCallback((swing: SwingItem) => {
         router.push({

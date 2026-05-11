@@ -10,13 +10,14 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
-import { updateSwingSettings, deleteSwing } from '../../../contexts/backEndApi';
+import { updateSwingSettings, deleteSwing, sellAll } from '../../../contexts/backEndApi';
 import { AddStockAutoRequest } from '../../../types/stock';
 import axios from 'axios';
 import SettingsTab from '../../../components/swing/SettingsTab';
 import ChartTab from '../../../components/swing/ChartTab';
 import HistoryTab from '../../../components/swing/HistoryTab';
 import { useAccountStore } from '../../../stores/useAccountStore';
+import { useMarketStore } from '../../../utils/useMarketStore';
 
 export default function SwingDetailScreen() {
     const params = useLocalSearchParams();
@@ -24,6 +25,8 @@ export default function SwingDetailScreen() {
     const [activeTab, setActiveTab] = useState(0);
     const [swingData, setSwingData] = useState<SwingItem | null>(null);
     const account = useAccountStore((state) => state.account);
+    const mrktCode = useMarketStore((s) => s.mrktCode);
+
     useEffect(() => {
         // 실제로는 API에서 데이터를 가져와야 함
         // 임시로 params에서 받은 데이터 사용
@@ -134,6 +137,43 @@ export default function SwingDetailScreen() {
         );
     };
 
+    const handleSellAll = async () => {
+        if (!swingData || swingData.HLDG_QTY <= 0) return;
+
+        Alert.alert(
+            '전량 매도 확인',
+            `${swingData.ST_NM} ${swingData.HLDG_QTY}주를 시장가로 전량 매도합니다.\n이 작업은 취소할 수 없습니다.`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '매도',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const result = await sellAll({
+                                ST_CODE: swingData.ST_CODE,
+                                MRKT_CODE: (swingData as any).MRKT_CODE || mrktCode,
+                                QTY: swingData.HLDG_QTY,
+                            });
+                            if (result) {
+                                Alert.alert('매도 완료', '전량 매도 주문이 접수되었습니다.');
+                                setSwingData(prev => prev ? {
+                                    ...prev,
+                                    HLDG_QTY: 0,
+                                    EVLU_AMT: 0,
+                                    EVLU_PFLS_AMT: 0,
+                                    EVLU_PFLS_RT: 0,
+                                } : null);
+                            }
+                        } catch (error) {
+                            Alert.alert('오류', '전량 매도 중 오류가 발생했습니다.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const handleBacktesting = async () => {
         if (!swingData) return;
 
@@ -186,6 +226,7 @@ export default function SwingDetailScreen() {
                 return <SettingsTab
                     swingData={swingData}
                     onStatusChange={handleStatusChange}
+                    onSellAll={handleSellAll}
                 />;
             default:
                 return null;
