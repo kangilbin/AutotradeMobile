@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SwingItem } from '../../types/swing';
 import { MarketCode } from '../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
@@ -8,6 +9,7 @@ import {
     formatAmountWithUnit,
     formatSignedAmountWithUnit,
     formatProfitRate,
+    formatPrice,
     getProfitLossColor,
     getSwingTypeText,
     getActiveBadgeColor
@@ -22,14 +24,18 @@ interface SwingCardProps {
 function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
     const profitColor = getProfitLossColor(item.EVLU_PFLS_AMT);
     const isProfit = item.EVLU_PFLS_AMT >= 0;
+    const priceDiff = (item.PRPR ?? 0) - (item.ENTRY_PRICE ?? 0);
+    const priceColor = getProfitLossColor(priceDiff);
+    const priceTrendIcon = priceDiff > 0 ? 'caret-up' : priceDiff < 0 ? 'caret-down' : 'remove';
 
     return (
         <TouchableOpacity style={styles.card} onPress={() => onPress(item)} activeOpacity={0.7}>
-            {/* 헤더: 종목명 + 코드 + 상태 뱃지 */}
+            {/* 헤더: 종목명 + 코드 + 전략 태그 + 상태 뱃지 */}
             <View style={styles.header}>
                 <View style={styles.titleRow}>
                     <Text style={styles.stockName}>{item.ST_NM}</Text>
                     <Text style={styles.stockCode}>{item.ST_CODE}</Text>
+                    <Tag label={getSwingTypeText(item.SWING_TYPE)} />
                 </View>
                 <View style={[
                     styles.badge,
@@ -48,9 +54,22 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
                 </View>
             </View>
 
-            {/* 설정 태그들 */}
-            <View style={styles.tagRow}>
-                <Tag label={getSwingTypeText(item.SWING_TYPE)} />
+            {/* 가격 라인: 매입가 → 현재가 */}
+            <View style={styles.priceRow}>
+                <View style={styles.priceItem}>
+                    <Text style={styles.priceLabel}>매입가</Text>
+                    <Text style={styles.priceEntryValue}>{formatPrice(item.ENTRY_PRICE, mrktCode)}</Text>
+                </View>
+                <Ionicons name="arrow-forward" size={14} color={Colors.textMuted} style={styles.priceArrow} />
+                <View style={styles.priceItem}>
+                    <Text style={styles.priceLabel}>현재가</Text>
+                    <View style={styles.priceCurrentWrap}>
+                        <Text style={[styles.priceCurrentValue, { color: priceColor }]}>
+                            {formatPrice(item.PRPR, mrktCode)}
+                        </Text>
+                        <Ionicons name={priceTrendIcon} size={12} color={priceColor} style={styles.priceTrendIcon} />
+                    </View>
+                </View>
             </View>
 
             {/* 평가 정보 */}
@@ -109,8 +128,9 @@ const styles = StyleSheet.create({
     },
     titleRow: {
         flexDirection: 'row',
-        alignItems: 'baseline',
+        alignItems: 'center',
         gap: Spacing.sm,
+        flexShrink: 1,
     },
     stockName: {
         fontSize: FontSizes.xl,
@@ -145,19 +165,51 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.xs + 1,
         fontWeight: '600',
     },
-    tagRow: {
+    priceRow: {
         flexDirection: 'row',
-        gap: Spacing.sm,
-        marginBottom: Spacing.lg,
+        alignItems: 'center',
+        backgroundColor: Colors.background,
+        borderRadius: BorderRadius.sm,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        marginBottom: Spacing.md,
+    },
+    priceItem: {
+        flex: 1,
+    },
+    priceLabel: {
+        fontSize: FontSizes.xs,
+        color: Colors.textMuted,
+        marginBottom: 2,
+    },
+    priceEntryValue: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.textSecondary,
+    },
+    priceCurrentWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    priceCurrentValue: {
+        fontSize: FontSizes.md,
+        fontWeight: '700',
+    },
+    priceTrendIcon: {
+        marginTop: 1,
+    },
+    priceArrow: {
+        marginHorizontal: Spacing.sm,
     },
     tag: {
         backgroundColor: Colors.background,
-        paddingHorizontal: Spacing.sm + 2,
-        paddingVertical: Spacing.xs,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: 2,
         borderRadius: BorderRadius.sm,
     },
     tagText: {
-        fontSize: FontSizes.xs + 1,
+        fontSize: FontSizes.xs,
         color: Colors.textSecondary,
         fontWeight: '500',
     },

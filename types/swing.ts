@@ -15,6 +15,8 @@ export type SwingItem = {
     EVLU_PFLS_AMT: number  // 평가손익금액
     EVLU_PFLS_RT: number  // 평가손익율
     HLDG_QTY: number  // 보유수량
+    ENTRY_PRICE: number  // 매입평균가
+    PRPR: number  // 현재가
     USE_YN: string  // 스윙 활성화 여부 ('Y' | 'N')
 }
 
