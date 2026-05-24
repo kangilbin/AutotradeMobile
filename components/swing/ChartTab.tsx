@@ -1,12 +1,12 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SwingItem } from '../../types/swing';
 import StockChart, { VisibleRange } from '../StockChart';
 import { useTradeHistory } from '../../hooks/useTradeHistory';
 import { getTradeStats } from '../../contexts/backEndApi';
 import { TradeStats } from '../../types/tradeHistory';
-import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
+import { Colors, FontSizes, Spacing } from '../../constants';
 
 interface ChartTabProps {
     swingData: SwingItem | null;
@@ -26,7 +26,6 @@ export default function ChartTab({ swingData }: ChartTabProps) {
         hasEarlierData,
     } = useTradeHistory(swingData?.SWING_ID ?? 0);
 
-    // 통계: 별도 API로 전체 기간 건수 조회
     const [stats, setStats] = useState<TradeStats | null>(null);
 
     useEffect(() => {
@@ -56,29 +55,29 @@ export default function ChartTab({ swingData }: ChartTabProps) {
     }
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <View style={styles.content}>
-                {/* 범례 */}
-                <View style={styles.chartLegend}>
-                    <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: Colors.profit }]} />
-                        <Text style={styles.legendText}>매수</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
-                        <Text style={styles.legendText}>매도</Text>
-                    </View>
-                    {lineOverlays.length > 0 && (
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
-                            <Text style={styles.legendText}>20EMA</Text>
-                        </View>
-                    )}
+        <View style={styles.container}>
+            {/* 상단 범례 헤더 */}
+            <View style={styles.legendBar}>
+                <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: Colors.profit }]} />
+                    <Text style={styles.legendText}>매수</Text>
                 </View>
+                <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
+                    <Text style={styles.legendText}>매도</Text>
+                </View>
+                {lineOverlays.length > 0 && (
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
+                        <Text style={styles.legendText}>20EMA</Text>
+                    </View>
+                )}
+            </View>
 
-                {/* 차트 */}
+            {/* 차트 영역 (flex: 1) */}
+            <View style={styles.chartArea}>
                 {priceCandles.length > 0 && (
-                    <View style={styles.chartContainer}>
+                    <>
                         <StockChart
                             data={priceCandles}
                             markers={tradeMarkers}
@@ -93,58 +92,49 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                                 <Text style={styles.loadingMoreText}>이전 데이터 로딩중...</Text>
                             </View>
                         )}
-                    </View>
-                )}
-
-                {/* 거래 통계 (전체 기간) */}
-                {stats && (
-                    <View style={styles.statsBar}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{stats.total_count}</Text>
-                            <Text style={styles.statLabel}>총 거래</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: Colors.profit }]}>{stats.buy_count}</Text>
-                            <Text style={styles.statLabel}>매수</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: Colors.loss }]}>{stats.sell_count}</Text>
-                            <Text style={styles.statLabel}>매도</Text>
-                        </View>
-                    </View>
+                    </>
                 )}
             </View>
-        </ScrollView>
+
+            {/* 하단 통계 바 */}
+            {stats && (
+                <View style={styles.statsBar}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{stats.total_count}</Text>
+                        <Text style={styles.statLabel}>총 거래</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={[styles.statValue, { color: Colors.profit }]}>{stats.buy_count}</Text>
+                        <Text style={styles.statLabel}>매수</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={[styles.statValue, { color: Colors.loss }]}>{stats.sell_count}</Text>
+                        <Text style={styles.statLabel}>매도</Text>
+                    </View>
+                </View>
+            )}
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
-    },
-    content: {
-        padding: Spacing.lg,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: Spacing.md,
-    },
-    loadingText: {
-        fontSize: FontSizes.md,
-        color: Colors.textSecondary,
+        backgroundColor: Colors.cardBackground,
     },
 
-    // 범례
-    chartLegend: {
+    // 상단 범례 헤더
+    legendBar: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'center',
         gap: Spacing.lg,
-        marginBottom: Spacing.md,
+        height: 36,
+        paddingHorizontal: Spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
     legendItem: {
         flexDirection: 'row',
@@ -152,9 +142,9 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
     },
     legendDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
     legendText: {
         fontSize: FontSizes.sm,
@@ -162,11 +152,10 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
 
-    // 차트
-    chartContainer: {
-        marginBottom: Spacing.lg,
-        borderRadius: BorderRadius.lg,
-        overflow: 'hidden',
+    // 차트 영역
+    chartArea: {
+        flex: 1,
+        position: 'relative',
     },
     loadingMoreOverlay: {
         position: 'absolute',
@@ -184,31 +173,45 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
 
-    // 통계 바
+    // 하단 통계 바
     statsBar: {
         flexDirection: 'row',
+        height: 56,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
         backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.lg,
-        ...Shadows.small,
     },
     statItem: {
         flex: 1,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     statDivider: {
         width: 1,
         backgroundColor: Colors.border,
+        marginVertical: Spacing.sm,
     },
     statValue: {
-        fontSize: FontSizes.xxl,
-        fontWeight: 'bold',
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
         color: Colors.textPrimary,
-        marginBottom: Spacing.xs,
     },
     statLabel: {
         fontSize: FontSizes.xs,
         color: Colors.textSecondary,
         fontWeight: '500',
+        marginTop: 2,
+    },
+
+    // 로딩
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: Spacing.md,
+    },
+    loadingText: {
+        fontSize: FontSizes.md,
+        color: Colors.textSecondary,
     },
 });

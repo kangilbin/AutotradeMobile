@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TradeItemData } from '../../types/tradeItem';
 import { MarketCode } from '../../types/market';
-import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
+import { Colors, FontSizes, Spacing } from '../../constants';
 import { formatAmountWithUnit, formatSignedAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../utils/format';
 
 interface TradeHistoryItemProps {
@@ -14,6 +14,14 @@ interface TradeHistoryItemProps {
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${m}.${d}`;
+};
+
+const formatFullDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
@@ -22,98 +30,86 @@ const formatDate = (dateString: string): string => {
 
 const TradeHistoryItem = React.memo(({ trade, index, mrktCode = 'J' }: TradeHistoryItemProps) => {
     const accentColor = trade.isBuy ? Colors.profit : Colors.loss;
+    const actionLabel = trade.isBuy ? '매수' : '매도';
 
     return (
-        <View style={styles.tradeCard}>
-            {/* 좌측 액센트 바 */}
-            <View style={[styles.accentBar, { backgroundColor: accentColor }]} />
+        <View style={styles.row}>
+            <View style={[styles.accent, { backgroundColor: accentColor }]} />
 
-            {/* 헤더: 매수/매도 뱃지 + 번호 + 날짜 */}
-            <View style={styles.tradeHeader}>
-                <View style={styles.tradeHeaderLeft}>
-                    <View style={[styles.tradeBadge, { backgroundColor: accentColor }]}>
-                        <Text style={styles.tradeBadgeText}>{trade.isBuy ? '매수' : '매도'}</Text>
+            <View style={styles.body}>
+                {/* 헤더: 액션 + 인덱스 + 날짜 */}
+                <View style={styles.headerRow}>
+                    <View style={styles.actionGroup}>
+                        <Text style={[styles.action, { color: accentColor }]}>{actionLabel}</Text>
+                        <Text style={styles.index}>#{index + 1}</Text>
                     </View>
-                    <Text style={styles.tradeIndex}>#{index + 1}</Text>
+                    <Text style={styles.date}>{formatFullDate(trade.date)}</Text>
                 </View>
-                <Text style={styles.tradeDate}>{formatDate(trade.date)}</Text>
-            </View>
 
-            {/* 거래 상세 - 가로 3열 */}
-            <View style={styles.tradeStats}>
-                <View style={styles.tradeStat}>
-                    <Text style={styles.tradeStatLabel}>단가</Text>
-                    <Text style={styles.tradeStatValue}>{formatAmountWithUnit(trade.price, mrktCode)}</Text>
-                </View>
-                <View style={styles.tradeStatDivider} />
-                <View style={styles.tradeStat}>
-                    <Text style={styles.tradeStatLabel}>수량</Text>
-                    <Text style={styles.tradeStatValue}>{trade.quantity}주</Text>
-                </View>
-                <View style={styles.tradeStatDivider} />
-                <View style={styles.tradeStat}>
-                    <Text style={styles.tradeStatLabel}>금액</Text>
-                    <Text style={styles.tradeStatValue}>{formatAmountWithUnit(trade.amount, mrktCode)}</Text>
-                </View>
-            </View>
-
-            {/* 매도 시 손익 정보 */}
-            {!trade.isBuy && trade.realizedPnl != null && (
-                <View style={[styles.pnlSection, {
-                    backgroundColor: trade.realizedPnl >= 0 ? 'rgba(78, 205, 196, 0.06)' : 'rgba(231, 76, 60, 0.06)',
-                }]}>
-                    <View style={styles.pnlRow}>
-                        <Text style={styles.pnlLabel}>실현손익</Text>
-                        <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.realizedPnl) }]}>
-                            {formatSignedAmountWithUnit(trade.realizedPnl, mrktCode)}
-                        </Text>
-                    </View>
-                    {trade.realizedPnlPct != null && (
-                        <View style={styles.pnlRow}>
-                            <Text style={styles.pnlLabel}>수익률</Text>
-                            <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.realizedPnlPct) }]}>
-                                {formatProfitRate(trade.realizedPnlPct)}
-                            </Text>
-                        </View>
-                    )}
-                    {trade.totalFee != null && (
-                        <View style={styles.pnlRow}>
-                            <Text style={styles.pnlLabel}>수수료+세금</Text>
-                            <Text style={styles.pnlFeeValue}>
-                                {formatAmountWithUnit(trade.totalFee, mrktCode)}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-            )}
-
-            {/* 거래 후 잔고 (백테스팅) */}
-            {trade.currentCapital != null && (
-                <View style={styles.capitalRow}>
-                    <Text style={styles.capitalLabel}>거래 후 잔고</Text>
-                    <Text style={styles.capitalValue}>
-                        {formatAmountWithUnit(trade.currentCapital, mrktCode)}
+                {/* 메타: 단가 · 수량 · 금액 */}
+                <View style={styles.metaRow}>
+                    <Text style={styles.metaText}>
+                        {formatAmountWithUnit(trade.price, mrktCode)}
+                    </Text>
+                    <Text style={styles.metaDot}>·</Text>
+                    <Text style={styles.metaText}>{trade.quantity}주</Text>
+                    <Text style={styles.metaDot}>·</Text>
+                    <Text style={styles.metaAmount}>
+                        {formatAmountWithUnit(trade.amount, mrktCode)}
                     </Text>
                 </View>
-            )}
 
-            {/* 매매 사유 - 태그 칩 */}
-            {trade.reasons.length > 0 && (
-                <View style={styles.reasonChips}>
-                    {trade.reasons.map((reason, idx) => (
-                        <View
-                            key={idx}
-                            style={[styles.reasonChip, {
-                                backgroundColor: trade.isBuy ? 'rgba(78, 205, 196, 0.08)' : 'rgba(231, 76, 60, 0.08)',
-                                borderColor: trade.isBuy ? 'rgba(78, 205, 196, 0.25)' : 'rgba(231, 76, 60, 0.25)',
-                            }]}
-                        >
-                            <View style={[styles.chipDot, { backgroundColor: accentColor }]} />
-                            <Text style={[styles.reasonChipText, { color: accentColor }]}>{reason}</Text>
+                {/* 매도 시 실현 손익 표시 */}
+                {!trade.isBuy && trade.realizedPnl != null && (
+                    <View style={styles.pnlBlock}>
+                        <View style={styles.pnlRow}>
+                            <Text style={styles.pnlLabel}>실현손익</Text>
+                            <Text style={[styles.pnlValue, { color: getProfitLossColor(trade.realizedPnl) }]}>
+                                {formatSignedAmountWithUnit(trade.realizedPnl, mrktCode)}
+                                {trade.realizedPnlPct != null && (
+                                    <Text style={[styles.pnlPct, { color: getProfitLossColor(trade.realizedPnlPct) }]}>
+                                        {'  '}{formatProfitRate(trade.realizedPnlPct)}
+                                    </Text>
+                                )}
+                            </Text>
                         </View>
-                    ))}
-                </View>
-            )}
+                        {trade.totalFee != null && (
+                            <View style={styles.pnlRow}>
+                                <Text style={styles.pnlLabel}>수수료+세금</Text>
+                                <Text style={styles.feeValue}>
+                                    {formatAmountWithUnit(trade.totalFee, mrktCode)}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                {/* 거래 후 잔고 (백테스팅) */}
+                {trade.currentCapital != null && (
+                    <View style={styles.capitalRow}>
+                        <Text style={styles.capitalLabel}>거래 후 잔고</Text>
+                        <Text style={styles.capitalValue}>
+                            {formatAmountWithUnit(trade.currentCapital, mrktCode)}
+                        </Text>
+                    </View>
+                )}
+
+                {/* 매매 사유 - 미니멀 칩 */}
+                {trade.reasons.length > 0 && (
+                    <View style={styles.tagRow}>
+                        {trade.reasons.map((reason, idx) => (
+                            <View
+                                key={idx}
+                                style={[styles.tag, {
+                                    backgroundColor: trade.isBuy ? Colors.profitBg : Colors.lossBg,
+                                }]}
+                            >
+                                <Text style={[styles.tagText, { color: accentColor }]}>{reason}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+            </View>
         </View>
     );
 });
@@ -121,96 +117,80 @@ const TradeHistoryItem = React.memo(({ trade, index, mrktCode = 'J' }: TradeHist
 export default TradeHistoryItem;
 
 const styles = StyleSheet.create({
-    tradeCard: {
+    row: {
+        flexDirection: 'row',
         backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.lg,
-        paddingLeft: Spacing.lg + 4,
-        marginBottom: Spacing.md,
-        overflow: 'hidden',
-        ...Shadows.small,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
-    accentBar: {
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 4,
-        borderTopLeftRadius: BorderRadius.lg,
-        borderBottomLeftRadius: BorderRadius.lg,
+    accent: {
+        width: 3,
     },
-    tradeHeader: {
+    body: {
+        flex: 1,
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.lg,
+        gap: Spacing.sm,
+    },
+
+    // 헤더
+    headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: Spacing.md,
     },
-    tradeHeaderLeft: {
+    actionGroup: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.sm,
     },
-    tradeBadge: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.xs,
-        borderRadius: BorderRadius.sm,
+    action: {
+        fontSize: FontSizes.md,
+        fontWeight: '700',
+        letterSpacing: -0.2,
     },
-    tradeBadgeText: {
-        fontSize: FontSizes.sm,
-        color: Colors.textWhite,
-        fontWeight: 'bold',
-    },
-    tradeIndex: {
-        fontSize: FontSizes.sm,
+    index: {
+        fontSize: FontSizes.xs,
         color: Colors.textMuted,
         fontWeight: '500',
     },
-    tradeDate: {
+    date: {
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
         fontWeight: '500',
     },
 
-    // 거래 상세 - 가로 3열
-    tradeStats: {
+    // 메타 (단가 · 수량 · 금액)
+    metaRow: {
         flexDirection: 'row',
-        backgroundColor: Colors.background,
-        borderRadius: BorderRadius.sm,
-        paddingVertical: Spacing.md,
-        marginBottom: Spacing.sm,
+        alignItems: 'baseline',
+        flexWrap: 'wrap',
+        gap: Spacing.xs,
     },
-    tradeStat: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    tradeStatLabel: {
-        fontSize: FontSizes.xs,
-        color: Colors.textMuted,
-        fontWeight: '500',
-        marginBottom: 4,
-    },
-    tradeStatValue: {
+    metaText: {
         fontSize: FontSizes.md,
-        fontWeight: '700',
-        color: Colors.textPrimary,
+        color: Colors.textSecondary,
+        fontWeight: '500',
     },
-    tradeStatDivider: {
-        width: 1,
-        backgroundColor: Colors.border,
-        marginVertical: 2,
+    metaDot: {
+        fontSize: FontSizes.md,
+        color: Colors.textMuted,
+        marginHorizontal: 2,
+    },
+    metaAmount: {
+        fontSize: FontSizes.md,
+        color: Colors.textPrimary,
+        fontWeight: '700',
     },
 
-    // 손익 정보 (매도 전용)
-    pnlSection: {
-        borderRadius: BorderRadius.sm,
-        padding: Spacing.md,
-        marginBottom: Spacing.sm,
+    // 손익 블록
+    pnlBlock: {
+        gap: 4,
     },
     pnlRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 3,
     },
     pnlLabel: {
         fontSize: FontSizes.sm,
@@ -219,24 +199,23 @@ const styles = StyleSheet.create({
     },
     pnlValue: {
         fontSize: FontSizes.md,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
-    pnlFeeValue: {
+    pnlPct: {
         fontSize: FontSizes.sm,
         fontWeight: '600',
+    },
+    feeValue: {
+        fontSize: FontSizes.sm,
         color: Colors.textMuted,
+        fontWeight: '500',
     },
 
-    // 거래 후 잔고
+    // 잔고
     capitalRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: Spacing.xs,
-        paddingHorizontal: Spacing.sm,
-        marginBottom: Spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: Colors.border,
     },
     capitalLabel: {
         fontSize: FontSizes.xs,
@@ -245,32 +224,24 @@ const styles = StyleSheet.create({
     },
     capitalValue: {
         fontSize: FontSizes.sm,
-        fontWeight: '600',
         color: Colors.textPrimary,
+        fontWeight: '600',
     },
 
-    // 매매 사유 - 태그 칩
-    reasonChips: {
+    // 사유 태그
+    tagRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: Spacing.xs,
     },
-    reasonChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
+    tag: {
         paddingHorizontal: Spacing.sm,
-        paddingVertical: 6,
-        borderRadius: 20,
-        borderWidth: 1,
+        paddingVertical: 4,
+        borderRadius: 4,
     },
-    chipDot: {
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
-    },
-    reasonChipText: {
+    tagText: {
         fontSize: FontSizes.xs,
         fontWeight: '600',
+        letterSpacing: -0.2,
     },
 });

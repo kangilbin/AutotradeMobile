@@ -290,6 +290,9 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                             <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
                             <Text style={styles.sellAllButtonText}>전량 매도</Text>
                         </TouchableOpacity>
+                        <Text style={styles.marketPriceNotice}>
+                            ※ 현재 시장가로 즉시 매도됩니다
+                        </Text>
                     </View>
                 )}
             </View>
@@ -490,6 +493,12 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 15,
         fontWeight: '600',
+    },
+    marketPriceNotice: {
+        fontSize: 12,
+        color: '#94A3B8',
+        textAlign: 'center',
+        marginTop: 8,
     },
 
     // 에러 메시지

@@ -13,7 +13,7 @@ import { AddStockAutoRequest, BacktestingResponse, BacktestingTrade } from '../.
 import { TradeItemData, fromBacktestingTrade } from '../../../types/tradeItem';
 import TradeHistoryItem from '../../../components/swing/TradeHistoryItem';
 import { backtesting } from '../../../contexts/backEndApi';
-import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants';
+import { Colors, FontSizes, Spacing } from '../../../constants';
 import { formatAmountWithUnit, formatSignedAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../../utils/format';
 import { useMarketStore } from '../../../utils/useMarketStore';
 
@@ -168,55 +168,49 @@ export default function BacktestingResultScreen() {
         if (!result) return null;
         return (
             <>
-                {/* 전략 정보 카드 */}
-                <View style={styles.strategyCard}>
-                    <View style={styles.strategyHeader}>
-                        <View style={styles.stockBadge}>
-                            <Text style={styles.stockBadgeText}>{result.parameters.ST_CODE}</Text>
-                        </View>
-                        <Text style={styles.stockNameText}>{stockName}</Text>
+                {/* 헤더 섹션: 종목 + 전략 + 수익률 + 자본 통합 */}
+                <View style={styles.headerSection}>
+                    <View style={styles.stockRow}>
+                        <Text style={styles.stockCode}>{result.parameters.ST_CODE}</Text>
+                        <Text style={styles.stockName}>{stockName}</Text>
                     </View>
-                    <Text style={styles.strategyName}>{result.strategy_name}</Text>
-                    <Text style={styles.strategyPeriod}>
-                        {formatDate(result.start_date)} ~ {formatDate(result.end_date)}
+                    <Text style={styles.strategyMeta}>
+                        {result.strategy_name} · {formatDate(result.start_date)} ~ {formatDate(result.end_date)}
                     </Text>
-                </View>
 
-                {/* 총 수익률 하이라이트 카드 */}
-                <View style={styles.returnHighlightCard}>
-                    <Text style={styles.returnHighlightLabel}>총 수익률</Text>
-                    <Text style={[styles.returnHighlightValue, { color: getProfitLossColor(totalReturnPct) }]}>
+                    <Text style={styles.returnLabel}>총 수익률</Text>
+                    <Text style={[styles.returnValue, { color: getProfitLossColor(totalReturnPct) }]}>
                         {formatProfitRate(totalReturnPct)}
                     </Text>
-                    <View style={styles.returnDivider} />
-                    <View style={styles.returnRow}>
-                        <View style={styles.returnCol}>
-                            <Text style={styles.returnLabel}>초기 자본금</Text>
-                            <Text style={styles.returnValue}>
+
+                    <View style={styles.capitalRow}>
+                        <View style={styles.capitalCol}>
+                            <Text style={styles.capitalLabel}>초기 자본금</Text>
+                            <Text style={styles.capitalValue}>
                                 {formatAmountWithUnit(result.initial_capital, mrktCode)}
                             </Text>
                         </View>
-                        <View style={styles.returnColDivider} />
-                        <View style={styles.returnCol}>
-                            <Text style={styles.returnLabel}>최종 자본금</Text>
-                            <Text style={[styles.returnValue, { color: getProfitLossColor(profitLoss) }]}>
+                        <View style={styles.capitalDivider} />
+                        <View style={styles.capitalCol}>
+                            <Text style={styles.capitalLabel}>최종 자본금</Text>
+                            <Text style={[styles.capitalValue, { color: getProfitLossColor(profitLoss) }]}>
                                 {formatAmountWithUnit(result.final_capital, mrktCode)}
                             </Text>
                         </View>
-                    </View>
-                    <View style={styles.profitLossRow}>
-                        <Text style={styles.returnLabel}>손익</Text>
-                        <Text style={[styles.profitLossValue, { color: getProfitLossColor(profitLoss) }]}>
-                            {formatSignedAmountWithUnit(profitLoss, mrktCode)}
-                        </Text>
+                        <View style={styles.capitalDivider} />
+                        <View style={styles.capitalCol}>
+                            <Text style={styles.capitalLabel}>손익</Text>
+                            <Text style={[styles.capitalValue, { color: getProfitLossColor(profitLoss) }]}>
+                                {formatSignedAmountWithUnit(profitLoss, mrktCode)}
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
-                {/* 주가 캔들 차트 + 매수/매도 마커 */}
+                {/* 차트 범례 + 차트 영역 (조건부) */}
                 {priceCandles.length > 0 && (
-                    <View style={styles.chartSection}>
-                        <Text style={styles.sectionTitle}>주가 차트</Text>
-                        <View style={styles.chartLegend}>
+                    <>
+                        <View style={styles.legendBar}>
                             <View style={styles.legendItem}>
                                 <View style={[styles.legendDot, { backgroundColor: Colors.profit }]} />
                                 <Text style={styles.legendText}>매수</Text>
@@ -232,7 +226,7 @@ export default function BacktestingResultScreen() {
                                 </View>
                             )}
                         </View>
-                        <View style={styles.chartContainer}>
+                        <View style={styles.chartArea}>
                             <StockChart
                                 data={priceCandles}
                                 markers={tradeMarkers}
@@ -240,31 +234,31 @@ export default function BacktestingResultScreen() {
                                 lineOverlays={lineOverlays}
                             />
                         </View>
-                    </View>
+                    </>
                 )}
 
-                {/* 거래 통계 카드 */}
-                <View style={styles.statsCard}>
-                    <Text style={styles.sectionTitle}>거래 통계</Text>
-                    <View style={styles.statsGrid}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{result.total_trades}</Text>
-                            <Text style={styles.statLabel}>총 거래</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: Colors.profit }]}>{stats.buyCount}</Text>
-                            <Text style={styles.statLabel}>매수</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: Colors.loss }]}>{stats.sellCount}</Text>
-                            <Text style={styles.statLabel}>매도</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Text style={[styles.statValue, { color: stats.winRate >= 50 ? Colors.profit : Colors.loss }]}>
-                                {stats.winRate.toFixed(0)}%
-                            </Text>
-                            <Text style={styles.statLabel}>승률</Text>
-                        </View>
+                {/* 통계 바 (4컬럼 플랫) */}
+                <View style={styles.statsBar}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{result.total_trades}</Text>
+                        <Text style={styles.statLabel}>총 거래</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={[styles.statValue, { color: Colors.profit }]}>{stats.buyCount}</Text>
+                        <Text style={styles.statLabel}>매수</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={[styles.statValue, { color: Colors.loss }]}>{stats.sellCount}</Text>
+                        <Text style={styles.statLabel}>매도</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={[styles.statValue, { color: stats.winRate >= 50 ? Colors.profit : Colors.loss }]}>
+                            {stats.winRate.toFixed(0)}%
+                        </Text>
+                        <Text style={styles.statLabel}>승률</Text>
                     </View>
                 </View>
 
@@ -274,7 +268,7 @@ export default function BacktestingResultScreen() {
                 </View>
             </>
         );
-    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, lineOverlays, stats]);
+    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, lineOverlays, stats, mrktCode]);
 
     return (
         <View style={styles.container}>
@@ -313,7 +307,7 @@ export default function BacktestingResultScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.cardBackground,
     },
     header: {
         flexDirection: 'row',
@@ -335,133 +329,91 @@ const styles = StyleSheet.create({
         width: 40,
     },
     content: {
-        padding: Spacing.xl,
+        paddingBottom: 0,
     },
     listFooter: {
         height: 40,
     },
 
-    // 전략 정보 카드
-    strategyCard: {
+    // 헤더 섹션 (전략 + 수익률 + 자본 통합)
+    headerSection: {
         backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xxl,
-        marginBottom: Spacing.lg,
-        ...Shadows.medium,
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.xl,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
-    strategyHeader: {
+    stockRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: Spacing.md,
+        gap: Spacing.sm,
+        marginBottom: Spacing.xs,
     },
-    stockBadge: {
-        backgroundColor: '#E3F2FD',
-        paddingVertical: Spacing.sm,
-        paddingHorizontal: Spacing.lg,
-        borderRadius: BorderRadius.xl,
-        marginRight: Spacing.md,
+    stockCode: {
+        fontSize: FontSizes.sm,
+        fontWeight: '600',
+        color: Colors.badgeText,
     },
-    stockBadgeText: {
-        fontSize: FontSizes.md,
-        fontWeight: 'bold',
-        color: '#1976D2',
-    },
-    stockNameText: {
+    stockName: {
         fontSize: FontSizes.lg,
         fontWeight: '600',
         color: Colors.textPrimary,
         flex: 1,
     },
-    strategyName: {
-        fontSize: FontSizes.md,
-        color: Colors.primary,
-        fontWeight: '600',
-        marginBottom: Spacing.xs,
-    },
-    strategyPeriod: {
+    strategyMeta: {
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
-    },
-
-    // 수익률 하이라이트 카드
-    returnHighlightCard: {
-        backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xxl,
         marginBottom: Spacing.lg,
-        alignItems: 'center',
-        ...Shadows.large,
-    },
-    returnHighlightLabel: {
-        fontSize: FontSizes.sm,
-        color: Colors.textSecondary,
-        fontWeight: '500',
-        marginBottom: Spacing.sm,
-    },
-    returnHighlightValue: {
-        fontSize: FontSizes.title,
-        fontWeight: 'bold',
-    },
-    returnDivider: {
-        width: '100%',
-        height: 1,
-        backgroundColor: Colors.border,
-        marginVertical: Spacing.lg,
-    },
-    returnRow: {
-        flexDirection: 'row',
-        width: '100%',
-        alignItems: 'center',
-    },
-    returnCol: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    returnColDivider: {
-        width: 1,
-        height: 40,
-        backgroundColor: Colors.border,
     },
     returnLabel: {
-        fontSize: FontSizes.sm,
+        fontSize: FontSizes.xs,
         color: Colors.textSecondary,
-        fontWeight: '500',
+        textAlign: 'center',
         marginBottom: Spacing.xs,
     },
     returnValue: {
-        fontSize: FontSizes.lg,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
+        fontSize: FontSizes.title,
+        fontWeight: '700',
+        textAlign: 'center',
+        marginBottom: Spacing.lg,
     },
-    profitLossRow: {
+    capitalRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-        marginTop: Spacing.lg,
         paddingTop: Spacing.lg,
         borderTopWidth: 1,
         borderTopColor: Colors.border,
     },
-    profitLossValue: {
-        fontSize: FontSizes.xl,
-        fontWeight: 'bold',
+    capitalCol: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    capitalDivider: {
+        width: 1,
+        backgroundColor: Colors.border,
+        marginVertical: Spacing.xs,
+    },
+    capitalLabel: {
+        fontSize: FontSizes.xs,
+        color: Colors.textSecondary,
+        marginBottom: 2,
+    },
+    capitalValue: {
+        fontSize: FontSizes.md,
+        fontWeight: '700',
+        color: Colors.textPrimary,
     },
 
-    // 차트 섹션
-    chartSection: {
-        backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xxl,
-        marginBottom: Spacing.lg,
-        alignItems: 'center',
-        ...Shadows.medium,
-    },
-    chartLegend: {
+    // 차트 범례
+    legendBar: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'center',
         gap: Spacing.lg,
-        marginBottom: Spacing.md,
+        height: 36,
+        paddingHorizontal: Spacing.lg,
+        backgroundColor: Colors.cardBackground,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
     legendItem: {
         flexDirection: 'row',
@@ -469,62 +421,63 @@ const styles = StyleSheet.create({
         gap: Spacing.xs,
     },
     legendDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
     legendText: {
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
         fontWeight: '500',
     },
-    chartContainer: {
-        width: '100%',
-        alignItems: 'center',
-        overflow: 'hidden',
+
+    // 차트 영역
+    chartArea: {
+        backgroundColor: Colors.cardBackground,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
 
-    // 거래 통계 카드
-    statsCard: {
-        backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xxl,
-        marginBottom: Spacing.lg,
-        ...Shadows.medium,
-    },
-    sectionTitle: {
-        fontSize: FontSizes.lg,
-        fontWeight: '700',
-        color: Colors.textPrimary,
-        marginBottom: Spacing.lg,
-    },
-    statsGrid: {
+    // 통계 바 (4컬럼 플랫)
+    statsBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        height: 64,
+        backgroundColor: Colors.cardBackground,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
     statItem: {
         flex: 1,
         alignItems: 'center',
-        backgroundColor: Colors.background,
-        borderRadius: BorderRadius.md,
-        paddingVertical: Spacing.lg,
-        marginHorizontal: Spacing.xs,
+        justifyContent: 'center',
+    },
+    statDivider: {
+        width: 1,
+        backgroundColor: Colors.border,
+        marginVertical: Spacing.sm,
     },
     statValue: {
-        fontSize: FontSizes.xxl,
-        fontWeight: 'bold',
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
         color: Colors.textPrimary,
-        marginBottom: Spacing.xs,
     },
     statLabel: {
         fontSize: FontSizes.xs,
         color: Colors.textSecondary,
         fontWeight: '500',
+        marginTop: 2,
     },
 
     // 매매 내역 섹션
     tradesSection: {
-        marginBottom: Spacing.xs,
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.lg,
+        backgroundColor: Colors.cardBackground,
+    },
+    sectionTitle: {
+        fontSize: FontSizes.lg,
+        fontWeight: '700',
+        color: Colors.textPrimary,
     },
 
     // 빈 상태
