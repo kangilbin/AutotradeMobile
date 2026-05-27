@@ -20,7 +20,16 @@ export const useSwingData = (accountNo: string | undefined, mrktCode: string = '
     const [summary, setSummary] = useState<SwingSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [dataMrktCode, setDataMrktCode] = useState(mrktCode);
     const isInitialLoad = useRef(true);
+
+    // 마켓이 바뀌면 이전 마켓 데이터가 새 마켓 포맷으로 잠깐 렌더링되는 것을 막기 위해 즉시 초기화
+    if (dataMrktCode !== mrktCode) {
+        setDataMrktCode(mrktCode);
+        setSwingList([]);
+        setSummary(null);
+        setLoading(true);
+    }
 
     const loadData = useCallback(async () => {
         if (!accountNo) {

@@ -74,7 +74,8 @@ export const getActiveBadgeColor = (isActive: string): string => {
  * 국내: 정수 + 천단위 구분 (10,500)
  * 미국: 소수점 2자리 ($150.25)
  */
-export const formatPrice = (price: number | string, mrktCode: MarketCode): string => {
+export const formatPrice = (price: number | string | undefined | null, mrktCode: MarketCode): string => {
+    if (price === undefined || price === null) return '-';
     const num = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(num)) return '-';
 

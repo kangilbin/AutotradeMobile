@@ -26,7 +26,7 @@ export default function NotificationsScreen() {
             setPermissionGranted(status === 'granted');
 
             const settings = await getNotificationSettings();
-            if (settings) {
+            if (Array.isArray(settings)) {
                 const tradeSetting = settings.find((item: NotiSettingItem) => item.NOTI_TYPE === 'TRADE');
                 setTradeNoti(tradeSetting?.USE_YN === 'Y');
             }

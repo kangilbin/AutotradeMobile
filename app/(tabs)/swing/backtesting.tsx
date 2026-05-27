@@ -265,6 +265,7 @@ export default function BacktestingResultScreen() {
                 {/* 매매 내역 타이틀 */}
                 <View style={styles.tradesSection}>
                     <Text style={styles.sectionTitle}>매매 내역</Text>
+                    <Text style={styles.sectionCount}>{result.total_trades}건</Text>
                 </View>
             </>
         );
@@ -470,14 +471,24 @@ const styles = StyleSheet.create({
 
     // 매매 내역 섹션
     tradesSection: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
         paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.lg,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.sm,
         backgroundColor: Colors.cardBackground,
     },
     sectionTitle: {
-        fontSize: FontSizes.lg,
+        fontSize: FontSizes.md,
         fontWeight: '700',
         color: Colors.textPrimary,
+        letterSpacing: -0.2,
+    },
+    sectionCount: {
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
+        fontWeight: '500',
     },
 
     // 빈 상태
