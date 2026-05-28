@@ -20,13 +20,13 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
         <View style={styles.container}>
             {/* 메인 투자 금액 */}
             <View style={styles.mainSection}>
-                <Text style={styles.mainLabel}>내 투자</Text>
+                <Text style={styles.mainLabel}>총 자본금</Text>
                 <Text style={styles.mainValue}>
                     {summary ? formatAmountWithUnit(summary.TOTAL_INVESTMENT_AMOUNT, mrktCode) : PLACEHOLDER}
                 </Text>
             </View>
 
-            {/* 보조 정보들 */}
+            {/* 원금 / 총 수익 / 현금 자산 */}
             <View style={styles.subInfoContainer}>
                 <SummaryItem
                     label="원금"
@@ -48,7 +48,7 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
                 </View>
 
                 <SummaryItem
-                    label="현금 자산"
+                    label="현금"
                     value={summary ? formatAmountWithUnit(summary.CASH_ASSET, mrktCode) : PLACEHOLDER}
                 />
             </View>
