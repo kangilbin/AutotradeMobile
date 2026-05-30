@@ -96,7 +96,7 @@ export default function TopHeader() {
                                         styles.toggleText,
                                         mrktCode === code && styles.toggleTextActive,
                                     ]}>
-                                        {MARKETS[code].flag} {MARKETS[code].label}
+                                        {MARKETS[code].label}
                                     </Text>
                                 </TouchableOpacity>
                             ))}

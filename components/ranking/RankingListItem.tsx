@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, FontSizes, Spacing } from '../../constants/theme';
 import VolumePowerBar from './VolumePowerBar';
 import { formatPrice as formatPriceUtil } from '../../utils/format';
 import { MarketCode } from '../../types/market';
@@ -26,12 +26,6 @@ const getSignColor = (sign: string) => {
     if (sign === '1' || sign === '2') return Colors.profit;
     if (sign === '4' || sign === '5') return Colors.loss;
     return Colors.textSecondary;
-};
-
-const getSignBgColor = (sign: string) => {
-    if (sign === '1' || sign === '2') return Colors.profitBg;
-    if (sign === '4' || sign === '5') return Colors.lossBg;
-    return Colors.background;
 };
 
 const getSignPrefix = (sign: string) => {
@@ -69,31 +63,26 @@ function RankingListItem({
     onPress,
 }: RankingListItemProps) {
     const signColor = getSignColor(changeSign);
-    const signBg = getSignBgColor(changeSign);
     const signPrefix = getSignPrefix(changeSign);
     const rateSign = changeSign === '1' || changeSign === '2' ? '+' : changeSign === '3' ? '' : '';
     const displayRate = changeRate.startsWith('-') ? changeRate : `${rateSign}${changeRate}`;
 
     return (
         <TouchableOpacity
-            style={[styles.card, Shadows.small]}
+            style={styles.card}
             onPress={() => onPress?.(code, name)}
             activeOpacity={0.7}
         >
             {/* 상단 행: 순위 + 종목명 + 현재가 */}
             <View style={styles.topRow}>
-                <View style={styles.rankCircle}>
-                    <Text style={styles.rankText}>{rank}</Text>
-                </View>
+                <Text style={styles.rankNumber}>{rank}</Text>
                 <View style={styles.infoContainer}>
                     <Text style={styles.name} numberOfLines={1}>{name}</Text>
                     <View style={styles.subRow}>
                         <Text style={styles.code}>{code}</Text>
-                        <View style={[styles.rateBadge, { backgroundColor: signBg }]}>
-                            <Text style={[styles.rateText, { color: signColor }]}>
-                                {displayRate}%
-                            </Text>
-                        </View>
+                        <Text style={[styles.rateText, { color: signColor }]}>
+                            {displayRate}%
+                        </Text>
                         <Text style={[styles.changeAmount, { color: signColor }]}>
                             {signPrefix}{formatPriceLabel(changeAmount.replace('-', ''), mrktCode)}
                         </Text>
@@ -122,27 +111,20 @@ export default React.memo(RankingListItem);
 const styles = StyleSheet.create({
     card: {
         backgroundColor: Colors.cardBackground,
-        borderRadius: BorderRadius.md,
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.lg,
-        marginHorizontal: Spacing.lg,
-        marginBottom: Spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.border,
     },
     topRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    rankCircle: {
+    rankNumber: {
         width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: Colors.background,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    rankText: {
-        fontSize: FontSizes.sm,
-        fontWeight: 'bold',
+        textAlign: 'center',
+        fontSize: FontSizes.md,
+        fontWeight: '700',
         color: Colors.textSecondary,
     },
     infoContainer: {
@@ -163,11 +145,6 @@ const styles = StyleSheet.create({
     code: {
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
-    },
-    rateBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
     },
     rateText: {
         fontSize: FontSizes.md,

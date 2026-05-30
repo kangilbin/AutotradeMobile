@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { Colors, FontSizes, Spacing } from '../../constants/theme';
+import { Colors, FontSizes, Spacing } from '../../constants';
 import { useFluctuationRank, useVolumeRank, useVolumePowerRank } from '../../hooks/useRanking';
 import {
     RankingTab,
@@ -15,7 +15,6 @@ import {
 } from '../../types/ranking';
 import RankingTabSelector from '../../components/ranking/RankingTabSelector';
 import RankingFilterChips from '../../components/ranking/RankingFilterChips';
-import RankingTopCards from '../../components/ranking/RankingTopCards';
 import RankingListItem from '../../components/ranking/RankingListItem';
 import { useMarketStore } from '../../utils/useMarketStore';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -135,10 +134,6 @@ export default function HomeScreen() {
         return volumePower.data;
     }, [activeTab, fluctuation.data, volume.data, volumePower.data]);
 
-    // Top 3 / 나머지 분리
-    const top3 = useMemo(() => allData.slice(0, 3), [allData]);
-    const restData = useMemo(() => allData.slice(3), [allData]);
-
     const isLoading = activeTab === 'fluctuation'
         ? fluctuation.loading
         : activeTab === 'volume'
@@ -244,11 +239,8 @@ export default function HomeScreen() {
         handleVolumeBlngChange, handleVolumePowerMarketChange, isOverseas]);
 
     const ListHeader = useMemo(() => (
-        <>
-            <RankingFilterChips {...filterChipsProps} />
-            <RankingTopCards items={top3} activeTab={activeTab} onItemPress={handleItemPress} />
-        </>
-    ), [filterChipsProps, top3, activeTab, handleItemPress]);
+        <RankingFilterChips {...filterChipsProps} />
+    ), [filterChipsProps]);
 
     // 초기 로딩 (데이터 없음 + 로딩 중)
     if (isLoading && allData.length === 0 && !refreshing) {
@@ -274,7 +266,7 @@ export default function HomeScreen() {
             ) : (
                 <FlatList
                     style={{ opacity: isLoading ? 0.5 : 1 }}
-                    data={restData}
+                    data={allData}
                     renderItem={renderItem}
                     keyExtractor={keyExtractor}
                     ListHeaderComponent={ListHeader}
