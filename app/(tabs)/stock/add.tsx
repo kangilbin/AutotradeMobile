@@ -110,6 +110,11 @@ export default function AddStockScreen() {
 
     const isMultiMA = form.SWING_TYPE === SWING_TYPES.MULTI_MA;
 
+    // 모의투자(capital_tracking=false / available_capital=null)는 한도 추적이 불가능하다.
+    // 이때는 "등록 가능" 표시·초과 경고를 끄고, null 과의 숫자 비교(null→0 강제)로 오경고가 뜨지 않도록 가드한다.
+    const capitalTracked = capitalInfo?.capital_tracking === true && capitalInfo.available_capital != null;
+    const isOverCapital = capitalTracked && form.INIT_AMOUNT > (capitalInfo!.available_capital as number);
+
     const handleFocus = (fieldName: string) => {
         setFocusedField(fieldName);
     };
@@ -319,9 +324,14 @@ export default function AddStockScreen() {
                     <View style={styles.sectionHeader}>
                         <Ionicons name="wallet-outline" size={18} color={Colors.primary} />
                         <Text style={styles.sectionTitle}>스윙 금액</Text>
-                        {capitalInfo && !capitalLoading && (
+                        {!capitalLoading && capitalTracked && (
                             <Text style={styles.availableCapitalBadge}>
-                                등록 가능: {formatCapitalAmount(capitalInfo.available_capital)}
+                                등록 가능: {formatCapitalAmount(capitalInfo!.available_capital as number)}
+                            </Text>
+                        )}
+                        {!capitalLoading && capitalInfo && !capitalTracked && (
+                            <Text style={styles.mockCapitalBadge}>
+                                모의투자 한도 미지원
                             </Text>
                         )}
                     </View>
@@ -394,11 +404,11 @@ export default function AddStockScreen() {
                             </Text>
                         </TouchableOpacity>
                     </View>
-                    {capitalInfo && !capitalLoading && form.INIT_AMOUNT > capitalInfo.available_capital && (
+                    {!capitalLoading && isOverCapital && (
                         <View style={styles.capitalWarning}>
                             <Ionicons name="information-circle-outline" size={14} color={Colors.warning} />
                             <Text style={[styles.capitalWarningText, { color: Colors.warning }]}>
-                                가용 자본을 초과하는 금액입니다 (가용: {formatCapitalAmount(capitalInfo.available_capital)})
+                                가용 자본을 초과하는 금액입니다 (가용: {formatCapitalAmount(capitalInfo!.available_capital as number)})
                             </Text>
                         </View>
                     )}
@@ -697,6 +707,12 @@ const styles = StyleSheet.create({
         marginLeft: 'auto',
         fontSize: FontSizes.sm,
         color: Colors.primary,
+        fontWeight: '600',
+    },
+    mockCapitalBadge: {
+        marginLeft: 'auto',
+        fontSize: FontSizes.sm,
+        color: Colors.textMuted,
         fontWeight: '600',
     },
     capitalWarning: {
