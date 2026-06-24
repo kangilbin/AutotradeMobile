@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SwingItem, AvailableCapitalResponse } from '../../types/swing';
 import { updateSwingSettings, getAvailableCapital } from '../../contexts/backEndApi';
 import { useAccountStore } from '../../stores/useAccountStore';
+import { MarketCode } from '../../types/market';
+import { formatAmountWithUnit } from '../../utils/format';
 import axios from 'axios';
 
 // 스윙 타입 상수
@@ -76,12 +78,12 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
 
     const effectiveAvailable = capitalInfo ? capitalInfo.available_capital : null;
     const isOverCapital = effectiveAvailable != null && form.INIT_AMOUNT > effectiveAvailable;
+    const mrktCode: MarketCode = ((swingData as any)?.MRKT_CODE as MarketCode) || 'J';
 
     const handleEdit = async () => {
         setIsEditMode(true);
         if (!account?.ACCOUNT_NO || !swingData) return;
         setCapitalLoading(true);
-        const mrktCode = (swingData as any).MRKT_CODE || 'J';
         const result = await getAvailableCapital(account.ACCOUNT_NO, mrktCode);
         if (result) setCapitalInfo(result);
         setCapitalLoading(false);
@@ -148,11 +150,11 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             if (axios.isAxiosError(error) && error.response?.status === 400) {
                 const detail = error.response.data?.detail;
                 if (detail?.available_capital != null) {
-                    const available = detail.available_capital.toLocaleString();
-                    const requested = (detail.requested_amount || form.INIT_AMOUNT).toLocaleString();
+                    const available = formatAmountWithUnit(detail.available_capital, mrktCode);
+                    const requested = formatAmountWithUnit(detail.requested_amount || form.INIT_AMOUNT, mrktCode);
                     Alert.alert(
                         '금액 초과',
-                        `가용 자본이 부족합니다\n(가용: ${available}원, 필요: ${requested}원)`
+                        `가용 자본이 부족합니다\n(가용: ${available}, 필요: ${requested})`
                     );
                     return;
                 }
@@ -221,7 +223,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                                 />
                                 {effectiveAvailable != null && !capitalLoading && (
                                     <Text style={styles.availableCapitalHint}>
-                                        등록 가능: {effectiveAvailable.toLocaleString()}원
+                                        등록 가능: {formatAmountWithUnit(effectiveAvailable, mrktCode)}
                                     </Text>
                                 )}
                                 {isOverCapital && effectiveAvailable != null && (
@@ -231,7 +233,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                                 )}
                             </View>
                         ) : (
-                            <Text style={styles.value}>{form.INIT_AMOUNT.toLocaleString()}원</Text>
+                            <Text style={styles.value}>{formatAmountWithUnit(form.INIT_AMOUNT, mrktCode)}</Text>
                         )}
                     </View>
 
