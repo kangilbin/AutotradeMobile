@@ -179,7 +179,7 @@ export default function SwingDetailScreen() {
 
         Alert.alert(
             '백트레이딩 실행',
-            '설정한 조건으로 1년간의 과거 데이터를 분석하여 예상 수익률을 확인하시겠습니까?',
+            '설정한 조건으로 2년간의 과거 데이터를 분석하여 예상 수익률을 확인하시겠습니까?',
             [
                 {
                     text: '취소',

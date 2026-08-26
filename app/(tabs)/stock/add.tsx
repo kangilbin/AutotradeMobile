@@ -16,7 +16,7 @@ import {AddStockAutoRequest} from "../../../types/stock";
 import LoadingIndicator from "../../../components/LoadingIndicator";
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
-import { MarketCode } from '../../../types/market';
+import { MarketCode, isOverseasMarket } from '../../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
 import { AvailableCapitalResponse } from '../../../types/swing';
 
@@ -65,12 +65,13 @@ export default function AddStockScreen() {
     const currentMrktCode = useMarketStore((s) => s.mrktCode);
 
     const effectiveMrktCode: MarketCode = (mrktCode as MarketCode) || currentMrktCode;
-    const isOverseas = effectiveMrktCode === 'NASD';
+    const isOverseas = isOverseasMarket(effectiveMrktCode);
     const amountPresets = isOverseas ? AMOUNT_PRESETS_US : AMOUNT_PRESETS_KR;
 
-    // 글로벌 마켓 변경 시: 진입 마켓과 달라지면 종목 검색 화면으로 이동
+    // 글로벌 마켓(국내/미국 그룹)이 진입 종목과 달라지면 검색 화면으로 이동.
+    // 미국 내 거래소 차이(NAS↔NYS 등)로는 튕기지 않음.
     useEffect(() => {
-        if (mrktCode && currentMrktCode !== mrktCode) {
+        if (mrktCode && isOverseasMarket(currentMrktCode) !== isOverseasMarket(mrktCode as string)) {
             router.dismissAll();
             router.replace('/stock');
         }

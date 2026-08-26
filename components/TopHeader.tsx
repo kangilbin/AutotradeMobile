@@ -10,16 +10,20 @@ import { JwtPayload } from '../types/auth';
 import { router, useFocusEffect } from 'expo-router';
 import { Colors, FontSizes, Spacing, BorderRadius } from '../constants/theme';
 
-const TOGGLE_WIDTH = 120;
-const TAB_WIDTH = TOGGLE_WIDTH / 2;
-const MARKETS_ORDER: MarketCode[] = ['J', 'NASD'];
+// 글로벌 토글은 국내/미국 2단. 개별 거래소(NYS/NAS/AMS)는 홈탭 랭킹에서만 선택.
+const MARKETS_ORDER: MarketCode[] = ['J', 'US'];
+const TAB_WIDTH = 60;
+const TOGGLE_WIDTH = TAB_WIDTH * MARKETS_ORDER.length;
+
+/** 시장 코드의 토글 인덱스 (없으면 0=국내) */
+const marketIndex = (code: MarketCode): number => Math.max(0, MARKETS_ORDER.indexOf(code));
 
 export default function TopHeader() {
     const account = useAccountStore((state) => state.account);
     const mrktCode = useMarketStore((state) => state.mrktCode);
     const setMrktCode = useMarketStore((state) => state.setMrktCode);
     const [userName, setUserName] = useState<string>('');
-    const slideAnim = useRef(new Animated.Value(mrktCode === 'J' ? 0 : 1)).current;
+    const slideAnim = useRef(new Animated.Value(marketIndex(mrktCode))).current;
 
     useFocusEffect(
         useCallback(() => {
@@ -42,7 +46,7 @@ export default function TopHeader() {
 
     useEffect(() => {
         Animated.spring(slideAnim, {
-            toValue: mrktCode === 'J' ? 0 : 1,
+            toValue: marketIndex(mrktCode),
             useNativeDriver: true,
             tension: 300,
             friction: 25,
@@ -58,8 +62,8 @@ export default function TopHeader() {
     }, [mrktCode, setMrktCode]);
 
     const translateX = slideAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [2, TAB_WIDTH + 2],
+        inputRange: [0, MARKETS_ORDER.length - 1],
+        outputRange: [2, (MARKETS_ORDER.length - 1) * TAB_WIDTH + 2],
     });
 
     return (
@@ -92,10 +96,12 @@ export default function TopHeader() {
                                     onPress={() => handleMarketSelect(code)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={[
-                                        styles.toggleText,
-                                        mrktCode === code && styles.toggleTextActive,
-                                    ]}>
+                                    <Text
+                                        numberOfLines={1}
+                                        style={[
+                                            styles.toggleText,
+                                            mrktCode === code && styles.toggleTextActive,
+                                        ]}>
                                         {MARKETS[code].label}
                                     </Text>
                                 </TouchableOpacity>

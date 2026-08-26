@@ -212,7 +212,7 @@ export type BacktestingTrade = {
     tax?: number;
 }
 
-// ─── 미국장(NASD) 시세 API 응답 타입 ───
+// ─── 미국장(NYS/NAS/AMS) 시세 API 응답 타입 ───
 
 export type NasdStockPriceResponse = {
     rt_cd: string;
