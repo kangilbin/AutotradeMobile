@@ -78,7 +78,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
 
     const effectiveAvailable = capitalInfo ? capitalInfo.available_capital : null;
     const isOverCapital = effectiveAvailable != null && form.INIT_AMOUNT > effectiveAvailable;
-    const mrktCode: MarketCode = ((swingData as any)?.MRKT_CODE as MarketCode) || 'J';
+    const mrktCode: MarketCode = swingData?.MRKT_CODE || 'J';
 
     const handleEdit = async () => {
         setIsEditMode(true);

@@ -1,3 +1,5 @@
+import { MarketCode } from './market';
+
 // 스윙 목록 조회 응답 타입
 export type SwingListResponse = {
     list: SwingItem[];
@@ -10,6 +12,7 @@ export type SwingItem = {
     ST_CODE: string
     ST_NM: string
     SWING_TYPE: string
+    MRKT_CODE?: MarketCode  // 시장 코드 (J: 국내 / NYS·NAS·AMS: 미국) — 통화 표시 기준
     INIT_AMOUNT: number  // 원금
     EVLU_AMT: number  // 평가금액
     EVLU_PFLS_AMT: number  // 평가손익금액

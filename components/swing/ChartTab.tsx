@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SwingItem } from '../../types/swing';
+import { MarketCode } from '../../types/market';
 import StockChart, { VisibleRange } from '../StockChart';
 import { useTradeHistory } from '../../hooks/useTradeHistory';
 import { getTradeStats } from '../../contexts/backEndApi';
@@ -10,9 +11,10 @@ import { Colors, FontSizes, Spacing } from '../../constants';
 
 interface ChartTabProps {
     swingData: SwingItem | null;
+    mrktCode?: MarketCode;
 }
 
-export default function ChartTab({ swingData }: ChartTabProps) {
+export default function ChartTab({ swingData, mrktCode = 'J' }: ChartTabProps) {
     const webViewRef = useRef<WebView>(null);
 
     const {
@@ -85,6 +87,7 @@ export default function ChartTab({ swingData }: ChartTabProps) {
                             lineOverlays={lineOverlays}
                             onVisibleRangeChange={handleVisibleRangeChange}
                             webViewRef={webViewRef}
+                            mrktCode={mrktCode}
                         />
                         {loadingMore && (
                             <View style={styles.loadingMoreOverlay}>
