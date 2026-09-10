@@ -11,6 +11,19 @@ interface SwingSummaryCardProps {
 }
 
 const PLACEHOLDER = '-';
+const UNSUPPORTED = '미지원';  // 모의투자: 현금 자산 미지원(null) 시 표기
+
+/**
+ * 현금 자산 표시값 결정
+ * - summary 없음: '-'
+ * - 모의투자(CASH_ASSET === null): '미지원'
+ * - 실전: 금액 포맷
+ */
+function formatCashAsset(summary: SwingSummary | null, mrktCode: MarketCode): string {
+    if (!summary) return PLACEHOLDER;
+    if (summary.CASH_ASSET === null) return UNSUPPORTED;
+    return formatAmountWithUnit(summary.CASH_ASSET, mrktCode);
+}
 
 /**
  * 스윙 요약 카드 컴포넌트 (Presentational)
@@ -49,7 +62,7 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
 
                 <SummaryItem
                     label="현금"
-                    value={summary ? formatAmountWithUnit(summary.CASH_ASSET, mrktCode) : PLACEHOLDER}
+                    value={formatCashAsset(summary, mrktCode)}
                 />
             </View>
         </View>

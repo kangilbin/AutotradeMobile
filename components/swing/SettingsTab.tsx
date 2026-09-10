@@ -226,6 +226,12 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                                         등록 가능: {formatAmountWithUnit(effectiveAvailable, mrktCode)}
                                     </Text>
                                 )}
+                                {/* 모의투자: 한도 추적 불가 → 등록 가능 금액 대신 미지원 안내 */}
+                                {capitalInfo && effectiveAvailable == null && !capitalLoading && (
+                                    <Text style={styles.mockCapitalHint}>
+                                        모의투자 한도 미지원
+                                    </Text>
+                                )}
                                 {isOverCapital && effectiveAvailable != null && (
                                     <Text style={styles.overCapitalText}>
                                         보유 자본을 초과합니다
@@ -470,6 +476,12 @@ const styles = StyleSheet.create({
     availableCapitalHint: {
         fontSize: 11,
         color: '#4ECDC4',
+        fontWeight: '500',
+        marginTop: 4,
+    },
+    mockCapitalHint: {
+        fontSize: 11,
+        color: '#94A3B8',
         fontWeight: '500',
         marginTop: 4,
     },
