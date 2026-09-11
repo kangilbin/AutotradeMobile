@@ -33,7 +33,9 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
             {/* 헤더: 종목명 + 코드 + 전략 태그 + 상태 뱃지 */}
             <View style={styles.header}>
                 <View style={styles.titleRow}>
-                    <Text style={styles.stockName}>{item.ST_NM}</Text>
+                    <Text style={styles.stockName} numberOfLines={1} ellipsizeMode="tail">
+                        {item.ST_NM}
+                    </Text>
                     <Text style={styles.stockCode}>{item.ST_CODE}</Text>
                     <Tag label={getSwingTypeText(item.SWING_TYPE)} />
                 </View>
@@ -136,11 +138,13 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.xl,
         fontWeight: 'bold',
         color: Colors.textPrimary,
+        flexShrink: 1,
     },
     stockCode: {
         fontSize: FontSizes.sm,
         color: Colors.textMuted,
         fontWeight: '500',
+        flexShrink: 0,
     },
     badge: {
         flexDirection: 'row',
@@ -207,6 +211,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm,
         paddingVertical: 2,
         borderRadius: BorderRadius.sm,
+        flexShrink: 0,
     },
     tagText: {
         fontSize: FontSizes.xs,

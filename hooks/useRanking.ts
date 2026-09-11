@@ -11,6 +11,7 @@ import {
 import { getFluctuationRank, getVolumeRank, getVolumePowerRank } from '../contexts/backEndApi';
 import { OverseasFluctuationRawItem, OverseasVolumeRawItem, OverseasVolumePowerRawItem } from '../types/ranking';
 import { normalizeOverseasFluctuation, normalizeOverseasVolume, normalizeOverseasVolumePower } from '../utils/normalizeRanking';
+import { isOverseasMarket } from '../types/market';
 
 interface UseFluctuationReturn {
     data: FluctuationRankItem[];
@@ -37,7 +38,7 @@ export const useFluctuationRank = (): UseFluctuationReturn => {
     const fetch = useCallback(async (rankSort: FluctuationSortCode, prcCls: FluctuationPriceCode, mrktCode: string = 'J') => {
         setLoading(true);
         try {
-            if (mrktCode === 'NASD') {
+            if (isOverseasMarket(mrktCode)) {
                 // 국내: 0=상승, 1=하락 / 미국: 0=급락, 1=급등 → 반전
                 const overseasSort: FluctuationSortCode = rankSort === '0' ? '1' : '0';
                 const raw = await getFluctuationRank(overseasSort, prcCls, mrktCode) as unknown as OverseasFluctuationRawItem[] | undefined;
@@ -61,7 +62,7 @@ export const useVolumeRank = (): UseVolumeReturn => {
     const fetch = useCallback(async (blngCls: VolumeBlngCode, mrktCode: string = 'J') => {
         setLoading(true);
         try {
-            if (mrktCode === 'NASD') {
+            if (isOverseasMarket(mrktCode)) {
                 const raw = await getVolumeRank(blngCls, mrktCode) as unknown as OverseasVolumeRawItem[] | undefined;
                 setData(raw ? normalizeOverseasVolume(raw) : []);
             } else {
@@ -83,7 +84,7 @@ export const useVolumePowerRank = (): UseVolumePowerReturn => {
     const fetch = useCallback(async (inputIscd: VolumePowerMarketCode, mrktCode: string = 'J') => {
         setLoading(true);
         try {
-            if (mrktCode === 'NASD') {
+            if (isOverseasMarket(mrktCode)) {
                 const raw = await getVolumePowerRank(inputIscd, mrktCode) as unknown as OverseasVolumePowerRawItem[] | undefined;
                 setData(raw ? normalizeOverseasVolumePower(raw) : []);
             } else {

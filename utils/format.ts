@@ -3,7 +3,7 @@
  */
 
 import { Colors } from '../constants';
-import { MarketCode } from '../types/market';
+import { MarketCode, isOverseasMarket } from '../types/market';
 
 /**
  * 숫자를 한국어 통화 형식으로 포맷팅
@@ -79,7 +79,7 @@ export const formatPrice = (price: number | string | undefined | null, mrktCode:
     const num = typeof price === 'string' ? parseFloat(price) : price;
     if (isNaN(num)) return '-';
 
-    if (mrktCode === 'NASD') {
+    if (isOverseasMarket(mrktCode)) {
         return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return Math.round(num).toLocaleString('ko-KR');
@@ -89,7 +89,7 @@ export const formatPrice = (price: number | string | undefined | null, mrktCode:
  * 통화 기호 반환
  */
 export const getCurrencySymbol = (mrktCode: MarketCode): string => {
-    return mrktCode === 'NASD' ? '$' : '\u{20A9}';
+    return isOverseasMarket(mrktCode) ? '$' : '\u{20A9}';
 };
 
 /**
@@ -101,15 +101,16 @@ export const formatAmountWithUnit = (
     amount: number | string | undefined | null,
     mrktCode: MarketCode = 'J'
 ): string => {
+    const overseas = isOverseasMarket(mrktCode);
     if (amount === undefined || amount === null) {
-        return mrktCode === 'NASD' ? '$0.00' : '0원';
+        return overseas ? '$0.00' : '0원';
     }
     const num = typeof amount === 'string' ? Number(amount) : amount;
     if (isNaN(num)) {
-        return mrktCode === 'NASD' ? '$0.00' : '0원';
+        return overseas ? '$0.00' : '0원';
     }
 
-    if (mrktCode === 'NASD') {
+    if (overseas) {
         return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return `${Math.round(num).toLocaleString('ko-KR')}원`;
@@ -127,7 +128,7 @@ export const formatSignedAmountWithUnit = (
     const num = typeof amount === 'string' ? Number(amount) : (amount ?? 0);
     if (isNaN(num)) return formatAmountWithUnit(0, mrktCode);
 
-    if (mrktCode === 'NASD') {
+    if (isOverseasMarket(mrktCode)) {
         const abs = Math.abs(num);
         const formatted = abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return num < 0 ? `-$${formatted}` : `+$${formatted}`;

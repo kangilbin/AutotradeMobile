@@ -5,7 +5,7 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import OrderBookRow from '../../../components/OrderBookRow';
 import { getStockPrice } from '../../../contexts/backEndApi';
 import { UnifiedStockPrice } from '../../../types/stock';
-import { MarketCode } from '../../../types/market';
+import { MarketCode, isOverseasMarket } from '../../../types/market';
 import { Colors, Shadows, Spacing, BorderRadius, FontSizes } from '../../../constants/theme';
 import { useMarketStore } from '../../../utils/useMarketStore';
 import { formatPrice } from '../../../utils/format';
@@ -19,7 +19,7 @@ export default function PriceScreen() {
 
     // 글로벌 마켓 변경 시: 진입 마켓과 달라지면 종목 검색 화면으로 이동
     useEffect(() => {
-        if (mrktCode && currentMrktCode !== mrktCode) {
+        if (mrktCode && isOverseasMarket(currentMrktCode) !== isOverseasMarket(mrktCode as string)) {
             router.dismissAll();
             router.replace('/stock');
         }
@@ -55,7 +55,7 @@ export default function PriceScreen() {
 
         const hhmm = now.getHours() * 100 + now.getMinutes();
 
-        if (activeMrktCode === 'NASD') {
+        if (isOverseasMarket(activeMrktCode)) {
             // 미국 정규장 (한국시간 기준, 서머타임): 23:30 ~ 06:00
             return hhmm >= 2330 || hhmm <= 600;
         }

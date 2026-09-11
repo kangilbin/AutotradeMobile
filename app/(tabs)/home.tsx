@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, FontSizes, Spacing } from '../../constants';
 import { useFluctuationRank, useVolumeRank, useVolumePowerRank } from '../../hooks/useRanking';
@@ -18,6 +18,7 @@ import RankingFilterChips from '../../components/ranking/RankingFilterChips';
 import RankingListItem from '../../components/ranking/RankingListItem';
 import { useMarketStore } from '../../utils/useMarketStore';
 import { useAccountStore } from '../../stores/useAccountStore';
+import { MarketCode, MARKETS, US_EXCHANGE_CODES } from '../../types/market';
 
 type RankItem = FluctuationRankItem | VolumeRankItem | VolumePowerRankItem;
 
@@ -36,10 +37,16 @@ export default function HomeScreen() {
     const [volumeBlng, setVolumeBlng] = useState<VolumeBlngCode>('3');
     const [volumePowerMarket, setVolumePowerMarket] = useState<VolumePowerMarketCode>('0000');
 
+    // 미국 랭킹은 거래소(EXCD)별 조회 → 홈탭 로컬 거래소 선택 (기본 나스닥)
+    const [rankingExcd, setRankingExcd] = useState<MarketCode>('NAS');
+
     const mrktCode = useMarketStore((s) => s.mrktCode);
     const isOverseas = useMarketStore((s) => s.isOverseas);
     const account = useAccountStore((s) => s.account);
     const isSimulation = account?.SIMULATION_YN === 'Y';
+
+    // 랭킹 API에 넘길 시장코드: 미국이면 선택한 거래소(NYS/NAS/AMS), 국내면 'J'
+    const rankMrkt = isOverseas ? rankingExcd : mrktCode;
 
     // 모의투자: 거래량+체결강도 비활성
     const disabledTabs: RankingTab[] = useMemo(() => {
@@ -51,6 +58,24 @@ export default function HomeScreen() {
     const simulationBanner = isSimulation && !isOverseas ? (
         <View style={styles.simulationBanner}>
             <Text style={styles.simulationBannerText}>모의투자에서는 거래량/체결강도 순위를 지원하지 않습니다</Text>
+        </View>
+    ) : null;
+
+    // 미국: 거래소별 랭킹 선택 (뉴욕/나스닥/아멕스)
+    const exchangeSelector = isOverseas ? (
+        <View style={styles.exchangeRow}>
+            {US_EXCHANGE_CODES.map((code) => (
+                <TouchableOpacity
+                    key={code}
+                    style={[styles.exchangeChip, rankingExcd === code && styles.exchangeChipActive]}
+                    onPress={() => setRankingExcd(code)}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.exchangeChipText, rankingExcd === code && styles.exchangeChipTextActive]}>
+                        {MARKETS[code].label}
+                    </Text>
+                </TouchableOpacity>
+            ))}
         </View>
     ) : null;
 
@@ -70,20 +95,20 @@ export default function HomeScreen() {
     const isFirstMount = useRef(true);
     useEffect(() => {
         if (activeTab === 'fluctuation') {
-            fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
+            fluctuation.fetch(fluctuationSort, fluctuationPrice, rankMrkt);
         } else if (activeTab === 'volume') {
-            volume.fetch(volumeBlng, mrktCode);
+            volume.fetch(volumeBlng, rankMrkt);
         } else {
-            volumePower.fetch(volumePowerMarket, mrktCode);
+            volumePower.fetch(volumePowerMarket, rankMrkt);
         }
-    }, [mrktCode]);
+    }, [rankMrkt]);
 
     // 탭 전환 시 데이터 없으면 최초 1회 fetch
     useEffect(() => {
         if (activeTab === 'volume' && volume.data.length === 0) {
-            volume.fetch(volumeBlng, mrktCode);
+            volume.fetch(volumeBlng, rankMrkt);
         } else if (activeTab === 'volume_power' && volumePower.data.length === 0) {
-            volumePower.fetch(volumePowerMarket, mrktCode);
+            volumePower.fetch(volumePowerMarket, rankMrkt);
         }
     }, [activeTab]);
 
@@ -93,20 +118,20 @@ export default function HomeScreen() {
             isFirstMount.current = false;
             return;
         }
-        fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
+        fluctuation.fetch(fluctuationSort, fluctuationPrice, rankMrkt);
     }, [fluctuationSort, fluctuationPrice]);
 
     // 거래량 필터 변경 시 재조회
     useEffect(() => {
         if (volume.data.length > 0 || activeTab === 'volume') {
-            volume.fetch(volumeBlng, mrktCode);
+            volume.fetch(volumeBlng, rankMrkt);
         }
     }, [volumeBlng]);
 
     // 체결강도 시장 필터 변경 시 재조회
     useEffect(() => {
         if (volumePower.data.length > 0 || activeTab === 'volume_power') {
-            volumePower.fetch(volumePowerMarket, mrktCode);
+            volumePower.fetch(volumePowerMarket, rankMrkt);
         }
     }, [volumePowerMarket]);
 
@@ -143,21 +168,22 @@ export default function HomeScreen() {
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         if (activeTab === 'fluctuation') {
-            await fluctuation.fetch(fluctuationSort, fluctuationPrice, mrktCode);
+            await fluctuation.fetch(fluctuationSort, fluctuationPrice, rankMrkt);
         } else if (activeTab === 'volume') {
-            await volume.fetch(volumeBlng, mrktCode);
+            await volume.fetch(volumeBlng, rankMrkt);
         } else {
-            await volumePower.fetch(volumePowerMarket, mrktCode);
+            await volumePower.fetch(volumePowerMarket, rankMrkt);
         }
         setRefreshing(false);
-    }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket, mrktCode]);
+    }, [activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket, rankMrkt]);
 
     const handleItemPress = useCallback((code: string, name: string) => {
         router.push({
             pathname: '/stock/price',
-            params: { stCode: code, stockName: name },
+            // 랭킹의 시장코드(미국이면 거래소별)를 함께 넘겨 상세/시세가 정확한 EXCD 사용
+            params: { stCode: code, stockName: name, mrktCode: rankMrkt },
         });
-    }, []);
+    }, [rankMrkt]);
 
     const renderItem = useCallback(({ item }: { item: RankItem }) => {
         const code = getItemCode(item, activeTab);
@@ -248,6 +274,7 @@ export default function HomeScreen() {
             <View style={styles.container}>
                 <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={disabledTabs} />
                 {simulationBanner}
+                {exchangeSelector}
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
@@ -259,6 +286,7 @@ export default function HomeScreen() {
         <View style={styles.container}>
             <RankingTabSelector activeTab={activeTab} onTabChange={setActiveTab} disabledTabs={disabledTabs} />
             {simulationBanner}
+            {exchangeSelector}
             {allData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>순위 데이터가 없습니다</Text>
@@ -314,5 +342,33 @@ const styles = StyleSheet.create({
     simulationBannerText: {
         fontSize: FontSizes.sm,
         color: Colors.textSecondary,
+    },
+    exchangeRow: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        backgroundColor: Colors.background,
+    },
+    exchangeChip: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.xs + 2,
+        borderRadius: 999,
+        backgroundColor: Colors.cardBackground,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    exchangeChipActive: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+    },
+    exchangeChipText: {
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
+        fontWeight: '500',
+    },
+    exchangeChipTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
 });

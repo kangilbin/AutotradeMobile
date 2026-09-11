@@ -1,4 +1,4 @@
-import { MarketCode } from '../types/market';
+import { MarketCode, isOverseasMarket } from '../types/market';
 import {
     StockPriceResponse,
     NasdStockPriceResponse,
@@ -79,7 +79,7 @@ export function normalizeStockPrice(
     data: StockPriceResponse | NasdStockPriceResponse,
     mrktCode: MarketCode,
 ): UnifiedStockPrice {
-    if (mrktCode === 'NASD') {
+    if (isOverseasMarket(mrktCode)) {
         return normalizeNasd(data as NasdStockPriceResponse);
     }
     return normalizeKrx(data as StockPriceResponse);
