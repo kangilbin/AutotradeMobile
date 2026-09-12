@@ -232,6 +232,7 @@ export default function BacktestingResultScreen() {
                                 markers={tradeMarkers}
                                 chartType="candlestick"
                                 lineOverlays={lineOverlays}
+                                mrktCode={mrktCode}
                             />
                         </View>
                     </>

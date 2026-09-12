@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
     View, 
     Text, 
@@ -18,6 +18,7 @@ import ChartTab from '../../../components/swing/ChartTab';
 import HistoryTab from '../../../components/swing/HistoryTab';
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
+import { MarketCode } from '../../../types/market';
 
 export default function SwingDetailScreen() {
     const params = useLocalSearchParams();
@@ -26,6 +27,13 @@ export default function SwingDetailScreen() {
     const [swingData, setSwingData] = useState<SwingItem | null>(null);
     const account = useAccountStore((state) => state.account);
     const mrktCode = useMarketStore((s) => s.mrktCode);
+
+    // 통화 표시 기준: 스윙에 저장된 시장 코드 우선, 없으면 전역 마켓 토글 값
+    // (전역 토글과 무관하게 해당 스윙의 실제 시장 기준으로 표시하기 위함)
+    const swingMrktCode: MarketCode = useMemo(
+        () => swingData?.MRKT_CODE || mrktCode,
+        [swingData?.MRKT_CODE, mrktCode]
+    );
 
     useEffect(() => {
         // 실제로는 API에서 데이터를 가져와야 함
@@ -152,7 +160,7 @@ export default function SwingDetailScreen() {
                         try {
                             const result = await sellAll({
                                 ST_CODE: swingData.ST_CODE,
-                                MRKT_CODE: (swingData as any).MRKT_CODE || mrktCode,
+                                MRKT_CODE: swingMrktCode,
                                 QTY: swingData.HLDG_QTY,
                             });
                             if (result) {
@@ -192,7 +200,7 @@ export default function SwingDetailScreen() {
                             // 스윙 데이터를 백트레이딩 파라미터로 변환
                             const backtestingParams: AddStockAutoRequest = {
                                 ST_CODE: swingData.ST_CODE,
-                                MRKT_CODE: (swingData as any).MRKT_CODE || '',
+                                MRKT_CODE: swingData.MRKT_CODE || '',
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
                                 INIT_AMOUNT: swingData.INIT_AMOUNT,
                                 SWING_TYPE: swingData.SWING_TYPE,
@@ -307,11 +315,11 @@ export default function SwingDetailScreen() {
                 </ScrollView>
             ) : activeTab === 1 ? (
                 <View style={{ flex: 1 }}>
-                    <ChartTab swingData={swingData} />
+                    <ChartTab swingData={swingData} mrktCode={swingMrktCode} />
                 </View>
             ) : (
                 <View style={{ flex: 1 }}>
-                    <HistoryTab swingData={swingData} />
+                    <HistoryTab swingData={swingData} mrktCode={swingMrktCode} />
                 </View>
             )}
 

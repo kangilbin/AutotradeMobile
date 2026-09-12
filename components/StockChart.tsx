@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import { MarketCode, isOverseasMarket } from '../types/market';
 
 const { height } = Dimensions.get('window');
 
@@ -46,9 +47,10 @@ export interface StockChartProps {
     lineOverlays?: LineOverlay[];
     onVisibleRangeChange?: (range: VisibleRange) => void;
     webViewRef?: React.RefObject<WebView | null>;
+    mrktCode?: MarketCode;   // 통화·소수점 표시 기준 (기본: 국내)
 }
 
-export default function StockChart({ data, markers, chartType = 'line', lineOverlays, onVisibleRangeChange, webViewRef }: StockChartProps) {
+export default function StockChart({ data, markers, chartType = 'line', lineOverlays, onVisibleRangeChange, webViewRef, mrktCode = 'J' }: StockChartProps) {
     const internalWebViewRef = useRef<WebView | null>(null);
     const effectiveRef = webViewRef || internalWebViewRef;
     const prevDataLenRef = useRef<number>(0);
@@ -56,6 +58,7 @@ export default function StockChart({ data, markers, chartType = 'line', lineOver
 
     // 초기 HTML은 한 번만 생성 (chartType 변경 시에만 재생성)
     const chartHTML = useMemo(() => {
+        const overseas = isOverseasMarket(mrktCode);
         const dataJSON = JSON.stringify(data);
         const markersJSON = JSON.stringify(markers || []);
         const overlaysJSON = JSON.stringify(lineOverlays || []);
@@ -112,6 +115,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 
   try{
     var CHART_TYPE='${chartType}';
+    var OVERSEAS=${overseas};
     var RAW_DATA=${dataJSON};
     var RAW_MARKERS=${markersJSON};
     var RAW_OVERLAYS=${overlaysJSON};
@@ -121,7 +125,10 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
     try{var p=s.split('-').map(Number);return(p[0]&&p[1]&&p[2])?{year:p[0],month:p[1],day:p[2]}:null}catch(e){return null}
   }
   function bdStr(bd){return bd.year+'.'+String(bd.month).padStart(2,'0')+'.'+String(bd.day).padStart(2,'0')}
-  function fmt(n){return n.toLocaleString()}
+  // 숫자만 (가격축·OHLC 헤더) — 미국은 소수점 2자리 유지, 국내는 정수
+  function fmt(n){return OVERSEAS?n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):Math.round(n).toLocaleString()}
+  // 통화 단위 포함 (툴팁) — 미국 '$1,234.56' / 국내 '1,234원'
+  function fmtMoney(n){return OVERSEAS?'$'+fmt(n):fmt(n)+'원'}
 
   function toCandles(raw){
     var o=[];
@@ -176,7 +183,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
         },
         localization:{
           timeFormatter:function(time){return time.month+'월 '+time.day+'일'},
-          priceFormatter:function(price){return Math.round(price).toLocaleString()}
+          priceFormatter:function(price){return fmt(price)}
         },
         rightPriceScale:{borderColor:'#F1F5F9'},
         crosshair:{mode:LightweightCharts.CrosshairMode.Normal}
@@ -314,7 +321,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
         var trade=window._tradeMap[key];
         if(trade&&param.point){
           var label=trade.isBuy?'매수':'매도';
-          tooltip.textContent=label+' '+fmt(trade.price)+'원 ('+trade.text+')';
+          tooltip.textContent=label+' '+fmtMoney(trade.price)+' ('+trade.text+')';
           tooltip.style.background='#4ECDC4';
           tooltip.style.display='block';
           var tx=Math.min(param.point.x,el.clientWidth-140);
@@ -476,9 +483,9 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 </script>
 </body>
 </html>`;
-    // chartHTML은 초기 렌더용이므로 chartType만 의존
+    // chartHTML은 초기 렌더용이므로 chartType·mrktCode(통화 포맷)만 의존
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chartType]);
+    }, [chartType, mrktCode]);
 
     // data/markers/overlays 변경 시 WebView를 재생성하지 않고 injectJavaScript로 업데이트
     useEffect(() => {
@@ -519,7 +526,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
         <View style={styles.container}>
             <WebView
                 ref={effectiveRef}
-                key={`chart-${chartType}`}
+                key={`chart-${chartType}-${mrktCode}`}
                 originWhitelist={['*']}
                 source={{ html: chartHTML }}
                 javaScriptEnabled
