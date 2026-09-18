@@ -125,8 +125,14 @@ const tripCircuitBreaker = () => {
     }
 };
 
+// --- API 서버 주소: 개발(로컬) / 빌드(원격) 분기 ---
+// __DEV__ 는 Metro 번들러로 실행할 때만 true, 릴리즈 빌드에서는 false
+const API_BASE_URL = __DEV__
+    ? 'http://localhost:8000'
+    : 'https://kang-t8-plus.tailae66f2.ts.net';
+
 const api = axios.create({
-    baseURL: 'http://localhost:8000',
+    baseURL: API_BASE_URL,
     timeout: 50000,
     headers: {
         'Content-Type': 'application/json',
