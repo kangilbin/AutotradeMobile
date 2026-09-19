@@ -1,18 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
-import { useApiLoading } from '../../contexts/backEndApi';
-import LoadingIndicator from "../../components/LoadingIndicator";
+import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import AppButton from '../../components/common/AppButton';
 import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function LoginScreen () {
-    const loading = useApiLoading();
     const { handleGoogleLogin, isReady: isGoogleReady } = useGoogleAuth();
 
     return (
         <View style={styles.container}>
-            {loading && <LoadingIndicator />}
+            {/* 로딩 인디케이터는 루트의 ApiLoadingOverlay 가 전역으로 처리한다 */}
 
             {/* 상단 로고 영역 - 화면의 대부분을 차지 */}
             <View style={styles.heroSection}>
@@ -26,18 +24,23 @@ export default function LoginScreen () {
 
             {/* 하단 로그인 영역 */}
             <View style={styles.loginSection}>
-                <TouchableOpacity
+                {/* 비동기 핸들러라 AppTouchable 이 완료까지 재진입을 막는다 */}
+                <AppButton
                     style={[styles.googleButton, !isGoogleReady && styles.buttonDisabled]}
+                    textStyle={styles.googleButtonText}
                     onPress={handleGoogleLogin}
                     disabled={!isGoogleReady}
-                    activeOpacity={0.85}
-                >
-                    <Image
-                        source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
-                        style={styles.googleLogo}
-                    />
-                    <Text style={styles.googleButtonText}>Google로 계속하기</Text>
-                </TouchableOpacity>
+                    title="Google로 계속하기"
+                    loadingText="로그인 중..."
+                    // 버튼 배경이 흰색이라 기본 흰 스피너는 보이지 않는다. 라벨과 같은 색으로 맞춘다
+                    spinnerColor="#1f1f1f"
+                    icon={
+                        <Image
+                            source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                            style={styles.googleLogo}
+                        />
+                    }
+                />
                 <Text style={styles.footerText}>
                     계속 진행하면 서비스 이용약관에 동의하게 됩니다.
                 </Text>
@@ -90,9 +93,9 @@ const styles = StyleSheet.create({
         opacity: 0.4,
     },
     googleLogo: {
+        // 라벨과의 간격은 AppButton 이 처리한다
         width: 20,
         height: 20,
-        marginRight: 12,
     },
     googleButtonText: {
         fontSize: 16,

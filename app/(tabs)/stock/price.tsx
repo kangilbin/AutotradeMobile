@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, FlatList, LayoutChangeEvent, ActivityIndicator } from 'react-native';
+import AppTouchable from '../../../components/common/AppTouchable';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import OrderBookRow from '../../../components/OrderBookRow';
@@ -26,6 +27,9 @@ export default function PriceScreen() {
     }, [currentMrktCode]);
 
     const [unified, setUnified] = useState<UnifiedStockPrice | null>(null);
+    // 첫 응답이 오기 전 화면을 빈 값(0원)으로 두면 "로딩 중"이 아니라 "가격이 0"으로 읽힌다.
+    // 첫 조회가 실패했는지까지 구분해야 무한 스피너 대신 재시도 경로를 줄 수 있다.
+    const [initialLoadFailed, setInitialLoadFailed] = useState(false);
     const flatListRef = useRef<FlatList>(null);
     const initialScrollDone = useRef(false);
     const failCountRef = useRef(0);
@@ -63,6 +67,15 @@ export default function PriceScreen() {
         return hhmm >= 830 && hhmm <= 1530;
     }, [activeMrktCode]);
 
+    // 장애가 길어지면 폴링이 초당 한 번씩 실패한다. 이미 실패로 표시된 뒤에는
+    // 같은 값을 다시 세팅하지 않도록 ref 로 한 번만 통과시킨다.
+    const failedFlagRef = useRef(false);
+    const markInitialLoadFailed = useCallback(() => {
+        if (failedFlagRef.current) return;
+        failedFlagRef.current = true;
+        setInitialLoadFailed(true);
+    }, []);
+
     // 주식 데이터 요청 → 정규화 후 저장
     const requestStockData = useCallback(async () => {
         if (!stCode) return false;
@@ -72,16 +85,32 @@ export default function PriceScreen() {
             if (response) {
                 setUnified(normalizeStockPrice(response, activeMrktCode));
                 failCountRef.current = 0;
+                failedFlagRef.current = false;
+                setInitialLoadFailed(false);
                 return true;
             }
             failCountRef.current++;
+            // unified 가 이미 있으면 렌더에서 이 플래그를 보지 않는다(마지막 시세를 계속 표시)
+            markInitialLoadFailed();
             return false;
         } catch (error) {
             console.error('API 호출 중 오류:', error);
             failCountRef.current++;
+            markInitialLoadFailed();
             return false;
         }
     }, [stCode, activeMrktCode]);
+
+    // 재시도 시 값을 올려 useFocusEffect 를 다시 태운다.
+    // 단순 재조회만 하면, MAX_FAIL 로 이미 정리된 폴링 interval 이 되살아나지 않는다.
+    const [retryToken, setRetryToken] = useState(0);
+
+    const handleRetry = useCallback(() => {
+        failCountRef.current = 0;
+        failedFlagRef.current = false;
+        setInitialLoadFailed(false);
+        setRetryToken(token => token + 1);
+    }, []);
 
     const ROW_HEIGHT = 40;
     const listHeightRef = useRef(0);
@@ -110,7 +139,9 @@ export default function PriceScreen() {
             }, 1000);
 
             return () => clearInterval(interval);
-        }, [stCode, isMarketTime, requestStockData, scrollToCurrentPrice])
+        // retryToken 은 콜백 안에서 읽지 않지만, 값이 바뀔 때 이 effect 를 다시 태워
+        // 재조회 + 폴링 interval 재설치를 하기 위한 의존성이다. 지우면 "다시 시도" 가 죽는다.
+        }, [stCode, isMarketTime, requestStockData, scrollToCurrentPrice, retryToken])
     );
 
     const askData = unified?.asks ?? [];
@@ -121,6 +152,12 @@ export default function PriceScreen() {
     const maxBid = bidData.length > 0 ? Math.max(...bidData.map((b) => b.quantity)) : 0;
 
     const fmt = (v: number | undefined) => v != null ? formatPrice(v, activeMrktCode) : '-';
+
+    // 첫 응답 전/첫 조회 실패는 헤더(종목명·코드)만 남기고 본문을 대체한다.
+    // 헤더를 같이 지우면 어떤 종목을 눌렀는지도 안 보여 오히려 불안해진다.
+    // unified 가 한 번이라도 채워지면 이후 폴링 실패에는 마지막 시세를 계속 보여준다.
+    const showInitialLoading = !unified && !initialLoadFailed;
+    const showInitialError = !unified && initialLoadFailed;
 
     return (
         <View style={styles.mainContainer}>
@@ -138,11 +175,31 @@ export default function PriceScreen() {
                         {isMarketTime ? '실시간' : '장 마감'}
                     </Text>
                 </View>
-                <TouchableOpacity onPress={() => router.push('/stock')} style={styles.searchButton}>
+                <AppTouchable onPress={() => router.push('/stock')} style={styles.searchButton}>
                     <AntDesign name="search" size={22} color={Colors.textPrimary} />
-                </TouchableOpacity>
+                </AppTouchable>
             </View>
 
+            {showInitialLoading && (
+                <View style={styles.initialState}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <Text style={styles.initialStateText}>시세를 불러오는 중...</Text>
+                </View>
+            )}
+
+            {showInitialError && (
+                <View style={styles.initialState}>
+                    <AntDesign name="exclamation-circle" size={40} color={Colors.textMuted} />
+                    <Text style={styles.initialStateText}>시세를 불러오지 못했습니다</Text>
+                    <AppTouchable style={styles.retryButton} onPress={handleRetry}>
+                        <AntDesign name="reload" size={16} color={Colors.textWhite} />
+                        <Text style={styles.retryButtonText}>다시 시도</Text>
+                    </AppTouchable>
+                </View>
+            )}
+
+            {!showInitialLoading && !showInitialError && (
+            <>
             {/* 가격 정보 바 */}
             <View style={styles.priceInfoBar}>
                 <Text style={[styles.currentPrice, { color: priceChange.color }]}>
@@ -250,9 +307,12 @@ export default function PriceScreen() {
                     </Text>
                 </View>
             </View>
+            </>
+            )}
 
-            {/* 플러스 등록 버튼 */}
-            <TouchableOpacity
+            {/* 플러스 등록 버튼 — 시세를 못 받은 상태에서는 감춘다 */}
+            {!showInitialLoading && !showInitialError && (
+            <AppTouchable
                 style={styles.fab}
                 onPress={() => router.push({
                     pathname: '/stock/add',
@@ -262,10 +322,10 @@ export default function PriceScreen() {
                         mrktCode: mrktCode as string
                     }
                 })}
-                activeOpacity={0.8}
             >
                 <AntDesign name="plus" size={24} color="white" />
-            </TouchableOpacity>
+            </AppTouchable>
+            )}
         </View>
     );
 }
@@ -400,6 +460,33 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background,
         paddingHorizontal: Spacing.sm,
         paddingTop: Spacing.sm,
+    },
+    initialState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: Spacing.md,
+        backgroundColor: Colors.background,
+    },
+    initialStateText: {
+        fontSize: FontSizes.md,
+        color: Colors.textMuted,
+        fontWeight: '500',
+    },
+    retryButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.md,
+        borderRadius: BorderRadius.md,
+        backgroundColor: Colors.primary,
+        marginTop: Spacing.xs,
+    },
+    retryButtonText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.textWhite,
     },
     emptyOrderBook: {
         flex: 1,

@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LoadingIndicator from "../components/LoadingIndicator";
+import ApiLoadingOverlay from "../components/ApiLoadingOverlay";
 import { useMarketStore } from "../utils/useMarketStore";
 
 SplashScreen.preventAutoHideAsync(); // 앱 시작 시 Splash 유지
@@ -35,6 +36,8 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="account" options={{ headerShown: false }} />
             </Stack>
+            {/* 전역 로딩 오버레이 — Stack 형제로 두어 모든 화면 위에 덮인다 */}
+            <ApiLoadingOverlay />
         </GestureHandlerRootView>
     );
 }

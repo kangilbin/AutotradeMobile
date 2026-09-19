@@ -1,7 +1,7 @@
 import axios from 'axios';
-import {useState, useEffect} from "react";
+import {useSyncExternalStore} from "react";
 import {Alert} from "react-native";
-import { AxiosError, AxiosResponse } from 'axios';
+import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import { getDeviceId, getDeviceName } from '../utils/device';
@@ -28,32 +28,41 @@ import {
     VolumePowerMarketCode,
 } from '../types/ranking';
 
-// API 로딩 상태
-let apiLoading = false;
-let setApiLoadingCallback: ((loading: boolean) => void) | null = null;
-
-const setApiLoading = (loading: boolean) => {
-    apiLoading = loading;
-    if (setApiLoadingCallback) {
-        setApiLoadingCallback(loading);
+// 요청별 로딩 정책 오버라이드 플래그
+declare module 'axios' {
+    interface AxiosRequestConfig {
+        /** true 면 전역 오버레이 강제 표시, false 면 강제 숨김 (미지정 시 HTTP 메서드로 판단) */
+        blocking?: boolean;
+        /** true 면 로딩 상태에 아예 잡히지 않음 (백그라운드 요청) */
+        silent?: boolean;
     }
+}
+
+// --- API 로딩 상태: 구독자 Set + 진행 중 요청 카운터 ---
+// 이전 구현은 "전역 콜백 슬롯 1개 + boolean" 이라 구조적으로 깨져 있었다.
+//  - 화면 두 개가 구독하면 나중에 마운트된 쪽이 앞 콜백을 덮어썼다
+//  - 앞 화면이 언마운트되면 콜백이 null 이 되어 남은 화면이 먹통이 됐다
+//  - boolean 이라 동시 요청 중 하나만 끝나도 인디케이터가 꺼졌다
+// 카운터 + Set 으로 바꿔 세 가지를 모두 해소한다.
+let blockingCount = 0;
+const loadingListeners = new Set<() => void>();
+
+const emitLoading = () => {
+    loadingListeners.forEach(listener => listener());
 };
 
-export const useApiLoading = () => {
-    const [loading, setLoading] = useState(apiLoading);
-    
-    useEffect(() => {
-        // 콜백 등록
-        setApiLoadingCallback = setLoading;
-        
-        // 컴포넌트 언마운트 시 콜백 제거
-        return () => {
-            setApiLoadingCallback = null;
-        };
-    }, []);
-    
-    return loading;
+const subscribeLoading = (listener: () => void) => {
+    loadingListeners.add(listener);
+    return () => {
+        loadingListeners.delete(listener);
+    };
 };
+
+const getLoadingSnapshot = () => blockingCount > 0;
+
+/** 전역 오버레이를 띄워야 하는 상태인지 — 쓰기 요청이 1건이라도 진행 중이면 true */
+export const useApiLoading = (): boolean =>
+    useSyncExternalStore(subscribeLoading, getLoadingSnapshot);
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -138,6 +147,114 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+// --- 전역 오버레이 노출 정책 ---
+// 쓰기(POST/PUT/PATCH/DELETE)만 오버레이로 막는다.
+// GET(조회·랭킹·1초 시세 폴링·검색 디바운스·무한스크롤)은 오버레이 없이 각 화면 스피너에 맡긴다.
+// 자동 토큰 갱신은 사용자 행동이 아니므로 항상 조용히 처리한다.
+const SILENT_URLS = ['/users/refresh', '/oauth/google/token'];
+
+// 중복 쓰기 요청 취소 — handleApiError 가 이 취소만 알럿 없이 흘려보낸다.
+// axios 1.x 의 Cancel 은 AxiosError 를 상속하므로 isCancel 만으로 뭉뚱그리면
+// circuit breaker 취소까지 같이 침묵해서 "눌렀는데 아무 반응 없음" 이 된다.
+const DUPLICATE_REQUEST_MESSAGE = '중복 요청 — 먼저 보낸 요청이 처리 중입니다';
+const DUPLICATE_REQUEST_FLAG = '__duplicateRequest';
+
+const createDuplicateRequestError = (): unknown => {
+    const error = new axios.Cancel(DUPLICATE_REQUEST_MESSAGE);
+    (error as unknown as Record<string, unknown>)[DUPLICATE_REQUEST_FLAG] = true;
+    return error;
+};
+
+const isDuplicateRequestError = (error: unknown): boolean =>
+    axios.isCancel(error)
+    && (error as unknown as Record<string, unknown>)[DUPLICATE_REQUEST_FLAG] === true;
+
+const isSilentRequest = (config: InternalAxiosRequestConfig): boolean =>
+    config.silent === true || SILENT_URLS.includes(config.url || '');
+
+const isBlockingRequest = (config: InternalAxiosRequestConfig): boolean => {
+    if (isSilentRequest(config)) return false;
+    // 호출부에서 { blocking: true/false } 로 개별 오버라이드 가능
+    if (typeof config.blocking === 'boolean') return config.blocking;
+    return (config.method || 'get').toLowerCase() !== 'get';
+};
+
+// --- 중복 요청 차단(안전망) + 로딩 카운팅 ---
+// 어댑터를 감싸기 때문에 아래 API 함수들을 한 줄도 고치지 않고 전체에 적용된다.
+//
+// 쓰기 요청만 대상으로 한다. 연타로 들어온 동일한 쓰기는 네트워크로 나가지 않고
+// 조용히 취소된다. (전량매도가 두 번 전송되는 사고를 UI 가드와 별개로 원천 차단)
+//
+// GET 을 제외한 이유:
+// dedup 한 호출들이 같은 Promise 를 공유하면 거부 시 AxiosError 객체 하나를 N 명이 나눠 갖는다.
+// 그러면 error.config 가 첫 호출자의 것이라 401 재시도 플래그(_retry)가 서로 섞여 두 번째
+// 호출자는 토큰 갱신을 건너뛴 채 에러 알럿을 띄우고, circuit breaker 도 실패 1건을 N 번 센다.
+// GET 은 멱등이라 중복돼도 트래픽만 낭비될 뿐이므로(기존 동작과 동일) 아예 건드리지 않는다.
+// 1초 시세 폴링·검색 디바운스가 여기에 걸리지 않는 것도 같은 이유로 중요하다.
+//
+// 카운팅을 인터셉터가 아닌 어댑터에서 하는 이유:
+// 취소된 중복 호출은 어댑터의 네트워크 경로를 타지 않으므로 증가도 감소도 일어나지 않아
+// 카운터가 항상 실제 네트워크 요청 수와 1:1 로 맞는다.
+const inFlightRequests = new Map<string, Promise<AxiosResponse>>();
+
+// FormData/Blob 같은 본문은 JSON.stringify 하면 전부 "{}" 로 뭉개져 서로 다른 요청이
+// 같은 키를 갖는다. 직렬화가 안전한 본문만 dedup 대상으로 삼는다.
+const isSerializableBody = (data: unknown): boolean =>
+    data == null || typeof data === 'string' || (
+        typeof data === 'object'
+        && Object.getPrototypeOf(data) === Object.prototype
+    );
+
+const isDedupTarget = (config: InternalAxiosRequestConfig): boolean => {
+    if ((config.method || 'get').toLowerCase() === 'get') return false;
+    if (!isSerializableBody(config.data)) return false;
+    // 인증 갱신은 사용자 연타가 아니라 인터셉터가 스스로 띄우는 요청이다.
+    // 두 요청이 동시에 만료를 만나면 같은 토큰으로 같은 본문을 보내는데, 여기서 한쪽을
+    // 취소하면 갱신에 성공했는데도 catch 로 떨어져 강제 로그아웃된다(BYPASS_URLS 참고).
+    if (BYPASS_URLS.includes(config.url || '')) return false;
+    return true;
+};
+
+const requestKey = (config: InternalAxiosRequestConfig): string => {
+    const method = (config.method || 'get').toLowerCase();
+    const params = config.params ? JSON.stringify(config.params) : '';
+    // 어댑터 시점의 data 는 이미 직렬화된 문자열인 경우가 많다
+    const body = typeof config.data === 'string' ? config.data : JSON.stringify(config.data ?? '');
+    return `${method}|${config.url}|${params}|${body}`;
+};
+
+const baseAdapter = axios.getAdapter(api.defaults.adapter);
+
+api.defaults.adapter = (config) => {
+    const dedup = isDedupTarget(config);
+    const key = dedup ? requestKey(config) : '';
+
+    if (dedup && inFlightRequests.has(key)) {
+        // 같은 쓰기 요청이 이미 나가 있다 → 취소로 처리한다.
+        // Cancel 이면 응답 인터셉터가 circuit breaker·401 재시도를 건너뛰고,
+        // handleApiError 도 알럿 없이 undefined 를 돌려준다(두 번째 탭은 조용한 무동작).
+        return Promise.reject(createDuplicateRequestError());
+    }
+
+    const blocking = isBlockingRequest(config);
+    if (blocking) {
+        blockingCount++;
+        emitLoading();
+    }
+
+    const pending = baseAdapter(config).finally(() => {
+        if (dedup) inFlightRequests.delete(key);
+        if (blocking) {
+            blockingCount = Math.max(0, blockingCount - 1);
+            emitLoading();
+        }
+    });
+
+    if (dedup) inFlightRequests.set(key, pending);
+    return pending;
+};
+
 // Add request interceptor
 api.interceptors.request.use(
     async (config) => {
@@ -146,8 +263,6 @@ api.interceptors.request.use(
             && !BYPASS_URLS.includes(config.url || '')) {
             return Promise.reject(new axios.Cancel('서버 연결 불안정 — 잠시 후 재시도'));
         }
-
-        setApiLoading(true);
 
         const accessToken = await SecureStore.getItemAsync('access_token');
         if (accessToken) {
@@ -164,7 +279,7 @@ api.interceptors.request.use(
         return config;
     },
     (error) => {
-        setApiLoading(false); // Hide loading on error
+        // 로딩 카운팅은 어댑터에서 처리한다 (여기까지 온 요청은 아직 카운트되지 않았다)
         return Promise.reject(error);
     }
 );
@@ -172,13 +287,10 @@ api.interceptors.request.use(
 // Add response interceptor
 api.interceptors.response.use(
     (response: AxiosResponse) => {
-        setApiLoading(false);
         resetCircuitBreaker();
         return response;
     },
     async (error: AxiosError) => {
-        setApiLoading(false);
-
         // Cancel된 요청(circuit breaker)은 바로 reject
         if (axios.isCancel(error)) {
             return Promise.reject(error);
@@ -284,6 +396,14 @@ const isAxiosError = (error: unknown): error is AxiosError<ApiErrorResponse> => 
 };
 
 const handleApiError = (error: unknown, operation: string): undefined => {
+    // 중복 쓰기 요청만 조용히 흘려보낸다 — 두 번째 탭은 무동작이어야 하므로.
+    // circuit breaker 취소는 반드시 알린다. 쿨다운(30초) 동안 새로 시도하는 동작은
+    // 아직 아무 안내도 못 받은 상태라, 침묵하면 눌러도 반응 없는 화면이 된다.
+    if (isDuplicateRequestError(error)) {
+        console.log('중복 요청 취소:', operation);
+        return undefined;
+    }
+
     if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.message ||
                            error.message || '알 수 없는 오류가 발생했습니다';
@@ -372,7 +492,8 @@ export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undef
 // 권한(보안키) 삭제 영향도 조회 — 함께 사라지는 계좌·자동매매, 보유 포지션 여부
 export const getAuthDeleteImpact = async (authId: number): Promise<DeleteImpactResponse | undefined> => {
     try {
-        const response = await api.get(`/auths/${authId}/delete-impact`);
+        // GET 이지만 삭제 알럿 직전에 사용자가 기다리는 요청이라 오버레이를 띄운다
+        const response = await api.get(`/auths/${authId}/delete-impact`, { blocking: true });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '삭제 영향도 조회');
@@ -423,7 +544,8 @@ export const getAccountList = async (): Promise<AccountStatus[] | undefined> => 
 // 계좌 삭제 영향도 조회 — 함께 사라지는 자동매매, 보유 포지션 여부
 export const getAccountDeleteImpact = async (accountId: number): Promise<DeleteImpactResponse | undefined> => {
     try {
-        const response = await api.get(`/accounts/${accountId}/delete-impact`);
+        // GET 이지만 삭제 알럿 직전에 사용자가 기다리는 요청이라 오버레이를 띄운다
+        const response = await api.get(`/accounts/${accountId}/delete-impact`, { blocking: true });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '삭제 영향도 조회');
@@ -459,7 +581,11 @@ export const getStockPrice = async (st_code: string, mrktCode: string = 'J'): Pr
         const response = await api.get('/stocks/price', { params: { st_code, mrkt_code: mrktCode } });
         return response.data.data;
     } catch (error: unknown) {
-        return handleApiError(error, '주식 시세 조회');
+        // 1초 간격 폴링이라 handleApiError 로 알럿을 띄우면 실패할 때마다 알럿이 쌓인다.
+        // 유일한 호출부인 stock/price 화면이 "시세를 불러오지 못했습니다 + 다시 시도"를
+        // 인라인으로 렌더하므로 여기서는 조용히 undefined 만 돌려준다.
+        console.error('주식 시세 조회 실패:', error);
+        return undefined;
     }
 };
 
@@ -530,7 +656,8 @@ export const sellAll = async (param: SellAllRequest): Promise<any | undefined> =
 // 백 트레이딩
 export const backtesting = async (param: AddStockAutoRequest): Promise<BacktestingResponse | undefined> => {
     try {
-        const response = await api.post('/backtesting', param);
+        // 백테스팅 화면이 자체 로딩 UI 를 가지고 있어 전역 오버레이와 겹치지 않게 내린다
+        const response = await api.post('/backtesting', param, { blocking: false });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '백 트레이딩');
@@ -665,7 +792,9 @@ export const updateNotificationSetting = async (param: UpdateNotificationRequest
 // 푸시 토큰 등록
 export const registerPushToken = async (param: PushTokenRegisterRequest): Promise<boolean> => {
     try {
-        await api.post('/users/push-token', param);
+        // 탭 진입 시 자동 실행되는 백그라운드 등록이라 사용자 행동이 아니다.
+        // silent 가 없으면 홈 화면에 전체 오버레이가 덮여 터치가 막힌다.
+        await api.post('/users/push-token', param, { silent: true });
         return true;
     } catch (error: unknown) {
         handleApiError(error, '푸시 토큰 등록');

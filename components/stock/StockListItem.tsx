@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import AppTouchable from '../common/AppTouchable';
 import { StockStatus } from '../../types/stock';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants/theme';
 
@@ -13,7 +14,7 @@ interface StockListItemProps {
  */
 function StockListItem({ item, onPress }: StockListItemProps) {
     return (
-        <TouchableOpacity
+        <AppTouchable
             style={styles.container}
             onPress={() => onPress(item.ST_NM, item.ST_CODE, item.MRKT_CODE)}
         >
@@ -23,7 +24,7 @@ function StockListItem({ item, onPress }: StockListItemProps) {
                 </View>
                 <Text style={styles.nameText}>{item.ST_NM}</Text>
             </View>
-        </TouchableOpacity>
+        </AppTouchable>
     );
 }
 

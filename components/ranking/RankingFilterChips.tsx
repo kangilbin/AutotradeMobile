@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import AppTouchable from '../common/AppTouchable';
 import { Colors, FontSizes, Spacing, BorderRadius } from '../../constants/theme';
 import {
     RankingTab,
@@ -70,15 +71,16 @@ function Chip<T extends string>({
     onPress: (v: T) => void;
 }) {
     return (
-        <TouchableOpacity
+        <AppTouchable
             style={[styles.chip, isActive && styles.activeChip]}
             onPress={() => onPress(option.value)}
-            activeOpacity={0.7}
+            // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+            cooldownMs={0}
         >
             <Text style={[styles.chipText, isActive && styles.activeChipText]}>
                 {option.label}
             </Text>
-        </TouchableOpacity>
+        </AppTouchable>
     );
 }
 

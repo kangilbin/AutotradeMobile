@@ -1,15 +1,16 @@
 import {useState, useCallback, useRef, createRef} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 import {useRouter, useFocusEffect} from 'expo-router';
-import {getAccountList, deleteAccount, getAccountDeleteImpact, useApiLoading} from '../../contexts/backEndApi';
+import {getAccountList, deleteAccount, getAccountDeleteImpact} from '../../contexts/backEndApi';
 import {AccountStatus} from "../../types/account";
 import {useAccountStore} from "../../stores/useAccountStore";
 import {chooseAuth} from '../../contexts/backEndApi';
 import {Colors, FontSizes, Spacing, BorderRadius} from '../../constants';
 import {formatAccountNo} from '../../utils/format';
 import {buildDeleteImpactAlert} from '../../utils/deleteImpact';
+import AppTouchable from '../../components/common/AppTouchable';
 import LoadingIndicator from '../../components/LoadingIndicator';
 import ReanimatedSwipeable, {type SwipeableMethods} from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {useAnimatedStyle, SharedValue} from 'react-native-reanimated';
@@ -18,14 +19,21 @@ export default function AccountListScreen() {
     const router = useRouter();
     const [accounts, setAccounts] = useState<AccountStatus[]>([]);
     const setAccount = useAccountStore((state) => state.setAccount);
-    // 삭제 영향도 조회 동안 화면이 멈춘 것처럼 보이지 않도록 전역 로딩을 표시
-    const loading = useApiLoading();
+
+    // 계좌 목록은 GET 이라 전역 오버레이가 뜨지 않는다.
+    // 로딩 표시가 없으면 조회가 끝날 때까지 빈 목록만 보여 "계좌가 없다"로 오해하게 된다.
+    // 재진입 때마다 깜빡이지 않도록 최초 1회만 표시한다.
+    const [initialLoading, setInitialLoading] = useState(true);
+
+    // 삭제 영향도 조회 중 로딩 표시는 루트의 ApiLoadingOverlay 가 전역으로 처리한다
+    // (getAccountDeleteImpact 는 GET 이지만 backEndApi 에서 blocking: true 로 올려둠)
 
     useFocusEffect(
         useCallback(() => {
             const fetchAccountList = async () => {
                 const response = await getAccountList();
                 setAccounts(response || []);
+                setInitialLoading(false);
             };
             fetchAccountList();
         }, [])
@@ -84,6 +92,16 @@ export default function AccountListScreen() {
         ]);
     }, [getSwipeableRef]);
 
+    if (initialLoading) {
+        // LoadingIndicator 는 rgba(0,0,0,0.3) 스크림이라 단독으로 두면 네비게이터 기본 배경 위에
+        // 얹혀 회색 판처럼 보인다. 앱 배경색 컨테이너를 깔아 정상적인 로딩 화면으로 만든다.
+        return (
+            <SafeAreaView style={styles.container}>
+                <LoadingIndicator />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
         <ScrollView
@@ -107,10 +125,9 @@ export default function AccountListScreen() {
                         )}
                         overshootRight={false}
                     >
-                        <TouchableOpacity
+                        <AppTouchable
                             style={styles.accountCard}
                             onPress={() => handleAccountPress(account)}
-                            activeOpacity={0.7}
                         >
                             <View style={styles.accountLeft}>
                                 <View style={[
@@ -141,21 +158,20 @@ export default function AccountListScreen() {
                                 </View>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-                        </TouchableOpacity>
+                        </AppTouchable>
                     </ReanimatedSwipeable>
                     </View>
                 ))}
             </View>
 
             {/* 계좌 추가 버튼 */}
-            <TouchableOpacity style={styles.addButton} onPress={() => router.push('account/add')}>
+            <AppTouchable style={styles.addButton} onPress={() => router.push('account/add')}>
                 <Ionicons name="add-circle-outline" size={22} color={Colors.primary} />
                 <Text style={styles.addButtonText}>새 계좌 추가</Text>
-            </TouchableOpacity>
+            </AppTouchable>
 
             <View style={styles.bottomSpacing} />
         </ScrollView>
-        {loading && <LoadingIndicator />}
         </SafeAreaView>
     );
 }
@@ -167,9 +183,9 @@ function DeleteAction({translation, onPress}: {translation: SharedValue<number>;
 
     return (
         <Animated.View style={[styles.deleteAction, animatedStyle]}>
-            <TouchableOpacity style={styles.deleteButton} onPress={onPress} activeOpacity={0.8}>
+            <AppTouchable style={styles.deleteButton} onPress={onPress} pressedScale={1}>
                 <Ionicons name="trash-outline" size={22} color="#fff" />
-            </TouchableOpacity>
+            </AppTouchable>
         </Animated.View>
     );
 }

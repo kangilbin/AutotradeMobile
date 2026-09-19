@@ -4,12 +4,12 @@ import {
     Text,
     StyleSheet,
     TextInput,
-    TouchableOpacity,
     TouchableWithoutFeedback,
     Alert,
     ScrollView,
     Keyboard,
 } from 'react-native';
+import AppButton from '../../../components/common/AppButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -87,13 +87,15 @@ export default function EditProfileScreen() {
                         />
                     </View>
 
-                    <TouchableOpacity
+                    {/* 프로필 저장(PATCH) — 저장 중 스피너 + 재탭 차단 */}
+                    <AppButton
                         style={[styles.saveBtn, isFormValid ? styles.saveEnabled : styles.saveDisabled]}
+                        textStyle={styles.saveTxt}
                         disabled={!isFormValid}
                         onPress={handleSave}
-                    >
-                        <Text style={styles.saveTxt}>저장</Text>
-                    </TouchableOpacity>
+                        title="저장"
+                        loadingText="저장 중..."
+                    />
                 </ScrollView>
             </TouchableWithoutFeedback>
         </SafeAreaView>

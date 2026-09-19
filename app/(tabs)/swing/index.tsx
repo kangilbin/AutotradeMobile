@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import AppTouchable from '../../../components/common/AppTouchable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
@@ -65,13 +66,13 @@ export default function SwingScreen() {
             <Ionicons name="swap-horizontal-outline" size={48} color={Colors.textMuted} />
             <Text style={styles.emptyTitle}>등록된 스윙이 없습니다</Text>
             <Text style={styles.emptyDescription}>새로운 스윙 매매를 추가해보세요</Text>
-            <TouchableOpacity
+            <AppTouchable
                 style={styles.emptyButton}
                 onPress={() => router.push('/stock')}
             >
                 <Ionicons name="add" size={18} color={Colors.textWhite} />
                 <Text style={styles.emptyButtonText}>스윙 추가</Text>
-            </TouchableOpacity>
+            </AppTouchable>
         </View>
     ), [router]);
 

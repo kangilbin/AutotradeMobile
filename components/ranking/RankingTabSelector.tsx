@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, LayoutChangeEvent } from 'react-native';
+import { StyleSheet, View, Text, Animated, LayoutChangeEvent } from 'react-native';
+import AppTouchable from '../common/AppTouchable';
 import { Colors, FontSizes, Spacing } from '../../constants/theme';
 import { RankingTab } from '../../types/ranking';
 
@@ -44,16 +45,20 @@ function RankingTabSelector({ activeTab, onTabChange, disabledTabs = [] }: Ranki
                 const isActive = tab === activeTab;
                 const isDisabled = disabledTabs.includes(tab);
                 return (
-                    <TouchableOpacity
+                    <AppTouchable
                         key={tab}
-                        style={[styles.tab, isDisabled && styles.disabledTab]}
-                        onPress={() => !isDisabled && onTabChange(tab)}
-                        activeOpacity={isDisabled ? 1 : 0.7}
+                        style={styles.tab}
+                        onPress={() => onTabChange(tab)}
+                        disabled={isDisabled}
+                        // 기존 disabledTab(opacity 0.3) 과 동일한 비활성 톤 유지
+                        disabledOpacity={0.3}
+                        // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                        cooldownMs={0}
                     >
                         <Text style={[styles.tabText, isActive && styles.activeTabText, isDisabled && styles.disabledTabText]}>
                             {TAB_LABELS[tab]}
                         </Text>
-                    </TouchableOpacity>
+                    </AppTouchable>
                 );
             })}
             <Animated.View

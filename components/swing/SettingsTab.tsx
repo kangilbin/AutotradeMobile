@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AppTouchable from '../common/AppTouchable';
+import AppButton from '../common/AppButton';
 import { SwingItem, AvailableCapitalResponse } from '../../types/swing';
 import { updateSwingSettings, getAvailableCapital } from '../../contexts/backEndApi';
 import { useAccountStore } from '../../stores/useAccountStore';
@@ -181,20 +183,21 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                 {/* 편집 헤더 */}
                 <View style={styles.editHeader}>
                     {!isEditMode ? (
-                        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                        <AppTouchable style={styles.editButton} onPress={handleEdit}>
                             <Ionicons name="create-outline" size={16} color="#4ECDC4" />
                             <Text style={styles.editButtonText}>편집</Text>
-                        </TouchableOpacity>
+                        </AppTouchable>
                     ) : (
                         <View style={styles.editButtonsRow}>
-                            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                            <AppTouchable style={styles.cancelButton} onPress={handleCancel}>
                                 <Ionicons name="close-outline" size={16} color="#64748B" />
                                 <Text style={styles.cancelButtonText}>취소</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                            </AppTouchable>
+                            {/* 설정 저장(PUT) — 완료될 때까지 재탭 차단 */}
+                            <AppTouchable style={styles.saveButton} onPress={handleSave}>
                                 <Ionicons name="checkmark-outline" size={16} color="#4ECDC4" />
                                 <Text style={styles.saveButtonText}>완료</Text>
-                            </TouchableOpacity>
+                            </AppTouchable>
                         </View>
                     )}
                 </View>
@@ -254,12 +257,14 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
                                 {/* TODO: 이동평균선(MULTI_MA), 일목균형표(ICHIMOKU) 개발 후 활성화 */}
-                                <TouchableOpacity
+                                <AppTouchable
                                     style={[
                                         styles.radioOption,
                                         form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioOptionSelected
                                     ]}
                                     onPress={() => handleSwingTypeChange(SWING_TYPES.SINGLE_MA)}
+                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
                                 >
                                     <View style={[
                                         styles.radioCircle,
@@ -273,7 +278,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                                     ]}>
                                         {SWING_TYPE_LABELS[SWING_TYPES.SINGLE_MA]}
                                     </Text>
-                                </TouchableOpacity>
+                                </AppTouchable>
                             </View>
                         ) : (
                             <Text style={styles.value}>
@@ -291,13 +296,16 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                             <Text style={styles.label}>보유수량</Text>
                             <Text style={styles.value}>{swingData.HLDG_QTY.toLocaleString()}주</Text>
                         </View>
-                        <TouchableOpacity
+                        {/* 실제 주문은 onSellAll 이 띄우는 Alert 확인 버튼 안에서 나간다.
+                            여기 버튼이 막아주는 건 Alert 이 여러 개 쌓이는 것까지이고,
+                            주문 중복 방지는 detail.tsx 의 sellingRef 가 담당한다. */}
+                        <AppButton
                             style={styles.sellAllButton}
+                            textStyle={styles.sellAllButtonText}
                             onPress={onSellAll}
-                        >
-                            <Ionicons name="cash-outline" size={18} color="#FFFFFF" />
-                            <Text style={styles.sellAllButtonText}>전량 매도</Text>
-                        </TouchableOpacity>
+                            title="전량 매도"
+                            icon={<Ionicons name="cash-outline" size={18} color="#FFFFFF" />}
+                        />
                         <Text style={styles.marketPriceNotice}>
                             ※ 현재 시장가로 즉시 매도됩니다
                         </Text>

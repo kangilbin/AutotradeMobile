@@ -3,10 +3,10 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     Alert,
 } from "react-native";
+import AppTouchable from "../../../components/common/AppTouchable";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
@@ -89,7 +89,7 @@ export default function UserScreen() {
         showArrow?: boolean;
         danger?: boolean;
     }) => (
-        <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+        <AppTouchable style={styles.menuItem} onPress={onPress}>
             <View style={styles.menuItemLeft}>
                 <View style={[styles.iconContainer, danger && styles.iconContainerDanger]}>
                     <Ionicons 
@@ -110,7 +110,7 @@ export default function UserScreen() {
             {showArrow && (
                 <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
             )}
-        </TouchableOpacity>
+        </AppTouchable>
     );
 
     return (
@@ -135,9 +135,9 @@ export default function UserScreen() {
                     </View>
                     <Text style={styles.userName}>{userName}</Text>
                     <Text style={styles.userPhone}>{userPhone}</Text>
-                    <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+                    <AppTouchable style={styles.editProfileButton} onPress={handleEditProfile}>
                         <Text style={styles.editProfileText}>프로필 수정</Text>
-                    </TouchableOpacity>
+                    </AppTouchable>
                 </View>
 
                 {/* Account Info Card */}
@@ -190,10 +190,10 @@ export default function UserScreen() {
                 </View>
 
                 {/* Logout Button */}
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <AppTouchable style={styles.logoutButton} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={20} color="#FF6B6B" />
                     <Text style={styles.logoutText}>로그아웃</Text>
-                </TouchableOpacity>
+                </AppTouchable>
 
                 <View style={styles.bottomSpacing} />
             </ScrollView>
