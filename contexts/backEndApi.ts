@@ -5,7 +5,7 @@ import { AxiosError, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {router} from "expo-router";
 import { getDeviceId, getDeviceName } from '../utils/device';
-import { AccountStatus, ChooseAccountRequest} from "../types/account";
+import { AccountStatus, ChooseAccountRequest, DeleteImpactResponse} from "../types/account";
 import {AddAuthRequest, AuthStatus, GoogleLoginRequest, GoogleTokenRefreshRequest, LoginResponse} from "../types/auth";
 import {
     StockPriceResponse,
@@ -369,6 +369,16 @@ export const addAuth = async (param: AddAuthRequest): Promise<AuthStatus | undef
     }
 };
 
+// 권한(보안키) 삭제 영향도 조회 — 함께 사라지는 계좌·자동매매, 보유 포지션 여부
+export const getAuthDeleteImpact = async (authId: number): Promise<DeleteImpactResponse | undefined> => {
+    try {
+        const response = await api.get(`/auths/${authId}/delete-impact`);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '삭제 영향도 조회');
+    }
+};
+
 // 권한 삭제
 export const deleteAuth = async (authId: number): Promise<boolean> => {
     try {
@@ -407,6 +417,16 @@ export const getAccountList = async (): Promise<AccountStatus[] | undefined> => 
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '계좌 목록');
+    }
+}
+
+// 계좌 삭제 영향도 조회 — 함께 사라지는 자동매매, 보유 포지션 여부
+export const getAccountDeleteImpact = async (accountId: number): Promise<DeleteImpactResponse | undefined> => {
+    try {
+        const response = await api.get(`/accounts/${accountId}/delete-impact`);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '삭제 영향도 조회');
     }
 }
 

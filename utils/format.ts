@@ -27,6 +27,17 @@ export const formatNumber = (num: number | string | undefined | null): string =>
 };
 
 /**
+ * 계좌번호 표시용 포맷 (뒤 2자리 앞에 하이픈)
+ * @param accountNo 계좌번호
+ * @returns 포맷팅된 문자열 (예: "5012345601" → "50123456-01")
+ */
+export const formatAccountNo = (accountNo: string | undefined | null): string => {
+    if (!accountNo) return '';
+    if (accountNo.length <= 2) return accountNo;
+    return `${accountNo.slice(0, -2)}-${accountNo.slice(-2)}`;
+};
+
+/**
  * 수익/손실 금액에 따른 색상 반환
  * @param amount 금액
  * @returns 색상 코드 (양수: 빨강, 음수: 파랑)

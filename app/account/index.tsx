@@ -3,11 +3,14 @@ import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert} from 'react
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 import {useRouter, useFocusEffect} from 'expo-router';
-import {getAccountList, deleteAccount} from '../../contexts/backEndApi';
+import {getAccountList, deleteAccount, getAccountDeleteImpact, useApiLoading} from '../../contexts/backEndApi';
 import {AccountStatus} from "../../types/account";
 import {useAccountStore} from "../../stores/useAccountStore";
 import {chooseAuth} from '../../contexts/backEndApi';
 import {Colors, FontSizes, Spacing, BorderRadius} from '../../constants';
+import {formatAccountNo} from '../../utils/format';
+import {buildDeleteImpactAlert} from '../../utils/deleteImpact';
+import LoadingIndicator from '../../components/LoadingIndicator';
 import ReanimatedSwipeable, {type SwipeableMethods} from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {useAnimatedStyle, SharedValue} from 'react-native-reanimated';
 
@@ -15,6 +18,8 @@ export default function AccountListScreen() {
     const router = useRouter();
     const [accounts, setAccounts] = useState<AccountStatus[]>([]);
     const setAccount = useAccountStore((state) => state.setAccount);
+    // 삭제 영향도 조회 동안 화면이 멈춘 것처럼 보이지 않도록 전역 로딩을 표시
+    const loading = useApiLoading();
 
     useFocusEffect(
         useCallback(() => {
@@ -41,29 +46,43 @@ export default function AccountListScreen() {
         router.push('home');
     }, [setAccount, router]);
 
-    const handleDelete = useCallback((account: AccountStatus) => {
-        Alert.alert(
-            '계좌 삭제',
-            `${account.ACCOUNT_NO.slice(0, -2)}-${account.ACCOUNT_NO.slice(-2)} 계좌를 삭제하시겠습니까?`,
-            [
-                {
-                    text: '취소',
-                    style: 'cancel',
-                    onPress: () => getSwipeableRef(account.ACCOUNT_ID).current?.close(),
-                },
-                {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: async () => {
-                        const success = await deleteAccount(account.ACCOUNT_ID);
-                        if (success) {
-                            setAccounts(prev => prev.filter(a => a.ACCOUNT_ID !== account.ACCOUNT_ID));
-                        }
-                    },
-                },
-            ],
+    const handleDelete = useCallback(async (account: AccountStatus) => {
+        const closeSwipe = () => getSwipeableRef(account.ACCOUNT_ID).current?.close();
+
+        // 계좌를 지우면 그 계좌의 자동매매도 함께 사라진다. 무엇이 사라지는지,
+        // 감시가 끊긴 채 방치될 주식이 있는지 먼저 확인한다.
+        const impact = await getAccountDeleteImpact(account.ACCOUNT_ID);
+        // 영향도를 모르는 채 확인창을 띄우면 경고 없이 포지션이 날아가는 경로가 된다 → 중단
+        if (!impact) {
+            closeSwipe();
+            return;
+        }
+
+        const {title, message} = buildDeleteImpactAlert(
+            {kind: 'account', label: formatAccountNo(account.ACCOUNT_NO)},
+            impact,
         );
-    }, []);
+
+        Alert.alert(title, message, [
+            {
+                text: '취소',
+                style: 'cancel',
+                onPress: closeSwipe,
+            },
+            {
+                text: '삭제',
+                style: 'destructive',
+                onPress: async () => {
+                    const success = await deleteAccount(account.ACCOUNT_ID);
+                    if (success) {
+                        setAccounts(prev => prev.filter(a => a.ACCOUNT_ID !== account.ACCOUNT_ID));
+                    }
+                    // 실패해도 열린 행이 남지 않도록 모든 종료 경로에서 닫는다
+                    closeSwipe();
+                },
+            },
+        ]);
+    }, [getSwipeableRef]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -106,9 +125,7 @@ export default function AccountListScreen() {
                                 </View>
                                 <View style={styles.accountInfo}>
                                     <Text style={styles.accountNo}>
-                                        {account.ACCOUNT_NO
-                                            ? `${account.ACCOUNT_NO.slice(0, -2)}-${account.ACCOUNT_NO.slice(-2)}`
-                                            : account.ACCOUNT_NO}
+                                        {formatAccountNo(account.ACCOUNT_NO)}
                                     </Text>
                                     <View style={[
                                         styles.modeBadge,
@@ -138,6 +155,7 @@ export default function AccountListScreen() {
 
             <View style={styles.bottomSpacing} />
         </ScrollView>
+        {loading && <LoadingIndicator />}
         </SafeAreaView>
     );
 }
