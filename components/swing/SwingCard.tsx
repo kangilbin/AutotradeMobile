@@ -25,8 +25,13 @@ interface SwingCardProps {
 function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
     const profitColor = getProfitLossColor(item.EVLU_PFLS_AMT);
     const isProfit = item.EVLU_PFLS_AMT >= 0;
+    // 매수 전에는 현재가·매입가가 비어 있어 등락을 따질 수 없다.
+    // 이때도 아이콘을 그리면 'remove'(가로 막대)가 formatPrice 의 '-' 옆에 붙어 '--' 로 보인다.
+    const hasPriceComparison = item.PRPR != null && item.ENTRY_PRICE != null;
     const priceDiff = (item.PRPR ?? 0) - (item.ENTRY_PRICE ?? 0);
-    const priceColor = getProfitLossColor(priceDiff);
+    // getProfitLossColor 는 0 을 수익(빨강)으로 취급하므로, 비교 불가일 때 그대로 쓰면
+    // 매수도 안 한 종목의 '-' 가 빨갛게 나온다.
+    const priceColor = hasPriceComparison ? getProfitLossColor(priceDiff) : Colors.textMuted;
     const priceTrendIcon = priceDiff > 0 ? 'caret-up' : priceDiff < 0 ? 'caret-down' : 'remove';
 
     return (
@@ -70,7 +75,9 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
                         <Text style={[styles.priceCurrentValue, { color: priceColor }]}>
                             {formatPrice(item.PRPR, mrktCode)}
                         </Text>
-                        <Ionicons name={priceTrendIcon} size={12} color={priceColor} style={styles.priceTrendIcon} />
+                        {hasPriceComparison && (
+                            <Ionicons name={priceTrendIcon} size={12} color={priceColor} style={styles.priceTrendIcon} />
+                        )}
                     </View>
                 </View>
             </View>

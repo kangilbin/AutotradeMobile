@@ -31,10 +31,14 @@ export default function RootLayout() {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="account" options={{ headerShown: false }} />
+            {/* headerShown 은 Stack 에 한 번만 건다.
+                화면별로 걸면 선언이 빠진 라우트(index 등)에 기본 헤더가 붙어
+                라우트 이름이 타이틀로 노출된다. 하위 _layout 들과 동일한 방식. */}
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="account" />
             </Stack>
             {/* 전역 로딩 오버레이 — Stack 형제로 두어 모든 화면 위에 덮인다 */}
             <ApiLoadingOverlay />
