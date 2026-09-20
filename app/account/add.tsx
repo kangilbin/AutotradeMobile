@@ -22,12 +22,14 @@ import {
     AddAccountRequest,
     addAuth,
     deleteAuth,
+    getAuthDeleteImpact,
     getAuthList,
     verifyAccount,
 } from "../../contexts/backEndApi";
 import {AddAuthRequest, AuthStatus} from "../../types/auth";
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Colors, Shadows, FontSizes, Spacing, BorderRadius} from '../../constants/theme';
+import {buildDeleteImpactAlert} from '../../utils/deleteImpact';
 
 /* 보안키 입력 폼 초기값 — 초기 상태와 리셋 경로가 어긋나지 않도록 한 곳에서 관리 */
 const EMPTY_AUTH: AddAuthRequest = {SIMULATION_YN: 'N', AUTH_NAME: '', API_KEY: '', SECRET_KEY: ''};
@@ -146,27 +148,33 @@ export default function AddAccountScreen() {
         }
     };
 
-    const handleDeleteAuth = (auth: AuthStatus) => {
-        Alert.alert(
-            '보안키 삭제',
-            `'${auth.AUTH_NAME}'를 삭제하시겠습니까?`,
-            [
-                {text: '취소', style: 'cancel'},
-                {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: async () => {
-                        const success = await deleteAuth(auth.AUTH_ID);
-                        if (success) {
-                            setAuthList(prev => prev.filter(a => a.AUTH_ID !== auth.AUTH_ID));
-                            if (form.AUTH_ID === auth.AUTH_ID) {
-                                handleChange('AUTH_ID', 0);
-                            }
-                        }
-                    },
-                },
-            ]
+    const handleDeleteAuth = async (auth: AuthStatus) => {
+        // 보안키를 지우면 그 키로 등록한 계좌 전체와 그 계좌들의 자동매매까지 사라진다.
+        // 영향도를 모른 채 확인창을 띄우면 경고 없이 보유 포지션이 방치되므로, 실패 시 중단한다.
+        const impact = await getAuthDeleteImpact(auth.AUTH_ID);
+        if (!impact) return;
+
+        const {title, message} = buildDeleteImpactAlert(
+            {kind: 'auth', label: auth.AUTH_NAME},
+            impact,
         );
+
+        Alert.alert(title, message, [
+            {text: '취소', style: 'cancel'},
+            {
+                text: '삭제',
+                style: 'destructive',
+                onPress: async () => {
+                    const success = await deleteAuth(auth.AUTH_ID);
+                    if (success) {
+                        setAuthList(prev => prev.filter(a => a.AUTH_ID !== auth.AUTH_ID));
+                        if (form.AUTH_ID === auth.AUTH_ID) {
+                            handleChange('AUTH_ID', 0);
+                        }
+                    }
+                },
+            },
+        ]);
     };
 
     const isFormValid = form.ACCOUNT_NO.length > 0 && form.AUTH_ID > 0;
