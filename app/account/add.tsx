@@ -11,11 +11,12 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     useWindowDimensions,
     View,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
+import AppTouchable from '../../components/common/AppTouchable';
+import AppButton from '../../components/common/AppButton';
 import {useRouter} from 'expo-router';
 import {
     addAccount,
@@ -230,17 +231,17 @@ export default function AddAccountScreen() {
                             </View>
                             <Text style={styles.inputLabel}>보안키</Text>
                             <View style={styles.authRow}>
-                                <Pressable style={styles.selectField} onPress={() => setPickerVisible(true)}>
+                                <AppTouchable style={styles.selectField} onPress={() => setPickerVisible(true)}>
                                     <Text style={form.AUTH_ID ? styles.selectText : styles.selectPlaceholder}>
                                         {form.AUTH_ID
                                             ? authList.find(a => a.AUTH_ID === form.AUTH_ID)?.AUTH_NAME
                                             : '보안키를 선택하세요'}
                                     </Text>
                                     <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
-                                </Pressable>
-                                <TouchableOpacity style={styles.authAddBtn} onPress={() => setIsAddModalVisible(true)}>
+                                </AppTouchable>
+                                <AppTouchable style={styles.authAddBtn} onPress={() => setIsAddModalVisible(true)}>
                                     <Ionicons name="add" size={20} color={Colors.textWhite} />
-                                </TouchableOpacity>
+                                </AppTouchable>
                             </View>
                         </View>
                     </Pressable>
@@ -248,20 +249,23 @@ export default function AddAccountScreen() {
 
                 {/* 하단 고정 등록 버튼 — absolute가 아닌 형제 플렉스라 키보드와 함께 밀린다 */}
                 <View style={[styles.bottomBar, sheetFooterPadding]}>
-                    <TouchableOpacity
+                    {/* 기존 isSubmitting 상태를 그대로 loading 으로 넘긴다 (모래시계 → 스피너) */}
+                    <AppButton
                         style={[styles.submitButton, isFormValid && !isSubmitting ? styles.submitEnabled : styles.submitDisabled]}
-                        disabled={!isFormValid || isSubmitting}
+                        textStyle={styles.submitText}
+                        disabled={!isFormValid}
+                        loading={isSubmitting}
                         onPress={handleSave}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons
-                            name={isSubmitting ? "hourglass-outline" : "checkmark-circle-outline"}
-                            size={20}
-                            color={Colors.textWhite}
-                            style={styles.submitIcon}
-                        />
-                        <Text style={styles.submitText}>{isSubmitting ? '검증 중...' : '계좌 등록'}</Text>
-                    </TouchableOpacity>
+                        title="계좌 등록"
+                        loadingText="검증 중..."
+                        icon={
+                            <Ionicons
+                                name="checkmark-circle-outline"
+                                size={20}
+                                color={Colors.textWhite}
+                            />
+                        }
+                    />
                 </View>
             </KeyboardAvoidingView>
 
@@ -278,9 +282,9 @@ export default function AddAccountScreen() {
                         <View style={styles.sheetHandle} />
                         <View style={styles.pickerHeader}>
                             <Text style={styles.pickerHeaderTitle}>보안키 선택</Text>
-                            <TouchableOpacity onPress={() => setPickerVisible(false)}>
+                            <AppTouchable onPress={() => setPickerVisible(false)}>
                                 <Ionicons name="close" size={24} color={Colors.textSecondary} />
-                            </TouchableOpacity>
+                            </AppTouchable>
                         </View>
                         <FlatList
                             data={authList}
@@ -288,7 +292,7 @@ export default function AddAccountScreen() {
                             style={styles.sheetList}
                             contentContainerStyle={styles.pickerListContent}
                             renderItem={({item}) => (
-                                <Pressable
+                                <AppTouchable
                                     style={[
                                         styles.authListItem,
                                         form.AUTH_ID === item.AUTH_ID && styles.authListItemSelected,
@@ -309,13 +313,13 @@ export default function AddAccountScreen() {
                                             {item.AUTH_NAME}
                                         </Text>
                                     </View>
-                                    <TouchableOpacity
+                                    <AppTouchable
                                         onPress={() => handleDeleteAuth(item)}
                                         hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
                                     >
                                         <Ionicons name="trash-outline" size={18} color={Colors.error} />
-                                    </TouchableOpacity>
-                                </Pressable>
+                                    </AppTouchable>
+                                </AppTouchable>
                             )}
                             ListEmptyComponent={
                                 <View style={styles.authListEmptyBox}>
@@ -345,9 +349,9 @@ export default function AddAccountScreen() {
                         <View style={styles.sheetHandle} />
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>보안키 추가</Text>
-                            <TouchableOpacity onPress={closeAddModal}>
+                            <AppTouchable onPress={closeAddModal}>
                                 <Ionicons name="close" size={24} color={Colors.textSecondary} />
-                            </TouchableOpacity>
+                            </AppTouchable>
                         </View>
 
                         {/* 입력부만 스크롤 — 등록 버튼은 항상 시트 하단에 남는다 */}
@@ -360,10 +364,11 @@ export default function AddAccountScreen() {
                             {/* 투자 모드 - 세그먼트 칩 */}
                             <Text style={styles.inputLabel}>투자 모드</Text>
                             <View style={styles.chipContainer}>
-                                <TouchableOpacity
+                                <AppTouchable
                                     style={[styles.chip, newAuth.SIMULATION_YN === 'N' && styles.chipSelected]}
                                     onPress={() => setNewAuth(prev => ({...prev, SIMULATION_YN: 'N'}))}
-                                    activeOpacity={0.7}
+                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
                                 >
                                     <Ionicons
                                         name="trending-up-outline"
@@ -373,11 +378,12 @@ export default function AddAccountScreen() {
                                     <Text style={[styles.chipText, newAuth.SIMULATION_YN === 'N' && styles.chipTextSelected]}>
                                         실전
                                     </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </AppTouchable>
+                                <AppTouchable
                                     style={[styles.chip, newAuth.SIMULATION_YN === 'Y' && styles.chipSelected]}
                                     onPress={() => setNewAuth(prev => ({...prev, SIMULATION_YN: 'Y'}))}
-                                    activeOpacity={0.7}
+                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
                                 >
                                     <Ionicons
                                         name="flask-outline"
@@ -387,7 +393,7 @@ export default function AddAccountScreen() {
                                     <Text style={[styles.chipText, newAuth.SIMULATION_YN === 'Y' && styles.chipTextSelected]}>
                                         모의
                                     </Text>
-                                </TouchableOpacity>
+                                </AppTouchable>
                             </View>
 
                             <Text style={styles.inputLabel}>보안키 이름</Text>
@@ -429,20 +435,21 @@ export default function AddAccountScreen() {
                         </ScrollView>
 
                         <View style={[styles.sheetFooter, sheetFooterPadding]}>
-                            <TouchableOpacity
+                            <AppButton
                                 style={[styles.submitButton, isAuthEnabled ? styles.submitEnabled : styles.submitDisabled]}
+                                textStyle={styles.submitText}
                                 disabled={!isAuthEnabled}
                                 onPress={handleAddAuth}
-                                activeOpacity={0.8}
-                            >
-                                <Ionicons
-                                    name="checkmark-circle-outline"
-                                    size={20}
-                                    color={Colors.textWhite}
-                                    style={styles.submitIcon}
-                                />
-                                <Text style={styles.submitText}>등록</Text>
-                            </TouchableOpacity>
+                                title="등록"
+                                loadingText="등록 중..."
+                                icon={
+                                    <Ionicons
+                                        name="checkmark-circle-outline"
+                                        size={20}
+                                        color={Colors.textWhite}
+                                    />
+                                }
+                            />
                         </View>
                     </View>
                 </KeyboardAvoidingView>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import AppTouchable from '../common/AppTouchable';
 import { Colors, FontSizes, Spacing } from '../../constants/theme';
 import VolumePowerBar from './VolumePowerBar';
 import { formatPrice as formatPriceUtil } from '../../utils/format';
@@ -68,10 +68,9 @@ function RankingListItem({
     const displayRate = changeRate.startsWith('-') ? changeRate : `${rateSign}${changeRate}`;
 
     return (
-        <TouchableOpacity
+        <AppTouchable
             style={styles.card}
             onPress={() => onPress?.(code, name)}
-            activeOpacity={0.7}
         >
             {/* 상단 행: 순위 + 종목명 + 현재가 */}
             <View style={styles.topRow}>
@@ -102,7 +101,7 @@ function RankingListItem({
             {buyVolume !== undefined && sellVolume !== undefined && (
                 <VolumePowerBar buyVolume={buyVolume} sellVolume={sellVolume} />
             )}
-        </TouchableOpacity>
+        </AppTouchable>
     );
 }
 

@@ -6,8 +6,8 @@ import {
     Alert,
     ActivityIndicator,
     Linking,
-    Pressable,
 } from 'react-native';
+import AppTouchable from '../../../components/common/AppTouchable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
@@ -84,13 +84,13 @@ export default function NotificationsScreen() {
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <View style={styles.content}>
                 {permissionGranted === false && (
-                    <Pressable style={styles.permissionBanner} onPress={handleRequestPermission}>
+                    <AppTouchable style={styles.permissionBanner} onPress={handleRequestPermission}>
                         <Ionicons name="warning-outline" size={18} color="#E17055" />
                         <Text style={styles.permissionText}>
                             푸시 알림이 꺼져 있습니다. 탭하여 권한을 허용해주세요.
                         </Text>
                         <Ionicons name="chevron-forward" size={16} color="#6C757D" />
-                    </Pressable>
+                    </AppTouchable>
                 )}
 
                 <View style={styles.card}>

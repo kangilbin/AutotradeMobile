@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AppTouchable from '../common/AppTouchable';
 import { SwingItem } from '../../types/swing';
 import { MarketCode } from '../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants';
@@ -29,7 +30,7 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
     const priceTrendIcon = priceDiff > 0 ? 'caret-up' : priceDiff < 0 ? 'caret-down' : 'remove';
 
     return (
-        <TouchableOpacity style={styles.card} onPress={() => onPress(item)} activeOpacity={0.7}>
+        <AppTouchable style={styles.card} onPress={() => onPress(item)}>
             {/* 헤더: 종목명 + 코드 + 전략 태그 + 상태 뱃지 */}
             <View style={styles.header}>
                 <View style={styles.titleRow}>
@@ -102,7 +103,7 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
                     </Text>
                 </View>
             </View>
-        </TouchableOpacity>
+        </AppTouchable>
     );
 }
 

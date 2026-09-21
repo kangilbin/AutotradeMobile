@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import AppTouchable from './common/AppTouchable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAccountStore } from '../stores/useAccountStore';
 import { useMarketStore } from '../utils/useMarketStore';
@@ -90,11 +91,15 @@ export default function TopHeader() {
                                 ]}
                             />
                             {MARKETS_ORDER.map((code) => (
-                                <TouchableOpacity
+                                <AppTouchable
                                     key={code}
                                     style={styles.toggleTab}
                                     onPress={() => handleMarketSelect(code)}
-                                    activeOpacity={0.8}
+                                    // 슬라이딩 인디케이터가 따로 움직이므로 scale/ripple 은 끈다
+                                    pressedScale={1}
+                                    ripple={false}
+                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
                                 >
                                     <Text
                                         numberOfLines={1}
@@ -104,18 +109,18 @@ export default function TopHeader() {
                                         ]}>
                                         {MARKETS[code].label}
                                     </Text>
-                                </TouchableOpacity>
+                                </AppTouchable>
                             ))}
                         </View>
                     </View>
                     <Text style={styles.userName}>{userName}님</Text>
                 </View>
-                <TouchableOpacity style={styles.rightSection} onPress={handleAccountPress}>
+                <AppTouchable style={styles.rightSection} onPress={handleAccountPress}>
                     <Text style={styles.accountLabel}>계좌번호</Text>
                     <Text style={styles.accountNo}>
                         {account?.ACCOUNT_NO.slice(0, -2)}-{account?.ACCOUNT_NO.slice(-2)}
                     </Text>
-                </TouchableOpacity>
+                </AppTouchable>
             </View>
         </SafeAreaView>
     );

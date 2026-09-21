@@ -1,5 +1,6 @@
 import {useEffect, useRef} from 'react';
-import { Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import { Text, Animated, StyleSheet } from 'react-native';
+import AppTouchable from './common/AppTouchable';
 
 interface AuthToggleProps {
     isOn: boolean;
@@ -29,13 +30,16 @@ export default function AuthToggle({ isOn, onText, offText, onToggle}: AuthToggl
     });
 
     return (
-        <TouchableOpacity onPress={onToggle} activeOpacity={0.8}>
+        // 토글 자체가 슬라이드 애니메이션을 가지므로 scale/ripple 은 끄고 투명도 변화만 준다
+        // 토글은 ON→OFF 즉시 정정이 정상 동작이라 쿨다운을 두지 않는다
+        // (실제 중복 요청은 onToggle 이 Promise 라 재진입 가드가 막는다)
+        <AppTouchable onPress={onToggle} pressedScale={1} ripple={false} cooldownMs={0}>
             <Animated.View style={[styles.toggleContainer, { backgroundColor }]}>
                 {/* ON 텍스트는 왼쪽에 */}
                 <Text style={[styles.text, isOn ? styles.leftText : styles.rightText]}>{isOn ? onText : offText}</Text>
                 <Animated.View style={[styles.circle, { transform: [{ translateX }] }]} />
             </Animated.View>
-        </TouchableOpacity>
+        </AppTouchable>
     );
 };
 const styles = StyleSheet.create({

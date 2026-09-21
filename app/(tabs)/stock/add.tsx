@@ -3,7 +3,6 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
     ScrollView,
     Platform,
@@ -11,9 +10,10 @@ import {
 import {useRouter, useLocalSearchParams} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
-import {addStockAuto, getAvailableCapital, useApiLoading} from "../../../contexts/backEndApi";
+import {addStockAuto, getAvailableCapital} from "../../../contexts/backEndApi";
 import {AddStockAutoRequest} from "../../../types/stock";
-import LoadingIndicator from "../../../components/LoadingIndicator";
+import AppTouchable from "../../../components/common/AppTouchable";
+import AppButton from "../../../components/common/AppButton";
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
 import { MarketCode, isOverseasMarket } from '../../../types/market';
@@ -107,7 +107,6 @@ export default function AddStockScreen() {
     const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const [validationErrors, setValidationErrors] = useState<{[key: string]: boolean}>({});
-    const loading = useApiLoading();
 
     const isMultiMA = form.SWING_TYPE === SWING_TYPES.MULTI_MA;
 
@@ -225,7 +224,7 @@ export default function AddStockScreen() {
 
     return (
         <DismissKeyboardView style={styles.container}>
-            {loading && <LoadingIndicator />}
+            {/* 등록(POST) 중 로딩 표시는 루트의 ApiLoadingOverlay 가 전역으로 처리한다 */}
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -255,11 +254,12 @@ export default function AddStockScreen() {
                         {SWING_TYPE_OPTIONS.map((option) => {
                             const selected = form.SWING_TYPE === option.value;
                             return (
-                                <TouchableOpacity
+                                <AppTouchable
                                     key={option.value}
                                     style={[styles.chip, selected && styles.chipSelected]}
                                     onPress={() => handleChange('SWING_TYPE', option.value)}
-                                    activeOpacity={0.7}
+                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
                                 >
                                     <Ionicons
                                         name={option.icon as any}
@@ -269,7 +269,7 @@ export default function AddStockScreen() {
                                     <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                                         {option.label}
                                     </Text>
-                                </TouchableOpacity>
+                                </AppTouchable>
                             );
                         })}
                     </View>
@@ -372,14 +372,15 @@ export default function AddStockScreen() {
                     </View>
                     <View style={styles.presetContainer}>
                         {amountPresets.map((preset) => (
-                            <TouchableOpacity
+                            <AppTouchable
                                 key={preset.value}
                                 style={[
                                     styles.presetButton,
                                     form.INIT_AMOUNT === preset.value && styles.presetButtonActive,
                                 ]}
                                 onPress={() => handleChange('INIT_AMOUNT', preset.value)}
-                                activeOpacity={0.7}
+                                // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                cooldownMs={0}
                             >
                                 <Text style={[
                                     styles.presetText,
@@ -387,15 +388,14 @@ export default function AddStockScreen() {
                                 ]}>
                                     {preset.label}
                                 </Text>
-                            </TouchableOpacity>
+                            </AppTouchable>
                         ))}
-                        <TouchableOpacity
+                        <AppTouchable
                             style={[
                                 styles.presetButton,
                                 !amountPresets.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetButtonActive,
                             ]}
                             onPress={() => swingAmountRef.current?.focus()}
-                            activeOpacity={0.7}
                         >
                             <Text style={[
                                 styles.presetText,
@@ -403,7 +403,7 @@ export default function AddStockScreen() {
                             ]}>
                                 직접입력
                             </Text>
-                        </TouchableOpacity>
+                        </AppTouchable>
                     </View>
                     {!capitalLoading && isOverCapital && (
                         <View style={styles.capitalWarning}>
@@ -416,23 +416,25 @@ export default function AddStockScreen() {
                 </View>
 
                 {/* 등록 버튼 */}
-                <TouchableOpacity
+                {/* handleSave 가 async 라 등록 중에는 스피너가 돌고 재탭이 막힌다 */}
+                <AppButton
                     style={[
                         styles.submitButton,
                         isFormValid() ? styles.submitEnabled : styles.submitDisabled,
                     ]}
+                    textStyle={styles.submitText}
                     onPress={handleSave}
                     disabled={!isFormValid()}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons
-                        name="checkmark-circle-outline"
-                        size={20}
-                        color={Colors.textWhite}
-                        style={styles.submitIcon}
-                    />
-                    <Text style={styles.submitText}>등록하기</Text>
-                </TouchableOpacity>
+                    title="등록하기"
+                    loadingText="등록 중..."
+                    icon={
+                        <Ionicons
+                            name="checkmark-circle-outline"
+                            size={20}
+                            color={Colors.textWhite}
+                        />
+                    }
+                />
 
                 <View style={styles.bottomSpacer} />
             </ScrollView>

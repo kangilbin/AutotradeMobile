@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import AppTouchable from '../../components/common/AppTouchable';
 import { router } from 'expo-router';
 import { Colors, FontSizes, Spacing } from '../../constants';
 import { useFluctuationRank, useVolumeRank, useVolumePowerRank } from '../../hooks/useRanking';
@@ -65,16 +66,17 @@ export default function HomeScreen() {
     const exchangeSelector = isOverseas ? (
         <View style={styles.exchangeRow}>
             {US_EXCHANGE_CODES.map((code) => (
-                <TouchableOpacity
+                <AppTouchable
                     key={code}
                     style={[styles.exchangeChip, rankingExcd === code && styles.exchangeChipActive]}
                     onPress={() => setRankingExcd(code)}
-                    activeOpacity={0.8}
+                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                    cooldownMs={0}
                 >
                     <Text style={[styles.exchangeChipText, rankingExcd === code && styles.exchangeChipTextActive]}>
                         {MARKETS[code].label}
                     </Text>
-                </TouchableOpacity>
+                </AppTouchable>
             ))}
         </View>
     ) : null;

@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
     View, 
     Text, 
     StyleSheet, 
-    ScrollView, 
-    TouchableOpacity, 
+    ScrollView,
     Alert
 } from 'react-native';
+import AppTouchable from '../../../components/common/AppTouchable';
+import AppButton from '../../../components/common/AppButton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +28,13 @@ export default function SwingDetailScreen() {
     const [swingData, setSwingData] = useState<SwingItem | null>(null);
     const account = useAccountStore((state) => state.account);
     const mrktCode = useMarketStore((s) => s.mrktCode);
+
+    // 실제 매도 주문은 Alert 확인 버튼 안에서 나간다.
+    // 즉 AppButton/AppTouchable 의 재진입 가드는 "Alert 을 여는 것"까지만 막아주고
+    // 주문 전송 자체는 감싸지 못한다. backEndApi 의 중복 요청 차단도 본문이 같을 때만
+    // 걸리는데, 그 사이 보유수량이 바뀌면 본문이 달라져 빠져나간다.
+    // 가장 위험한 동작이라 주문 전송 구간을 여기서 직접 잠근다.
+    const sellingRef = useRef(false);
 
     // 통화 표시 기준: 스윙에 저장된 시장 코드 우선, 없으면 전역 마켓 토글 값
     // (전역 토글과 무관하게 해당 스윙의 실제 시장 기준으로 표시하기 위함)
@@ -157,6 +165,8 @@ export default function SwingDetailScreen() {
                     text: '매도',
                     style: 'destructive',
                     onPress: async () => {
+                        if (sellingRef.current) return;
+                        sellingRef.current = true;
                         try {
                             const result = await sellAll({
                                 ST_CODE: swingData.ST_CODE,
@@ -175,6 +185,8 @@ export default function SwingDetailScreen() {
                             }
                         } catch (error) {
                             Alert.alert('오류', '전량 매도 중 오류가 발생했습니다.');
+                        } finally {
+                            sellingRef.current = false;
                         }
                     },
                 },
@@ -273,25 +285,27 @@ export default function SwingDetailScreen() {
                             {swingData.USE_YN === 'Y' ? '활성' : '비활성'}
                         </Text>
                     </View>
-                    <TouchableOpacity
+                    <AppTouchable
                         style={styles.deleteButton}
                         onPress={handleDeleteSwing}
                     >
                         <Ionicons name="trash-outline" size={20} color="#E74C3C" />
-                    </TouchableOpacity>
+                    </AppTouchable>
                 </View>
             </View>
 
             {/* 상단 탭 */}
             <View style={styles.tabContainer}>
                 {tabs.map((tab) => (
-                    <TouchableOpacity
+                    <AppTouchable
                         key={tab.id}
                         style={[
                             styles.tab,
                             activeTab === tab.id && styles.activeTab
                         ]}
                         onPress={() => handleTabPress(tab.id)}
+                        // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                        cooldownMs={0}
                     >
                         <Ionicons 
                             name={tab.icon as any} 
@@ -304,7 +318,7 @@ export default function SwingDetailScreen() {
                         ]}>
                             {tab.title}
                         </Text>
-                    </TouchableOpacity>
+                    </AppTouchable>
                 ))}
             </View>
 
@@ -326,36 +340,36 @@ export default function SwingDetailScreen() {
             {/* 설정 탭일 때만 하단에 액션 버튼들 표시 */}
             {activeTab === 0 && (
                 <View style={styles.bottomActions}>
-                    <TouchableOpacity
+                    <AppButton
                         style={styles.secondaryButton}
+                        textStyle={styles.secondaryButtonText}
                         onPress={handleBacktesting}
-                    >
-                        <Ionicons
-                            name="analytics-outline"
-                            size={18}
-                            color="#4A90E2"
-                        />
-                        <Text style={styles.secondaryButtonText}>
-                            백테스트
-                        </Text>
-                    </TouchableOpacity>
+                        title="백테스트"
+                        icon={
+                            <Ionicons
+                                name="analytics-outline"
+                                size={18}
+                                color="#4A90E2"
+                            />
+                        }
+                    />
 
-                    <TouchableOpacity
+                    <AppButton
                         style={[
                             styles.primaryButton,
                             { backgroundColor: swingData.USE_YN === 'Y' ? '#E74C3C' : '#4ECDC4' }
                         ]}
+                        textStyle={styles.primaryButtonText}
                         onPress={handleSwingActivation}
-                    >
-                        <Ionicons
-                            name={swingData.USE_YN === 'Y' ? 'pause-circle' : 'play-circle'}
-                            size={18}
-                            color="#FFFFFF"
-                        />
-                        <Text style={styles.primaryButtonText}>
-                            {swingData.USE_YN === 'Y' ? '비활성화' : '활성화'}
-                        </Text>
-                    </TouchableOpacity>
+                        title={swingData.USE_YN === 'Y' ? '비활성화' : '활성화'}
+                        icon={
+                            <Ionicons
+                                name={swingData.USE_YN === 'Y' ? 'pause-circle' : 'play-circle'}
+                                size={18}
+                                color="#FFFFFF"
+                            />
+                        }
+                    />
                 </View>
             )}
         </View>
