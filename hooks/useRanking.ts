@@ -13,22 +13,27 @@ import { OverseasFluctuationRawItem, OverseasVolumeRawItem, OverseasVolumePowerR
 import { normalizeOverseasFluctuation, normalizeOverseasVolume, normalizeOverseasVolumePower } from '../utils/normalizeRanking';
 import { isOverseasMarket } from '../types/market';
 
+// clear: 시장(국내/미국)이 바뀌면 이전 시장 데이터는 통째로 무효다.
+// 비워두면 탭을 열 때 "데이터 없음" 조건에 걸려 새 시장 기준으로 다시 조회된다.
 interface UseFluctuationReturn {
     data: FluctuationRankItem[];
     loading: boolean;
     fetch: (rankSort: FluctuationSortCode, prcCls: FluctuationPriceCode, mrktCode?: string) => Promise<void>;
+    clear: () => void;
 }
 
 interface UseVolumeReturn {
     data: VolumeRankItem[];
     loading: boolean;
     fetch: (blngCls: VolumeBlngCode, mrktCode?: string) => Promise<void>;
+    clear: () => void;
 }
 
 interface UseVolumePowerReturn {
     data: VolumePowerRankItem[];
     loading: boolean;
     fetch: (inputIscd: VolumePowerMarketCode, mrktCode?: string) => Promise<void>;
+    clear: () => void;
 }
 
 export const useFluctuationRank = (): UseFluctuationReturn => {
@@ -52,7 +57,9 @@ export const useFluctuationRank = (): UseFluctuationReturn => {
         }
     }, []);
 
-    return { data, loading, fetch };
+    const clear = useCallback(() => setData([]), []);
+
+    return { data, loading, fetch, clear };
 };
 
 export const useVolumeRank = (): UseVolumeReturn => {
@@ -74,7 +81,9 @@ export const useVolumeRank = (): UseVolumeReturn => {
         }
     }, []);
 
-    return { data, loading, fetch };
+    const clear = useCallback(() => setData([]), []);
+
+    return { data, loading, fetch, clear };
 };
 
 export const useVolumePowerRank = (): UseVolumePowerReturn => {
@@ -96,5 +105,7 @@ export const useVolumePowerRank = (): UseVolumePowerReturn => {
         }
     }, []);
 
-    return { data, loading, fetch };
+    const clear = useCallback(() => setData([]), []);
+
+    return { data, loading, fetch, clear };
 };

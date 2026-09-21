@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, LayoutChangeEvent, ActivityIndicator } from 'react-native';
 import AppTouchable from '../../../components/common/AppTouchable';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -18,13 +18,20 @@ export default function PriceScreen() {
     const currentMrktCode = useMarketStore((s) => s.mrktCode);
     const activeMrktCode: MarketCode = (mrktCode as MarketCode) || currentMrktCode;
 
-    // 글로벌 마켓 변경 시: 진입 마켓과 달라지면 종목 검색 화면으로 이동
-    useEffect(() => {
-        if (mrktCode && isOverseasMarket(currentMrktCode) !== isOverseasMarket(mrktCode as string)) {
+    // 글로벌 마켓 변경 시: 진입 마켓과 달라지면 종목 검색 화면으로 이동.
+    // 반드시 '포커스된 화면'에서만 실행해야 한다. 탭/스택 화면은 언마운트되지 않으므로
+    // 일반 useEffect 로 두면, 사용자가 swing 탭에 있는데 백그라운드에 남아 있던 이 화면이
+    // dismissAll + replace 를 실행해 엉뚱하게 종목 검색으로 끌고 간다.
+    const marketMismatch = !!mrktCode
+        && isOverseasMarket(currentMrktCode) !== isOverseasMarket(mrktCode as string);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!marketMismatch) return;
             router.dismissAll();
             router.replace('/stock');
-        }
-    }, [currentMrktCode]);
+        }, [marketMismatch])
+    );
 
     const [unified, setUnified] = useState<UnifiedStockPrice | null>(null);
     // 첫 응답이 오기 전 화면을 빈 값(0원)으로 두면 "로딩 중"이 아니라 "가격이 0"으로 읽힌다.
@@ -34,6 +41,10 @@ export default function PriceScreen() {
     const initialScrollDone = useRef(false);
     const failCountRef = useRef(0);
     const MAX_FAIL = 3;
+    // 1초 폴링이 응답보다 빠를 수 있다(해외장·네트워크 지연). 직전 요청이 아직 안 끝났으면
+    // 이번 tick 은 건너뛴다. 겹쳐 내보내면 같은 URL 이 중첩 호출되고, 응답 순서가 뒤집혀
+    // 오래된 시세가 최신 시세를 덮어쓴다. GET 은 backEndApi 의 중복 차단 대상도 아니다.
+    const inFlightRef = useRef(false);
 
     const referencePrice = unified?.currentPrice ?? 0;
     const basePrice = unified?.basePrice ?? 0;
@@ -79,6 +90,9 @@ export default function PriceScreen() {
     // 주식 데이터 요청 → 정규화 후 저장
     const requestStockData = useCallback(async () => {
         if (!stCode) return false;
+        // 이전 요청이 아직 응답 대기 중이면 이번 호출은 버린다(실패로 세지도 않는다).
+        if (inFlightRef.current) return false;
+        inFlightRef.current = true;
 
         try {
             const response = await getStockPrice(stCode as string, activeMrktCode);
@@ -98,6 +112,8 @@ export default function PriceScreen() {
             failCountRef.current++;
             markInitialLoadFailed();
             return false;
+        } finally {
+            inFlightRef.current = false;
         }
     }, [stCode, activeMrktCode]);
 
