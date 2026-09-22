@@ -10,6 +10,11 @@ web-build/
 expo-env.d.ts
 
 # Native
+# expo prebuild 로 생성되는 네이티브 프로젝트 — 소스가 아니라 산출물이라 추적하지 않는다.
+# 클론 후에는 `npx expo prebuild` 로 재생성한다.
+/ios/
+/android/
+
 *.orig.*
 *.jks
 *.p8
