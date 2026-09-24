@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import AppTouchable from '../../components/common/AppTouchable';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Colors, FontSizes, Spacing } from '../../constants';
 import { useFluctuationRank, useVolumeRank, useVolumePowerRank } from '../../hooks/useRanking';
 import {
@@ -93,17 +93,43 @@ export default function HomeScreen() {
         }
     }, [disabledTabs]);
 
-    // 마켓 변경 시 현재 탭 데이터 재조회 (초기 로딩 포함)
     const isFirstMount = useRef(true);
+
+    // 시장이 바뀌면 이전 시장 랭킹은 세 탭 모두 무효 → 데이터를 비운다.
+    // 예전에는 활성 탭만 다시 받아서, 국내 → 미국 전환 뒤 거래량 탭을 열면
+    // data.length !== 0 이라 아래 '탭 전환 시 최초 1회' 조건에 걸리지 않고
+    // 국내장 데이터가 미국장 화면에 그대로 남아 있었다.
+    // 조회가 아니라 비우기만 하므로 백그라운드에서 실행돼도 트래픽이 발생하지 않는다.
+    const prevRankMrkt = useRef(rankMrkt);
     useEffect(() => {
-        if (activeTab === 'fluctuation') {
-            fluctuation.fetch(fluctuationSort, fluctuationPrice, rankMrkt);
-        } else if (activeTab === 'volume') {
-            volume.fetch(volumeBlng, rankMrkt);
-        } else {
-            volumePower.fetch(volumePowerMarket, rankMrkt);
-        }
+        if (prevRankMrkt.current === rankMrkt) return;
+        prevRankMrkt.current = rankMrkt;
+        fluctuation.clear();
+        volume.clear();
+        volumePower.clear();
     }, [rankMrkt]);
+
+    // 현재 탭 데이터 조회 (초기 로딩 + 시장 변경). 화면이 포커스됐을 때만 실행한다.
+    // 탭 네비게이터는 한 번 마운트한 화면을 언마운트하지 않는다. 그래서 이걸 그냥
+    // useEffect([rankMrkt]) 로 두면 swing/stock 탭에서 시장을 토글할 때마다
+    // 보이지도 않는 홈이 랭킹 API 를 같이 호출했다(로그에 찍히던 ranking/fluctuation).
+    // fetchedMrkt 가드가 '이미 이 시장으로 받아왔다'를 기억하므로,
+    // 탭을 오갈 때마다 포커스 이벤트로 재조회되는 일도 없다.
+    const fetchedMrkt = useRef<string | null>(null);
+    useFocusEffect(
+        useCallback(() => {
+            if (fetchedMrkt.current === rankMrkt) return;
+            fetchedMrkt.current = rankMrkt;
+
+            if (activeTab === 'fluctuation') {
+                fluctuation.fetch(fluctuationSort, fluctuationPrice, rankMrkt);
+            } else if (activeTab === 'volume') {
+                volume.fetch(volumeBlng, rankMrkt);
+            } else {
+                volumePower.fetch(volumePowerMarket, rankMrkt);
+            }
+        }, [rankMrkt, activeTab, fluctuationSort, fluctuationPrice, volumeBlng, volumePowerMarket])
+    );
 
     // 탭 전환 시 데이터 없으면 최초 1회 fetch
     useEffect(() => {
@@ -114,7 +140,7 @@ export default function HomeScreen() {
         }
     }, [activeTab]);
 
-    // 등락률 필터 변경 시 재조회 (마운트 시 제외 - useEffect #1이 초기 로딩 담당)
+    // 등락률 필터 변경 시 재조회 (마운트 시 제외 - 위 useFocusEffect 가 초기 로딩 담당)
     useEffect(() => {
         if (isFirstMount.current) {
             isFirstMount.current = false;

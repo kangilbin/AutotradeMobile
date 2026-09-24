@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import AppTouchable from '../../../components/common/AppTouchable';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,20 +26,17 @@ export default function SwingScreen() {
         onRefresh
     } = useSwingData(account?.ACCOUNT_NO, mrktCode);
 
+    // 포커스 진입 + 마켓 변경을 이 훅 하나가 모두 담당한다.
+    // loadData 는 useCallback([accountNo, mrktCode]) 이라 마켓이 바뀌면 함수 identity 가 새로 생기고,
+    // useFocusEffect 는 콜백 identity 가 바뀌면(포커스 상태일 때) 즉시 재실행되기 때문이다.
+    // 예전에는 여기에 mrktCode 변경 감지 useEffect 를 따로 뒀는데, 그게 바로 이 useFocusEffect 와
+    // 같은 타이밍에 겹쳐 터져 토글 1회에 /swing/list 가 2번씩 나가던 원인이었다.
+    // 백그라운드에서 마켓이 바뀐 경우엔 포커스 복귀 시점에 1회만 조회된다.
     useFocusEffect(
         useCallback(() => {
             loadData();
         }, [loadData])
     );
-
-    // 마켓 변경 시 스윙 목록 자동 재조회
-    const prevMrktCode = useRef(mrktCode);
-    useEffect(() => {
-        if (prevMrktCode.current !== mrktCode) {
-            prevMrktCode.current = mrktCode;
-            loadData();
-        }
-    }, [mrktCode, loadData]);
 
     const handleSwingPress = useCallback((swing: SwingItem) => {
         router.push({

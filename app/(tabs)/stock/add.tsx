@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
     StyleSheet,
     Text,
@@ -7,7 +7,7 @@ import {
     ScrollView,
     Platform,
 } from 'react-native';
-import {useRouter, useLocalSearchParams} from 'expo-router';
+import {useRouter, useLocalSearchParams, useFocusEffect} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
 import {addStockAuto, getAvailableCapital} from "../../../contexts/backEndApi";
@@ -70,18 +70,27 @@ export default function AddStockScreen() {
 
     // 글로벌 마켓(국내/미국 그룹)이 진입 종목과 달라지면 검색 화면으로 이동.
     // 미국 내 거래소 차이(NAS↔NYS 등)로는 튕기지 않음.
-    useEffect(() => {
-        if (mrktCode && isOverseasMarket(currentMrktCode) !== isOverseasMarket(mrktCode as string)) {
+    // 포커스된 화면에서만 실행한다 — 백그라운드에 남아 있는 이 화면이 다른 탭에 있는
+    // 사용자를 종목 검색으로 끌고 가면 안 된다(price.tsx 와 동일한 이유).
+    const marketMismatch = !!mrktCode
+        && isOverseasMarket(currentMrktCode) !== isOverseasMarket(mrktCode as string);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!marketMismatch) return;
             router.dismissAll();
             router.replace('/stock');
-        }
-    }, [currentMrktCode]);
+        }, [marketMismatch])
+    );
 
     const [capitalInfo, setCapitalInfo] = useState<AvailableCapitalResponse | null>(null);
     const [capitalLoading, setCapitalLoading] = useState(true);
 
     // 가용 자본 조회
     useEffect(() => {
+        // 시장이 어긋나 곧 검색 화면으로 되돌릴 화면이다. 버려질 화면에서 조회하지 않는다.
+        if (marketMismatch) return;
+
         const fetchCapital = async () => {
             if (!account?.ACCOUNT_NO) return;
             setCapitalLoading(true);
@@ -92,7 +101,7 @@ export default function AddStockScreen() {
             setCapitalLoading(false);
         };
         fetchCapital();
-    }, [account?.ACCOUNT_NO, effectiveMrktCode]);
+    }, [account?.ACCOUNT_NO, effectiveMrktCode, marketMismatch]);
 
     const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
