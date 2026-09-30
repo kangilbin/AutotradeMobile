@@ -352,28 +352,19 @@ export default function AddStockScreen() {
                             style={styles.amountInput}
                             placeholder="0"
                             placeholderTextColor={Colors.textMuted}
+                            // 달러도 원화처럼 정수 단위로만 입력받는다.
+                            // 소수 자리를 매 입력마다 포맷하면 "1." 같은 입력 중간 상태가 지워져 편집이 불가능하다.
                             value={
                                 form.INIT_AMOUNT
-                                    ? isOverseas
-                                        ? form.INIT_AMOUNT.toLocaleString('en-US', {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                          })
-                                        : form.INIT_AMOUNT.toLocaleString()
+                                    ? form.INIT_AMOUNT.toLocaleString(isOverseas ? 'en-US' : undefined)
                                     : ''
                             }
                             onChangeText={(text) => {
-                                if (isOverseas) {
-                                    const cleaned = text.replace(/[$,]/g, '');
-                                    const number = parseFloat(cleaned) || 0;
-                                    handleChange('INIT_AMOUNT', number);
-                                } else {
-                                    const numericValue = text.replace(/,/g, '');
-                                    const number = parseInt(numericValue) || 0;
-                                    handleChange('INIT_AMOUNT', number);
-                                }
+                                const numericValue = text.replace(/[^0-9]/g, '');
+                                const number = parseInt(numericValue) || 0;
+                                handleChange('INIT_AMOUNT', number);
                             }}
-                            keyboardType={isOverseas ? 'decimal-pad' : 'number-pad'}
+                            keyboardType="number-pad"
                             onFocus={() => handleFocus('swingAmount')}
                             onBlur={handleBlur}
                         />
