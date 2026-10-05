@@ -52,6 +52,8 @@ const useBacktesting = () => {
                     ACCOUNT_NO: formParams.ACCOUNT_NO as string,
                     INIT_AMOUNT: Number(formParams.INIT_AMOUNT),
                     SWING_TYPE: formParams.SWING_TYPE as string,
+                    // 라우트 파라미터는 문자열로 넘어온다 — 'Y' 외에는 기본값 'N'
+                    FULL_ENTRY_YN: formParams.FULL_ENTRY_YN === 'Y' ? 'Y' : 'N',
                 };
 
                 const response = await backtesting(backtestingParams);
