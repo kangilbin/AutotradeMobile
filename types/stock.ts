@@ -1,3 +1,5 @@
+import { FullEntryYn } from './swing';
+
 export type StockStatus = {
     MRKT_CODE: string
     ST_CODE: string
@@ -17,6 +19,7 @@ export type AddStockAutoRequest = {
     ACCOUNT_NO: string
     INIT_AMOUNT: number
     SWING_TYPE: string  // 'S' 단일 이평선, 'B' 일목균형표
+    FULL_ENTRY_YN?: FullEntryYn  // 매수 방식 — 생략 시 백엔드 기본값 'N'
 }
 
 // 주식 오토 설정 상태 타입

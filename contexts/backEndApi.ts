@@ -14,7 +14,7 @@ import {
     BacktestingResponse,
     StockStatus
 } from "../types/stock";
-import { SwingListResponse, AvailableCapitalResponse } from '../types/swing';
+import { SwingListResponse, AvailableCapitalResponse, FullEntryYn } from '../types/swing';
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 import { SellAllRequest } from '../types/order';
@@ -627,6 +627,7 @@ export const updateSwingSettings = async (swingId: number, settings: {
     SWING_TYPE?: string;
     INIT_AMOUNT?: number;
     USE_YN?: string;
+    FULL_ENTRY_YN?: FullEntryYn;
 }): Promise<boolean> => {
     const response = await api.put(`/swing/${swingId}/settings`, settings);
     return response.data.data || true;

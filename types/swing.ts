@@ -21,7 +21,18 @@ export type SwingItem = {
     ENTRY_PRICE: number | null  // 매입평균가 (매수 전 null)
     PRPR: number | null  // 현재가 (매수 전 null)
     USE_YN: string  // 스윙 활성화 여부 ('Y' | 'N')
+    FULL_ENTRY_YN?: FullEntryYn  // 매수 방식 ('Y' 전량 / 'N' 신호 강도 비례)
 }
+
+// 매수 방식 (SWING_TRADE.FULL_ENTRY_YN)
+// 'Y': 매수 신호 시 배정금 전량 투입 (호가 차이 버퍼로 99%)
+// 'N': 신호 강도(conviction)에 비례해 배정금의 32~80% 투입 — 기본값
+export type FullEntryYn = 'Y' | 'N';
+
+export const FULL_ENTRY_OPTIONS: { value: FullEntryYn; label: string; description: string }[] = [
+    { value: 'N', label: '신호 강도 비례', description: '신호 강도에 따라 배정금의 32~80%를 매수합니다' },
+    { value: 'Y', label: '전량 매수', description: '매수 신호가 나면 배정금 전량을 매수합니다' },
+];
 
 // 가용 자본 조회 응답 타입
 // 모의투자는 현금/주문가능 소스가 없어 한도 추적이 불가능하다.

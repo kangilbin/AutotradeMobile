@@ -216,6 +216,7 @@ export default function SwingDetailScreen() {
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
                                 INIT_AMOUNT: swingData.INIT_AMOUNT,
                                 SWING_TYPE: swingData.SWING_TYPE,
+                                FULL_ENTRY_YN: swingData.FULL_ENTRY_YN || 'N',
                             };
                             
                             // 백트레이딩 결과 화면으로 이동

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, Alert, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import AppTouchable from '../common/AppTouchable';
 import AppButton from '../common/AppButton';
-import { SwingItem, AvailableCapitalResponse } from '../../types/swing';
+import { SwingItem, AvailableCapitalResponse, FullEntryYn, FULL_ENTRY_OPTIONS } from '../../types/swing';
 import { updateSwingSettings, getAvailableCapital } from '../../contexts/backEndApi';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { MarketCode } from '../../types/market';
@@ -35,6 +35,7 @@ interface SettingsTabProps {
 interface FormState {
     ST_CODE: string;
     SWING_TYPE: SwingTypeValue;
+    FULL_ENTRY_YN: FullEntryYn;
     INIT_AMOUNT: number;
     SHORT_MA: number;
     MID_MA: number;
@@ -54,6 +55,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
     const [form, setForm] = useState<FormState>({
         ST_CODE: '',
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
+        FULL_ENTRY_YN: 'N',
         INIT_AMOUNT: 0,
         SHORT_MA: 5,
         MID_MA: 20,
@@ -70,6 +72,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             setForm({
                 ST_CODE: swingData.ST_CODE || '',
                 SWING_TYPE: (swingData.SWING_TYPE as SwingTypeValue) || SWING_TYPES.SINGLE_MA,
+                FULL_ENTRY_YN: swingData.FULL_ENTRY_YN || 'N',
                 INIT_AMOUNT: swingData.INIT_AMOUNT || 0,
                 SHORT_MA: (swingData as any).SHORT_MA || 5,
                 MID_MA: (swingData as any).MID_MA || 20,
@@ -97,6 +100,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             setForm({
                 ST_CODE: swingData.ST_CODE || '',
                 SWING_TYPE: (swingData.SWING_TYPE as SwingTypeValue) || SWING_TYPES.SINGLE_MA,
+                FULL_ENTRY_YN: swingData.FULL_ENTRY_YN || 'N',
                 INIT_AMOUNT: swingData.INIT_AMOUNT || 0,
                 SHORT_MA: (swingData as any).SHORT_MA || 5,
                 MID_MA: (swingData as any).MID_MA || 20,
@@ -135,6 +139,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             const updateData: any = {
                 SWING_TYPE: form.SWING_TYPE,
                 INIT_AMOUNT: form.INIT_AMOUNT,
+                FULL_ENTRY_YN: form.FULL_ENTRY_YN,
             };
 
             // 이동평균선 타입일 때만 MA 값 포함
@@ -252,7 +257,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>스윙 전략</Text>
 
-                    <View style={[styles.settingRow, styles.settingRowLast]}>
+                    <View style={styles.settingRow}>
                         <Text style={styles.label}>유형</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
@@ -283,6 +288,37 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         ) : (
                             <Text style={styles.value}>
                                 {SWING_TYPE_LABELS[form.SWING_TYPE] || form.SWING_TYPE}
+                            </Text>
+                        )}
+                    </View>
+
+                    {/* 매수 방식 (FULL_ENTRY_YN) */}
+                    <View style={[styles.settingRow, styles.settingRowLast]}>
+                        <Text style={styles.label}>매수 방식</Text>
+                        {isEditMode ? (
+                            <View style={styles.radioGroup}>
+                                {FULL_ENTRY_OPTIONS.map((option) => {
+                                    const selected = form.FULL_ENTRY_YN === option.value;
+                                    return (
+                                        <AppTouchable
+                                            key={option.value}
+                                            style={[styles.radioOption, selected && styles.radioOptionSelected]}
+                                            onPress={() => updateForm('FULL_ENTRY_YN', option.value)}
+                                            cooldownMs={0}
+                                        >
+                                            <View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>
+                                                {selected && <View style={styles.radioInner} />}
+                                            </View>
+                                            <Text style={[styles.radioLabel, selected && styles.radioLabelSelected]}>
+                                                {option.label}
+                                            </Text>
+                                        </AppTouchable>
+                                    );
+                                })}
+                            </View>
+                        ) : (
+                            <Text style={styles.value}>
+                                {FULL_ENTRY_OPTIONS.find(o => o.value === form.FULL_ENTRY_YN)?.label}
                             </Text>
                         )}
                     </View>

@@ -18,7 +18,7 @@ import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
 import { MarketCode, isOverseasMarket } from '../../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
-import { AvailableCapitalResponse } from '../../../types/swing';
+import { AvailableCapitalResponse, FULL_ENTRY_OPTIONS } from '../../../types/swing';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
@@ -109,6 +109,7 @@ export default function AddStockScreen() {
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
+        FULL_ENTRY_YN: 'N',
         SHORT_MA: 5,
         MID_MA: 20,
         LONG_MA: 60,
@@ -196,6 +197,7 @@ export default function AddStockScreen() {
                 ACCOUNT_NO: form.ACCOUNT_NO,
                 INIT_AMOUNT: form.INIT_AMOUNT,
                 SWING_TYPE: form.SWING_TYPE,
+                FULL_ENTRY_YN: form.FULL_ENTRY_YN,
             };
 
             // 이동평균선 타입일 때만 MA 값 추가
@@ -282,6 +284,35 @@ export default function AddStockScreen() {
                             );
                         })}
                     </View>
+                </View>
+
+                {/* 매수 방식 — 매수 신호 시 배정금을 얼마나 투입할지 (FULL_ENTRY_YN) */}
+                <View style={styles.card}>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="cart-outline" size={18} color={Colors.primary} />
+                        <Text style={styles.sectionTitle}>매수 방식</Text>
+                    </View>
+                    <View style={styles.chipContainer}>
+                        {FULL_ENTRY_OPTIONS.map((option) => {
+                            const selected = form.FULL_ENTRY_YN === option.value;
+                            return (
+                                <AppTouchable
+                                    key={option.value}
+                                    style={[styles.chip, selected && styles.chipSelected]}
+                                    onPress={() => handleChange('FULL_ENTRY_YN', option.value)}
+                                    // 선택 컨트롤 — 빠른 정정까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
+                                >
+                                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                                        {option.label}
+                                    </Text>
+                                </AppTouchable>
+                            );
+                        })}
+                    </View>
+                    <Text style={styles.optionDescription}>
+                        {FULL_ENTRY_OPTIONS.find(o => o.value === form.FULL_ENTRY_YN)?.description}
+                    </Text>
                 </View>
 
                 {/* 이동평균선 설정 - 이동평균선(A) 타입일 때만 표시 */}
@@ -553,6 +584,11 @@ const styles = StyleSheet.create({
     },
     chipTextSelected: {
         color: Colors.textWhite,
+    },
+    optionDescription: {
+        marginTop: Spacing.md,
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
     },
 
     // 이동평균선 입력
