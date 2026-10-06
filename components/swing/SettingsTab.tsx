@@ -292,8 +292,10 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         )}
                     </View>
 
-                    {/* 매수 방식 (FULL_ENTRY_YN) */}
-                    <View style={[styles.settingRow, styles.settingRowLast]}>
+                    {/* 매수 방식 (FULL_ENTRY_YN)
+                        편집 모드는 옵션 두 개가 라벨 옆 한 줄에 들어가기엔 빠듯해서, 선택 시 굵어지는
+                        폭만큼 줄바꿈이 생겼다 켜졌다 한다 → 옵션을 라벨 아래 줄로 내려 레이아웃을 고정 */}
+                    <View style={[styles.settingRow, styles.settingRowLast, isEditMode && styles.settingRowStacked]}>
                         <Text style={styles.label}>매수 방식</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
@@ -437,6 +439,11 @@ const styles = StyleSheet.create({
     },
     settingRowLast: {
         borderBottomWidth: 0,
+    },
+    settingRowStacked: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: 10,
     },
     label: {
         fontSize: 15,
