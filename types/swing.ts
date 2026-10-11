@@ -46,9 +46,15 @@ export type AvailableCapitalResponse = {
 
 // 스윙 요약 정보 타입
 export type SwingSummary = {
-    TOTAL_INVESTMENT_AMOUNT: number  // 내 투자 금액 (모의: 현금 제외 보유평가만)
-    TOTAL_PRINCIPAL: number  // 원금
-    TOTAL_PROFIT: number  // 총 수익
-    TOTAL_PROFIT_RATE: number  // 총 수익률
-    CASH_ASSET: number | null  // 현금 자산 — 모의: null (미지원)
+    TOTAL_INVESTMENT_AMOUNT: number  // 총 자본금 (예수금 + 보유주식 평가금액)
+    // 보유 기준 (지금 들고 있는 주식)
+    TOTAL_PURCHASE_AMOUNT: number  // 매입금액 (보유주식 매입금액 합계)
+    UNREALIZED_PROFIT: number  // 평가손익
+    UNREALIZED_PROFIT_RATE: number  // 평가손익 ÷ 매입금액
+    // 누적 기준 (목록 스윙 합계 — 매도 완료분 손익 포함)
+    TOTAL_PRINCIPAL: number  // 배정금 (스윙 금액 합계 — 실제 매수액이 아니라 가용자본에서 묶인 돈, 손절해도 줄지 않음)
+    TOTAL_VALUE: number  // 누적 평가금액 (배정금 + 종합 수익 = 스윙별 잔여 현금 + 보유 평가금액 합)
+    TOTAL_PROFIT: number  // 종합 수익 (목록 손익 합계, 손절 포함)
+    TOTAL_PROFIT_RATE: number  // 종합 수익 ÷ 배정금
+    CASH_ASSET: number | null  // 현금 자산 — 예수금 산출 불가 시 null (미지원)
 }

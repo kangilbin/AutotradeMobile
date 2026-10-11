@@ -11,13 +11,13 @@ interface SwingSummaryCardProps {
 }
 
 const PLACEHOLDER = '-';
-const UNSUPPORTED = '미지원';  // 모의투자: 현금 자산 미지원(null) 시 표기
+const UNSUPPORTED = '미지원';  // 예수금 산출 불가(null) 시 표기
 
 /**
  * 현금 자산 표시값 결정
  * - summary 없음: '-'
- * - 모의투자(CASH_ASSET === null): '미지원'
- * - 실전: 금액 포맷
+ * - 예수금 산출 불가(CASH_ASSET === null): '미지원'
+ * - 그 외: 금액 포맷
  */
 function formatCashAsset(summary: SwingSummary | null, mrktCode: MarketCode): string {
     if (!summary) return PLACEHOLDER;
@@ -39,35 +39,75 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
                 </Text>
             </View>
 
-            {/* 원금 / 총 수익 / 현금 자산 */}
+            {/* 보유 기준: 매입금액 / 평가손익(÷매입금액) / 현금 */}
+            <Text style={styles.rowCaption}>보유 중</Text>
             <View style={styles.subInfoContainer}>
                 <SummaryItem
-                    label="원금"
-                    value={summary ? formatAmountWithUnit(summary.TOTAL_PRINCIPAL, mrktCode) : PLACEHOLDER}
+                    label="매입금액"
+                    value={summary ? formatAmountWithUnit(summary.TOTAL_PURCHASE_AMOUNT, mrktCode) : PLACEHOLDER}
                 />
-
-                <View style={styles.subInfoItem}>
-                    <Text style={styles.subInfoLabel}>총 수익</Text>
-                    <View style={styles.profitInfo}>
-                        <Text style={[styles.subInfoValue, summary && { color: getProfitLossColor(summary.TOTAL_PROFIT) }]}>
-                            {summary ? formatAmountWithUnit(summary.TOTAL_PROFIT, mrktCode) : PLACEHOLDER}
-                        </Text>
-                        {summary && (
-                            <Text style={[styles.profitRate, { color: getProfitLossColor(summary.TOTAL_PROFIT_RATE) }]}>
-                                {formatProfitRate(summary.TOTAL_PROFIT_RATE)}
-                            </Text>
-                        )}
-                    </View>
-                </View>
-
+                <ProfitItem
+                    label="평가손익"
+                    summary={summary}
+                    amount={summary?.UNREALIZED_PROFIT}
+                    rate={summary?.UNREALIZED_PROFIT_RATE}
+                    mrktCode={mrktCode}
+                />
                 <SummaryItem
                     label="현금"
                     value={formatCashAsset(summary, mrktCode)}
                 />
             </View>
+
+            {/* 누적 기준: 배정금(스윙 금액 합) → 누적 평가금액(잔여 현금+보유 평가) → 종합 수익(차이, ÷배정금) */}
+            <Text style={[styles.rowCaption, styles.rowCaptionSpaced]}>누적 (매도 완료 포함)</Text>
+            <View style={styles.subInfoContainer}>
+                <SummaryItem
+                    label="배정금"
+                    value={summary ? formatAmountWithUnit(summary.TOTAL_PRINCIPAL, mrktCode) : PLACEHOLDER}
+                />
+                <SummaryItem
+                    label="누적 평가금액"
+                    value={summary ? formatAmountWithUnit(summary.TOTAL_VALUE, mrktCode) : PLACEHOLDER}
+                />
+                <ProfitItem
+                    label="종합 수익"
+                    summary={summary}
+                    amount={summary?.TOTAL_PROFIT}
+                    rate={summary?.TOTAL_PROFIT_RATE}
+                    mrktCode={mrktCode}
+                />
+            </View>
         </View>
     );
 }
+
+interface ProfitItemProps {
+    label: string;
+    summary: SwingSummary | null;
+    amount?: number;
+    rate?: number;
+    mrktCode: MarketCode;
+}
+
+/** 손익 금액 + 수익률 (손익 색상 적용) */
+const ProfitItem = memo(function ProfitItem({ label, summary, amount, rate, mrktCode }: ProfitItemProps) {
+    return (
+        <View style={styles.subInfoItem}>
+            <Text style={styles.subInfoLabel}>{label}</Text>
+            <View style={styles.profitInfo}>
+                <Text style={[styles.subInfoValue, summary && { color: getProfitLossColor(amount ?? 0) }]}>
+                    {summary ? formatAmountWithUnit(amount ?? 0, mrktCode) : PLACEHOLDER}
+                </Text>
+                {summary && (
+                    <Text style={[styles.profitRate, { color: getProfitLossColor(rate ?? 0) }]}>
+                        {formatProfitRate(rate ?? 0)}
+                    </Text>
+                )}
+            </View>
+        </View>
+    );
+});
 
 interface SummaryItemProps {
     label: string;
@@ -111,6 +151,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.textPrimary,
         letterSpacing: -0.5,
+    },
+    rowCaption: {
+        fontSize: FontSizes.xs,
+        color: Colors.textMuted,
+        marginBottom: Spacing.sm,
+    },
+    rowCaptionSpaced: {
+        marginTop: Spacing.xl,
     },
     subInfoContainer: {
         flexDirection: 'row',
