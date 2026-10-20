@@ -39,6 +39,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="account" />
+                <Stack.Screen name="review" />
             </Stack>
             {/* 전역 로딩 오버레이 — Stack 형제로 두어 모든 화면 위에 덮인다 */}
             <ApiLoadingOverlay />

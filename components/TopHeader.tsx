@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import AppTouchable from './common/AppTouchable';
+import ReviewStatusIcon from './ReviewStatusIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAccountStore } from '../stores/useAccountStore';
 import { useMarketStore } from '../utils/useMarketStore';
@@ -113,7 +114,11 @@ export default function TopHeader() {
                             ))}
                         </View>
                     </View>
-                    <Text style={styles.userName}>{userName}님</Text>
+                    {/* 이름 줄은 뒤가 비어 있다 — 계좌번호 옆에 두면 375pt 폭에서 넘친다 */}
+                    <View style={styles.nameRow}>
+                        <Text style={styles.userName}>{userName}님</Text>
+                        <ReviewStatusIcon />
+                    </View>
                 </View>
                 <AppTouchable style={styles.rightSection} onPress={handleAccountPress}>
                     <Text style={styles.accountLabel}>계좌번호</Text>
@@ -212,6 +217,11 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.xl,
         fontWeight: '600',
         color: Colors.textPrimary,
+    },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
     rightSection: {
         alignItems: 'flex-end',

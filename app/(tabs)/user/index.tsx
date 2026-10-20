@@ -14,6 +14,7 @@ import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import { Ionicons } from "@expo/vector-icons";
 import { useAccountStore } from "../../../stores/useAccountStore";
+import { useStockReviewStore } from "../../../stores/useStockReviewStore";
 import { JwtPayload } from "../../../types/auth";
 import { deletePushToken } from "../../../contexts/backEndApi";
 import { getExpoPushToken } from "../../../utils/pushNotification";
@@ -62,6 +63,8 @@ export default function UserScreen() {
                         await SecureStore.deleteItemAsync('refresh_token');
                         await SecureStore.deleteItemAsync('google_refresh_token');
                         await SecureStore.deleteItemAsync('google_picture');
+                        // AI 분석 폴링 중지 + 이전 사용자 목록 제거 (다음 로그인 사용자 헤더에 남지 않게)
+                        useStockReviewStore.getState().reset();
                         router.replace('/(auth)/login');
                     }
                 }
