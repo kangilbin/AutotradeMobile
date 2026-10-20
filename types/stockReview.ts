@@ -2,6 +2,13 @@
 // 분석은 1분 이상 걸려 백엔드가 백그라운드로 처리하고, 앱은 목록을 폴링해 상태를 확인한다.
 
 export type StockReviewStatus = 'RUNNING' | 'DONE' | 'FAILED';
+
+export const QUOTA_EXHAUSTED = 'QUOTA_EXHAUSTED';
+
+/** 사용량 소진으로 실패했고 아직 초기화 전인지 — 이 동안은 다시 분석해도 실패하므로 재시도를 막는다 */
+export const isQuotaBlocked = (item: { ERROR_CODE?: string | null; RETRY_AT?: string | null }): boolean =>
+    item.ERROR_CODE === QUOTA_EXHAUSTED && !!item.RETRY_AT && new Date(item.RETRY_AT).getTime() > Date.now();
+
 export type StockReviewVerdict = '적합' | '보류' | '부적합';
 
 // 목록 항목 (GET /stock-review)
@@ -11,6 +18,9 @@ export type StockReviewItem = {
     STATUS: StockReviewStatus
     VERDICT: StockReviewVerdict | null
     ERROR: string | null
+    // 'QUOTA_EXHAUSTED' = AI 무료 사용량 소진 — RETRY_AT(ISO) 전까지는 다시 요청해도 실패한다
+    ERROR_CODE?: string | null
+    RETRY_AT?: string | null
     SEEN: boolean  // 완료 결과를 상세에서 확인했는지 — false 면 헤더에 완료 아이콘
     REQUESTED_AT: string | null
     FINISHED_AT: string | null

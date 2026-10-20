@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import AppTouchable from '../../components/common/AppTouchable';
 import VerdictBadge from '../../components/review/VerdictBadge';
 import { useStockReviewStore } from '../../stores/useStockReviewStore';
-import { StockReviewItem } from '../../types/stockReview';
+import { StockReviewItem, QUOTA_EXHAUSTED } from '../../types/stockReview';
 import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 /** ISO 시각 → 오늘이면 HH:mm, 아니면 M/D HH:mm — 목록이 24시간이라 어제·오늘 같은 시각이 섞인다 */
@@ -44,7 +44,9 @@ function ReviewRow({ item }: { item: StockReviewItem }) {
                         <VerdictBadge verdict={item.VERDICT} />
                     </>
                 )}
-                {item.STATUS === 'FAILED' && <Text style={styles.failedText}>실패</Text>}
+                {item.STATUS === 'FAILED' && (
+                    <Text style={styles.failedText}>{item.ERROR_CODE === QUOTA_EXHAUSTED ? '사용량 소진' : '실패'}</Text>
+                )}
                 <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
             </View>
         </AppTouchable>

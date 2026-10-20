@@ -8,12 +8,20 @@ import VerdictBadge from '../../components/review/VerdictBadge';
 import { getStockReview, requestStockReview } from '../../contexts/backEndApi';
 import { useStockReviewStore } from '../../stores/useStockReviewStore';
 import { useMarketStore } from '../../utils/useMarketStore';
-import { StockReviewDetail, StockReviewResult } from '../../types/stockReview';
+import { StockReviewDetail, StockReviewResult, isQuotaBlocked } from '../../types/stockReview';
 import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 /** YYYYMMDD → YYYY.MM.DD */
 const dateOf = (yyyymmdd: string | null): string =>
     yyyymmdd ? `${yyyymmdd.slice(0, 4)}.${yyyymmdd.slice(4, 6)}.${yyyymmdd.slice(6, 8)}` : '-';
+
+/** ISO → 오늘이면 HH:mm, 아니면 M/D HH:mm */
+const clockOf = (iso: string | null | undefined): string => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    return sameDay ? iso.slice(11, 16) : `${d.getMonth() + 1}/${d.getDate()} ${iso.slice(11, 16)}`;
+};
 
 /** ISO → YYYY.MM.DD HH:mm */
 const dateTimeOf = (iso: string | null): string =>
@@ -153,6 +161,7 @@ export default function ReviewDetailScreen() {
     }, [code, detail?.ST_NM, recommendedType, isOverseas, setMrktCode]);
 
     const status = detail?.STATUS;
+    const quotaBlocked = !!detail && isQuotaBlocked(detail);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -197,14 +206,25 @@ export default function ReviewDetailScreen() {
                 </View>
             )}
 
-            {status === 'FAILED' && (
+            {status === 'FAILED' && detail && (
                 <View style={styles.center}>
-                    <Ionicons name="alert-circle-outline" size={44} color={Colors.warning} />
-                    <Text style={styles.centerTitle}>분석에 실패했어요</Text>
-                    <Text style={styles.centerText}>{detail?.ERROR ?? '잠시 후 다시 시도해주세요.'}</Text>
-                    <AppTouchable style={styles.button} onPress={handleRetry}>
-                        <Text style={styles.buttonText}>다시 분석</Text>
-                    </AppTouchable>
+                    <Ionicons
+                        name={quotaBlocked ? 'hourglass-outline' : 'alert-circle-outline'}
+                        size={44}
+                        color={Colors.warning}
+                    />
+                    <Text style={styles.centerTitle}>
+                        {quotaBlocked ? '오늘 AI 사용량을 모두 썼어요' : '분석에 실패했어요'}
+                    </Text>
+                    <Text style={styles.centerText}>{detail.ERROR ?? '잠시 후 다시 시도해주세요.'}</Text>
+                    {/* 사용량 소진이면 초기화 전까지 다시 해도 실패한다 — 버튼 대신 가능 시각을 안내 */}
+                    {quotaBlocked ? (
+                        <Text style={styles.retryAtText}>{clockOf(detail.RETRY_AT)} 이후 다시 분석할 수 있어요</Text>
+                    ) : (
+                        <AppTouchable style={styles.button} onPress={handleRetry}>
+                            <Text style={styles.buttonText}>다시 분석</Text>
+                        </AppTouchable>
+                    )}
                 </View>
             )}
 
@@ -363,6 +383,11 @@ const styles = StyleSheet.create({
         lineHeight: 21,
         color: Colors.textSecondary,
         textAlign: 'center',
+    },
+    retryAtText: {
+        fontSize: FontSizes.md,
+        fontWeight: '600',
+        color: Colors.textSecondary,
     },
     linkButton: {
         flexDirection: 'row',
