@@ -56,7 +56,10 @@ interface FormState extends AddStockAutoRequest {
 
 export default function AddStockScreen() {
     const router = useRouter();
-    const { stCode, stockName, mrktCode } = useLocalSearchParams();
+    const { stCode, stockName, mrktCode, swingType } = useLocalSearchParams();
+    // AI 종목 분석에서 넘어온 추천 전략 — 이 화면의 선택지에 있는 값일 때만 미리 선택
+    const initialSwingType: SwingTypeValue =
+        SWING_TYPE_OPTIONS.find((o) => o.value === swingType)?.value ?? SWING_TYPES.SINGLE_MA;
     const swingAmountRef = useRef<TextInput | null>(null);
     const shortMaRef = useRef<TextInput | null>(null);
     const midMaRef = useRef<TextInput | null>(null);
@@ -108,7 +111,7 @@ export default function AddStockScreen() {
         MRKT_CODE: (mrktCode as string) || currentMrktCode,
         ACCOUNT_NO: account?.ACCOUNT_NO as string || '',
         INIT_AMOUNT: 0,
-        SWING_TYPE: SWING_TYPES.SINGLE_MA,
+        SWING_TYPE: initialSwingType,
         FULL_ENTRY_YN: 'N',
         SHORT_MA: 5,
         MID_MA: 20,

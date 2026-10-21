@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, LayoutChangeEvent, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, LayoutChangeEvent, ActivityIndicator, Alert } from 'react-native';
 import AppTouchable from '../../../components/common/AppTouchable';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import OrderBookRow from '../../../components/OrderBookRow';
-import { getStockPrice } from '../../../contexts/backEndApi';
+import { getStockPrice, requestStockReview } from '../../../contexts/backEndApi';
+import { useStockReviewStore } from '../../../stores/useStockReviewStore';
 import { UnifiedStockPrice } from '../../../types/stock';
 import { MarketCode, isOverseasMarket } from '../../../types/market';
 import { Colors, Shadows, Spacing, BorderRadius, FontSizes } from '../../../constants/theme';
@@ -32,6 +34,29 @@ export default function PriceScreen() {
             router.replace('/stock');
         }, [marketMismatch])
     );
+
+    // AI 분석 (국내만 — 뉴스·재무 데이터가 KIS 국내 TR 기반)
+    const canReview = !isOverseasMarket(activeMrktCode);
+    const upsertReview = useStockReviewStore((s) => s.upsert);
+    const reviewRunning = useStockReviewStore((s) =>
+        s.reviews.some((r) => r.ST_CODE === stCode && r.STATUS === 'RUNNING'));
+
+    const handleReview = useCallback(async () => {
+        const item = await requestStockReview(stCode as string);
+        if (!item) return;
+        upsertReview(item);
+        if (item.STATUS === 'DONE') {
+            Alert.alert('AI 분석', '최근에 분석한 결과가 있어요.', [
+                { text: '닫기', style: 'cancel' },
+                { text: '결과 보기', onPress: () => router.push({ pathname: '/review/[code]', params: { code: stCode as string } }) },
+            ]);
+            return;
+        }
+        Alert.alert(
+            'AI 분석을 시작했어요',
+            '차트·재무·수급·뉴스를 모아 분석하는 데 1~2분 걸려요.\n상단 모래시계 아이콘이 체크 표시로 바뀌면 눌러서 결과를 확인하세요.',
+        );
+    }, [stCode, upsertReview]);
 
     const [unified, setUnified] = useState<UnifiedStockPrice | null>(null);
     // 첫 응답이 오기 전 화면을 빈 값(0원)으로 두면 "로딩 중"이 아니라 "가격이 0"으로 읽힌다.
@@ -191,6 +216,22 @@ export default function PriceScreen() {
                         {isMarketTime ? '실시간' : '장 마감'}
                     </Text>
                 </View>
+                {canReview && (
+                    <AppTouchable
+                        onPress={handleReview}
+                        disabled={reviewRunning}
+                        style={[styles.reviewButton, reviewRunning && styles.reviewButtonRunning]}
+                    >
+                        <Ionicons
+                            name={reviewRunning ? 'hourglass-outline' : 'sparkles'}
+                            size={14}
+                            color={reviewRunning ? Colors.textMuted : Colors.badgeText}
+                        />
+                        <Text style={[styles.reviewButtonText, reviewRunning && styles.reviewButtonTextRunning]}>
+                            {reviewRunning ? '분석중' : 'AI 분석'}
+                        </Text>
+                    </AppTouchable>
+                )}
                 <AppTouchable onPress={() => router.push('/stock')} style={styles.searchButton}>
                     <AntDesign name="search" size={22} color={Colors.textPrimary} />
                 </AppTouchable>
@@ -551,6 +592,26 @@ const styles = StyleSheet.create({
     },
 
     // FAB
+    reviewButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: Spacing.sm + 2,
+        paddingVertical: Spacing.xs + 2,
+        borderRadius: BorderRadius.full,
+        backgroundColor: Colors.badgeBackground,
+    },
+    reviewButtonRunning: {
+        backgroundColor: Colors.background,
+    },
+    reviewButtonText: {
+        fontSize: FontSizes.sm,
+        fontWeight: '600',
+        color: Colors.badgeText,
+    },
+    reviewButtonTextRunning: {
+        color: Colors.textMuted,
+    },
     fab: {
         position: 'absolute',
         bottom: 24,

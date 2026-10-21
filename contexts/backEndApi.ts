@@ -18,6 +18,7 @@ import { SwingListResponse, AvailableCapitalResponse, FullEntryYn } from '../typ
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
 import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
 import { SellAllRequest } from '../types/order';
+import { StockReviewItem, StockReviewDetail } from '../types/stockReview';
 import {
     FluctuationRankItem,
     VolumeRankItem,
@@ -609,6 +610,40 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '스윙 등록');
+    }
+};
+
+// AI 종목 분석 요청 — 캐시된 결과가 있으면 STATUS 'DONE', 아니면 'RUNNING' (백그라운드 처리)
+export const requestStockReview = async (stCode: string): Promise<StockReviewItem | undefined> => {
+    try {
+        const response = await api.post('/stock-review', { ST_CODE: stCode });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, 'AI 분석 요청');
+    }
+};
+
+// AI 종목 분석 목록 — 헤더 아이콘이 분석 중일 때 5초마다 폴링한다.
+// silent: 전역 오버레이를 띄우지 않고, 실패해도 알럿 없이 다음 폴링에 맡긴다.
+export const getStockReviews = async (): Promise<StockReviewItem[] | undefined> => {
+    try {
+        const response = await api.get('/stock-review', { silent: true });
+        return response.data.data;
+    } catch (error: unknown) {
+        console.error('AI 분석 목록 조회 실패:', error);
+        return undefined;
+    }
+};
+
+// AI 종목 분석 상세 — 완료된 결과를 조회하면 백엔드가 확인(SEEN) 처리한다.
+// 분석 중이면 상세 화면도 폴링하므로 알럿 대신 화면에서 상태를 보여준다.
+export const getStockReview = async (stCode: string): Promise<StockReviewDetail | undefined> => {
+    try {
+        const response = await api.get(`/stock-review/${stCode}`, { silent: true });
+        return response.data.data;
+    } catch (error: unknown) {
+        console.error('AI 분석 결과 조회 실패:', error);
+        return undefined;
     }
 };
 
