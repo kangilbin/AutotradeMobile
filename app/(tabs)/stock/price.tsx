@@ -15,6 +15,8 @@ import { formatPrice } from '../../../utils/format';
 import { normalizeStockPrice } from '../../../utils/normalizeStockPrice';
 
 
+const REVIEWABLE_MARKETS: MarketCode[] = ['J', 'NYS', 'NAS', 'AMS'];
+
 export default function PriceScreen() {
     const { stockName, stCode, mrktCode } = useLocalSearchParams();
     const currentMrktCode = useMarketStore((s) => s.mrktCode);
@@ -35,14 +37,15 @@ export default function PriceScreen() {
         }, [marketMismatch])
     );
 
-    // AI 분석 (국내만 — 뉴스·재무 데이터가 KIS 국내 TR 기반)
-    const canReview = !isOverseasMarket(activeMrktCode);
+    // AI 분석 — 국내(J)와 미국 개별 거래소. 서버가 거래소별로 종목을 찾으므로
+    // 거래소를 모르는 글로벌 토글 값('US')만으로는 요청하지 않는다
+    const canReview = REVIEWABLE_MARKETS.includes(activeMrktCode);
     const upsertReview = useStockReviewStore((s) => s.upsert);
     const reviewRunning = useStockReviewStore((s) =>
         s.reviews.some((r) => r.ST_CODE === stCode && r.STATUS === 'RUNNING'));
 
     const handleReview = useCallback(async () => {
-        const item = await requestStockReview(stCode as string);
+        const item = await requestStockReview(stCode as string, activeMrktCode);
         if (!item) return;
         upsertReview(item);
         if (item.STATUS === 'DONE') {
@@ -56,7 +59,7 @@ export default function PriceScreen() {
             'AI 분석을 시작했어요',
             '차트·재무·수급·뉴스를 모아 분석하는 데 1~2분 걸려요.\n상단 모래시계 아이콘이 체크 표시로 바뀌면 눌러서 결과를 확인하세요.',
         );
-    }, [stCode, upsertReview]);
+    }, [stCode, activeMrktCode, upsertReview]);
 
     const [unified, setUnified] = useState<UnifiedStockPrice | null>(null);
     // 첫 응답이 오기 전 화면을 빈 값(0원)으로 두면 "로딩 중"이 아니라 "가격이 0"으로 읽힌다.

@@ -8,6 +8,7 @@ import VerdictBadge from '../../components/review/VerdictBadge';
 import { getStockReview, requestStockReview } from '../../contexts/backEndApi';
 import { useStockReviewStore } from '../../stores/useStockReviewStore';
 import { useMarketStore } from '../../utils/useMarketStore';
+import { isOverseasMarket } from '../../types/market';
 import { StockReviewDetail, StockReviewResult, isQuotaBlocked } from '../../types/stockReview';
 import { Colors, FontSizes, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
@@ -145,17 +146,21 @@ export default function ReviewDetailScreen() {
         }
     }, [storeStatus, detail?.STATUS, load]);
 
+    // 이전 형식 항목엔 MRKT_CODE 가 없다 — 당시엔 국내만 지원했으므로 J
+    const stockMrkt = detail?.MRKT_CODE ?? 'J';
+
     const handleRetry = useCallback(async () => {
-        const item = await requestStockReview(code);
+        const item = await requestStockReview(code, stockMrkt);
         if (!item) return;
         upsertReview(item);
         load();
-    }, [code, upsertReview, load]);
+    }, [code, stockMrkt, upsertReview, load]);
 
     const recommendedType = detail?.RESULT?.RECOMMENDED_SWING_TYPE;
     const handleRegister = useCallback(() => {
-        // 국내 종목 등록 화면은 글로벌 마켓이 미국이면 검색 화면으로 되돌린다 → 먼저 국내로 맞춘다
-        if (isOverseas) setMrktCode('J');
+        // 등록 화면은 글로벌 마켓(국내/미국)이 종목과 다르면 검색 화면으로 되돌린다 → 종목 쪽으로 맞춘다
+        const overseasStock = isOverseasMarket(stockMrkt);
+        if (overseasStock !== isOverseas) setMrktCode(overseasStock ? 'US' : 'J');
         // navigate: 루트 스택에 이미 있는 (tabs) 로 돌아가 그 안에서 연다.
         // push 는 (tabs) 를 하나 더 쌓아 헤더가 중복 마운트되고 뒤로가기가 이 화면으로 돌아온다.
         router.navigate({
@@ -163,12 +168,12 @@ export default function ReviewDetailScreen() {
             params: {
                 stCode: code,
                 stockName: detail?.ST_NM ?? code,
-                mrktCode: 'J',
+                mrktCode: stockMrkt,
                 // AI 추천 전략을 등록 화면에서 미리 선택 (없으면 기본 전략)
                 ...(recommendedType ? { swingType: recommendedType } : {}),
             },
         });
-    }, [code, detail?.ST_NM, recommendedType, isOverseas, setMrktCode]);
+    }, [code, stockMrkt, detail?.ST_NM, recommendedType, isOverseas, setMrktCode]);
 
     const status = detail?.STATUS;
     const quotaBlocked = !!detail && isQuotaBlocked(detail);

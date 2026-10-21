@@ -614,9 +614,9 @@ export const addStockAuto = async (param: AddStockAutoRequest): Promise<any | un
 };
 
 // AI 종목 분석 요청 — 캐시된 결과가 있으면 STATUS 'DONE', 아니면 'RUNNING' (백그라운드 처리)
-export const requestStockReview = async (stCode: string): Promise<StockReviewItem | undefined> => {
+export const requestStockReview = async (stCode: string, mrktCode: string = 'J'): Promise<StockReviewItem | undefined> => {
     try {
-        const response = await api.post('/stock-review', { ST_CODE: stCode });
+        const response = await api.post('/stock-review', { ST_CODE: stCode, MRKT_CODE: mrktCode });
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, 'AI 분석 요청');
