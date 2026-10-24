@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import * as SecureStore from 'expo-secure-store';
 import { getStockReviews } from '../contexts/backEndApi';
 import { StockReviewItem } from '../types/stockReview';
 
@@ -55,9 +56,15 @@ export const useStockReviewStore = create<StockReviewStore>((set, get) => ({
         try {
             const list = await getStockReviews();
             if (!list) {
-                // 실패(로그아웃 후 401, 서버 장애 등)면 폴링을 멈춘다. 계속 돌리면 로그인 화면이
-                // 5초마다 다시 열린다. 포그라운드 복귀·화면 진입·새 요청 때 다시 시작된다.
-                stopPolling();
+                // 로그아웃 상태(직접 로그아웃 / 토큰 갱신 실패로 인터셉터가 토큰을 지움)면 멈춘다 —
+                // 계속 돌리면 401 → 로그인 화면이 5초마다 다시 열린다.
+                // 토큰이 있으면 일시 실패(네트워크 끊김·서버 오류)로 보고 다음 주기에 계속 확인한다.
+                // 여기서 멈추면 분석이 끝나도 화면이 '분석중'에 머문다.
+                if (!(await SecureStore.getItemAsync('access_token'))) {
+                    localVersion++;
+                    stopPolling();
+                    set({ reviews: [] });
+                }
                 return;
             }
             if (startedVersion !== localVersion) return;  // 그 사이 로컬이 더 최신 — 다음 폴링에 맡긴다
