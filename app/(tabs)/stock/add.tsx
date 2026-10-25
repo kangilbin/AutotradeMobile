@@ -18,19 +18,21 @@ import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
 import { MarketCode, isOverseasMarket } from '../../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
-import { AvailableCapitalResponse, FULL_ENTRY_OPTIONS } from '../../../types/swing';
+import { AvailableCapitalResponse, fullEntryOptionsFor } from '../../../types/swing';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
     SINGLE_MA: 'S',      // 단일 이동평균선
     MULTI_MA: 'A',       // 이동평균선 (단기/중기/장기)
     ICHIMOKU: 'B',       // 일목균형표
+    ORDER_BLOCK: 'O',    // 오더블럭
 } as const;
 
 type SwingTypeValue = typeof SWING_TYPES[keyof typeof SWING_TYPES];
 
 const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string; icon: string }[] = [
     { value: SWING_TYPES.SINGLE_MA, label: '단일 이평선', icon: 'trending-up-outline' },
+    { value: SWING_TYPES.ORDER_BLOCK, label: '오더블럭', icon: 'layers-outline' },
     // { value: SWING_TYPES.MULTI_MA, label: '이동평균선', icon: 'analytics-outline' },
     // { value: SWING_TYPES.ICHIMOKU, label: '일목균형표', icon: 'grid-outline' },
 ];
@@ -296,7 +298,7 @@ export default function AddStockScreen() {
                         <Text style={styles.sectionTitle}>매수 방식</Text>
                     </View>
                     <View style={styles.chipContainer}>
-                        {FULL_ENTRY_OPTIONS.map((option) => {
+                        {fullEntryOptionsFor(form.SWING_TYPE).map((option) => {
                             const selected = form.FULL_ENTRY_YN === option.value;
                             return (
                                 <AppTouchable
@@ -314,7 +316,7 @@ export default function AddStockScreen() {
                         })}
                     </View>
                     <Text style={styles.optionDescription}>
-                        {FULL_ENTRY_OPTIONS.find(o => o.value === form.FULL_ENTRY_YN)?.description}
+                        {fullEntryOptionsFor(form.SWING_TYPE).find(o => o.value === form.FULL_ENTRY_YN)?.description}
                     </Text>
                 </View>
 
