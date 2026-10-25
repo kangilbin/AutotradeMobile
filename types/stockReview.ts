@@ -34,9 +34,14 @@ export type StockReviewResult = {
     VERDICT: StockReviewVerdict
     SUMMARY: string
     // AI가 서비스에 등록된 실전 전략 중 고른 것 (SWING_TYPE). null 이면 맞는 전략 없음
+    // 투자 판단 근거 — 네 관점 (관리종목 차단 결과나 이전 형식 캐시면 없을 수 있다)
+    NEWS_VIEW?: string | null       // 뉴스·시황
+    VALUATION_VIEW?: string | null  // 주가 수준 (PER·PBR·EPS 기준 비싼가 싼가)
+    FINANCIAL_VIEW?: string | null  // 재무
+    TREND_VIEW?: string | null      // 주가 흐름·수급
+    // 판단과 별개로 AI가 등록된 실전 전략 중 고른 것 (SWING_TYPE). 차단 결과면 null
     RECOMMENDED_SWING_TYPE: string | null
     RECOMMENDED_STRATEGY_NAME: string | null
-    STRATEGY_REASON: string | null  // 고른 이유 + 그 전략 기준 현재 위치
     POSITIVES: string[]
     RISKS: string[]
     KEY_NEWS: string[]

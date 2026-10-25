@@ -53,12 +53,22 @@ function Section({ title, items, icon, color }: { title: string; items: string[]
     );
 }
 
+function ViewCard({ icon, title, text }: { icon: IoniconName; title: string; text?: string | null }) {
+    if (!text) return null;
+    return (
+        <View style={styles.card}>
+            <SectionTitle icon={icon} color={Colors.primaryDark} title={title} />
+            <Text style={styles.bodyText}>{text}</Text>
+        </View>
+    );
+}
+
 function ResultView({ result }: { result: StockReviewResult }) {
     return (
         <>
             <View style={styles.card}>
                 <View style={styles.verdictRow}>
-                    <Text style={styles.verdictLabel}>스윙 등록 판단</Text>
+                    <Text style={styles.verdictLabel}>투자 판단</Text>
                     <VerdictBadge verdict={result.VERDICT} large />
                 </View>
                 <Text style={styles.summary}>{result.SUMMARY}</Text>
@@ -66,22 +76,22 @@ function ResultView({ result }: { result: StockReviewResult }) {
                     <Text style={styles.blocked}>제외 사유: {result.BLOCKED_REASONS.join(', ')}</Text>
                 )}
             </View>
-            {!!result.STRATEGY_REASON && (
-                <View style={styles.card}>
-                    <View style={styles.verdictRow}>
-                        <SectionTitle icon="trending-up-outline" color={Colors.primaryDark} title="추천 전략" />
-                        <View style={[styles.strategyBadge, !result.RECOMMENDED_SWING_TYPE && styles.strategyBadgeNone]}>
-                            <Text style={[styles.strategyBadgeText, !result.RECOMMENDED_SWING_TYPE && styles.strategyBadgeTextNone]}>
-                                {result.RECOMMENDED_STRATEGY_NAME ?? '맞는 전략 없음'}
-                            </Text>
-                        </View>
-                    </View>
-                    <Text style={styles.bodyText}>{result.STRATEGY_REASON}</Text>
-                </View>
-            )}
+            <ViewCard icon="newspaper-outline" title="뉴스·시황" text={result.NEWS_VIEW} />
+            <ViewCard icon="pricetag-outline" title="주가 수준" text={result.VALUATION_VIEW} />
+            <ViewCard icon="document-text-outline" title="재무" text={result.FINANCIAL_VIEW} />
+            <ViewCard icon="trending-up-outline" title="주가 흐름·수급" text={result.TREND_VIEW} />
             <Section title="긍정 요인" icon="thumbs-up-outline" color={Colors.success} items={result.POSITIVES} />
             <Section title="위험 요인" icon="warning-outline" color={Colors.error} items={result.RISKS} />
             <Section title="참고 뉴스·공시" icon="newspaper-outline" color={Colors.textSecondary} items={result.KEY_NEWS} />
+            {/* 판단과 별개 — 등록된 스윙 전략 중 AI가 고른 것. 이름만 보여준다 */}
+            {!!result.RECOMMENDED_STRATEGY_NAME && (
+                <View style={[styles.card, styles.strategyRow]}>
+                    <Text style={styles.strategyLabel}>추천 전략</Text>
+                    <View style={styles.strategyBadge}>
+                        <Text style={styles.strategyBadgeText}>{result.RECOMMENDED_STRATEGY_NAME}</Text>
+                    </View>
+                </View>
+            )}
             <View style={styles.metaBox}>
                 <Text style={styles.metaText}>
                     데이터 기준일 {dateOf(result.DATA_AS_OF)}{result.INCOMPLETE_BAR ? ' (장중 값 포함)' : ''}
@@ -198,11 +208,6 @@ export default function ReviewDetailScreen() {
                         차트·재무·수급·뉴스를 모아 AI가 판단하고 있어요.{'\n'}
                         1~2분 정도 걸리고, 이 화면을 나가도 분석은 계속돼요.
                     </Text>
-                    {/* 네트워크 오류로 목록 폴링이 멈췄을 때 직접 다시 확인하는 경로 */}
-                    <AppTouchable style={styles.linkButton} onPress={load}>
-                        <Ionicons name="refresh" size={14} color={Colors.textSecondary} />
-                        <Text style={styles.linkText}>상태 새로고침</Text>
-                    </AppTouchable>
                 </View>
             )}
 
@@ -312,16 +317,20 @@ const styles = StyleSheet.create({
         borderRadius: BorderRadius.sm,
         backgroundColor: '#E6F8F6',
     },
-    strategyBadgeNone: {
-        backgroundColor: Colors.background,
-    },
     strategyBadgeText: {
         fontSize: FontSizes.sm,
         fontWeight: '700',
         color: Colors.primaryDark,
     },
-    strategyBadgeTextNone: {
-        color: Colors.textMuted,
+    strategyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    strategyLabel: {
+        fontSize: FontSizes.md,
+        color: Colors.textSecondary,
+        fontWeight: '600',
     },
     sectionTitleRow: {
         flexDirection: 'row',
@@ -387,17 +396,6 @@ const styles = StyleSheet.create({
     retryAtText: {
         fontSize: FontSizes.md,
         fontWeight: '600',
-        color: Colors.textSecondary,
-    },
-    linkButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingVertical: Spacing.sm,
-        paddingHorizontal: Spacing.md,
-    },
-    linkText: {
-        fontSize: FontSizes.md,
         color: Colors.textSecondary,
     },
     footer: {
