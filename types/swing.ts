@@ -26,26 +26,13 @@ export type SwingItem = {
 
 // 매수 방식 (SWING_TRADE.FULL_ENTRY_YN)
 // 'Y': 매수 신호 시 배정금 전량 투입 (호가 차이 버퍼로 99%)
-// 'N': 신호 강도(conviction)에 비례해 배정금의 32~80% 투입 — 기본값 (단일 이평선)
-//      오더블럭은 손절폭 기준 (손절 시 배정금 2% 손실, 상한 80%) — fullEntryOptionsFor 참고
+// 'N': 신호 강도(conviction)에 비례해 배정금의 32~80% 투입 — 기본값
 export type FullEntryYn = 'Y' | 'N';
 
-export type FullEntryOption = { value: FullEntryYn; label: string; description: string };
-
-export const FULL_ENTRY_OPTIONS: FullEntryOption[] = [
+export const FULL_ENTRY_OPTIONS: { value: FullEntryYn; label: string; description: string }[] = [
     { value: 'N', label: '신호 강도 비례', description: '신호 강도에 따라 배정금의 32~80%를 매수합니다' },
     { value: 'Y', label: '전량 매수', description: '매수 신호가 나면 배정금 전량을 매수합니다' },
 ];
-
-// 오더블럭('O')은 수량을 손절폭으로 정한다 (백엔드 BaseOrderBlockStrategy.entry_qty — RISK_PER_TRADE 2%, 상한 80%)
-const ORDER_BLOCK_FULL_ENTRY_OPTIONS: FullEntryOption[] = [
-    { value: 'N', label: '손절폭 기준', description: '손절되면 배정금의 2%만 잃도록 수량을 정합니다 (최대 배정금의 80%)' },
-    FULL_ENTRY_OPTIONS[1],
-];
-
-/** 전략별 매수 방식 선택지 — 같은 'N'이라도 전략마다 수량을 정하는 방식이 다르다 */
-export const fullEntryOptionsFor = (swingType?: string): FullEntryOption[] =>
-    swingType === 'O' ? ORDER_BLOCK_FULL_ENTRY_OPTIONS : FULL_ENTRY_OPTIONS;
 
 // 가용 자본 조회 응답 타입
 // 모의투자는 현금/주문가능 소스가 없어 한도 추적이 불가능하다.

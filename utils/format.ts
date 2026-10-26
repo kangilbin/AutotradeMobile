@@ -59,14 +59,13 @@ export const formatProfitRate = (rate: number | undefined | null): string => {
 
 /**
  * 스윙 타입 텍스트 변환
- * @param type 스윙 타입 코드 ('A' | 'S' | 'B' | 'O')
+ * @param type 스윙 타입 코드 ('A' | 'S' | 'B')
  * @returns 표시용 텍스트
  */
 export const getSwingTypeText = (type: string): string => {
     switch (type) {
         case 'A': return '이평선';
         case 'S': return '단일이평선';
-        case 'O': return '오더블럭';
         case 'B': return '일목균형표';
         default: return type;
     }
