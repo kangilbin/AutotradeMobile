@@ -13,6 +13,7 @@ export type StockReviewVerdict = '적합' | '보류' | '부적합';
 
 // 목록 항목 (GET /stock-review)
 export type StockReviewItem = {
+    MRKT_CODE?: string  // J(국내) / NYS·NAS·AMS(미국). 이전 항목엔 없을 수 있다 → 국내로 간주
     ST_CODE: string
     ST_NM: string | null
     STATUS: StockReviewStatus
