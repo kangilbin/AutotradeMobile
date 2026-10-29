@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, Alert, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import AppTouchable from '../common/AppTouchable';
 import AppButton from '../common/AppButton';
-import { SwingItem, AvailableCapitalResponse, FullEntryYn, fullEntryOptionsFor } from '../../types/swing';
+import { SwingItem, AvailableCapitalResponse, FullEntryYn, FULL_ENTRY_OPTIONS } from '../../types/swing';
 import { updateSwingSettings, getAvailableCapital } from '../../contexts/backEndApi';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { MarketCode } from '../../types/market';
@@ -15,7 +15,6 @@ const SWING_TYPES = {
     SINGLE_MA: 'S',      // 단일 이동평균선
     MULTI_MA: 'A',       // 이동평균선 (단기/중기/장기)
     ICHIMOKU: 'B',       // 일목균형표
-    ORDER_BLOCK: 'O',    // 오더블럭
 } as const;
 
 type SwingTypeKey = keyof typeof SWING_TYPES;
@@ -25,12 +24,7 @@ const SWING_TYPE_LABELS: Record<SwingTypeValue, string> = {
     [SWING_TYPES.SINGLE_MA]: '단일 이평선',
     [SWING_TYPES.MULTI_MA]: '이동평균선',
     [SWING_TYPES.ICHIMOKU]: '일목균형표',
-    [SWING_TYPES.ORDER_BLOCK]: '오더블럭',
 };
-
-// 편집 모드에서 고를 수 있는 전략 (실전 전략이 있는 것만)
-// TODO: 이동평균선(MULTI_MA), 일목균형표(ICHIMOKU) 개발 후 활성화
-const SELECTABLE_SWING_TYPES: SwingTypeValue[] = [SWING_TYPES.SINGLE_MA, SWING_TYPES.ORDER_BLOCK];
 
 interface SettingsTabProps {
     swingData: SwingItem | null;
@@ -263,30 +257,33 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>스윙 전략</Text>
 
-                    {/* 유형 — 옵션이 둘 이상이라 매수 방식과 같이 편집 모드에선 라벨 아래 줄로 내린다 */}
-                    <View style={[styles.settingRow, isEditMode && styles.settingRowStacked]}>
+                    <View style={styles.settingRow}>
                         <Text style={styles.label}>유형</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
-                                {SELECTABLE_SWING_TYPES.map((type) => {
-                                    const selected = form.SWING_TYPE === type;
-                                    return (
-                                        <AppTouchable
-                                            key={type}
-                                            style={[styles.radioOption, selected && styles.radioOptionSelected]}
-                                            onPress={() => handleSwingTypeChange(type)}
-                                            // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
-                                            cooldownMs={0}
-                                        >
-                                            <View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>
-                                                {selected && <View style={styles.radioInner} />}
-                                            </View>
-                                            <Text style={[styles.radioLabel, selected && styles.radioLabelSelected]}>
-                                                {SWING_TYPE_LABELS[type]}
-                                            </Text>
-                                        </AppTouchable>
-                                    );
-                                })}
+                                {/* TODO: 이동평균선(MULTI_MA), 일목균형표(ICHIMOKU) 개발 후 활성화 */}
+                                <AppTouchable
+                                    style={[
+                                        styles.radioOption,
+                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => handleSwingTypeChange(SWING_TYPES.SINGLE_MA)}
+                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                    cooldownMs={0}
+                                >
+                                    <View style={[
+                                        styles.radioCircle,
+                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioCircleSelected
+                                    ]}>
+                                        {form.SWING_TYPE === SWING_TYPES.SINGLE_MA && <View style={styles.radioInner} />}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioLabel,
+                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioLabelSelected
+                                    ]}>
+                                        {SWING_TYPE_LABELS[SWING_TYPES.SINGLE_MA]}
+                                    </Text>
+                                </AppTouchable>
                             </View>
                         ) : (
                             <Text style={styles.value}>
@@ -302,7 +299,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         <Text style={styles.label}>매수 방식</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
-                                {fullEntryOptionsFor(form.SWING_TYPE).map((option) => {
+                                {FULL_ENTRY_OPTIONS.map((option) => {
                                     const selected = form.FULL_ENTRY_YN === option.value;
                                     return (
                                         <AppTouchable
@@ -323,7 +320,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                             </View>
                         ) : (
                             <Text style={styles.value}>
-                                {fullEntryOptionsFor(form.SWING_TYPE).find(o => o.value === form.FULL_ENTRY_YN)?.label}
+                                {FULL_ENTRY_OPTIONS.find(o => o.value === form.FULL_ENTRY_YN)?.label}
                             </Text>
                         )}
                     </View>
