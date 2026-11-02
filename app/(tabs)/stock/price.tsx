@@ -208,7 +208,7 @@ export default function PriceScreen() {
             {/* 상단 헤더 */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                    <Text style={styles.stockName}>{stockName}</Text>
+                    <Text style={styles.stockName} numberOfLines={1}>{stockName}</Text>
                     <View style={styles.codeBadge}>
                         <Text style={styles.codeBadgeText}>{stCode}</Text>
                     </View>
@@ -414,11 +414,15 @@ const styles = StyleSheet.create({
         gap: Spacing.sm,
     },
     stockName: {
+        // RN 의 flexShrink 기본값은 0 이라, 긴 종목명은 headerLeft 를 뚫고 나가 코드 배지를 오른쪽 '실시간' 배지 위로 밀어낸다.
+        // 이름만 줄어들게(말줄임) 하고 배지들은 줄지 않게 고정한다
+        flexShrink: 1,
         fontSize: FontSizes.xl,
         fontWeight: '700',
         color: Colors.textPrimary,
     },
     codeBadge: {
+        flexShrink: 0,
         backgroundColor: Colors.background,
         borderRadius: BorderRadius.full,
         paddingHorizontal: Spacing.sm,
@@ -430,6 +434,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     marketBadge: {
+        flexShrink: 0,
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.xs,
