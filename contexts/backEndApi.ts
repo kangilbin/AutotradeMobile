@@ -16,7 +16,8 @@ import {
 } from "../types/stock";
 import { SwingListResponse, AvailableCapitalResponse, FullEntryYn } from '../types/swing';
 import { UpdateUserProfileRequest, NotiSettingItem, UpdateNotificationRequest, PushTokenRegisterRequest, PushTokenDeleteRequest } from '../types/user';
-import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse } from '../types/tradeHistory';
+import { TradeHistoryWithChartResponse, TradeStats, TradeHistoryPageResponse, TradeCyclesResponse } from '../types/tradeHistory';
+import { PoolSetting, PoolSettingUpdate, ParkingStatus, ParkResult, PoolMarket } from '../types/pool';
 import { SellAllRequest } from '../types/order';
 import { StockReviewItem, StockReviewDetail } from '../types/stockReview';
 import {
@@ -754,6 +755,64 @@ export const getTradeHistoryList = async (
         return response.data.data;
     } catch (error: unknown) {
         return handleApiError(error, '매매 내역 조회');
+    }
+};
+
+// 사이클별 수익률 + 누적 (매수 → 전량 매도 반복 성과)
+export const getTradeCycles = async (
+    swingId: number
+): Promise<TradeCyclesResponse | undefined> => {
+    try {
+        const response = await api.get(`/trade-history/${swingId}/cycles`);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '사이클 수익률 조회');
+    }
+};
+
+// 풀 설정 조회 (국내·미국 2건) — 저장된 설정이 없으면 기본값(꺼짐)
+// silent: 화면 표시 분기용 백그라운드 조회 — 오버레이·알럿 없이, 실패하면 undefined (호출부가 기존 화면으로 대체)
+export const getPoolSettings = async (accountNo: string, silent: boolean = false): Promise<PoolSetting[] | undefined> => {
+    try {
+        const response = await api.get('/pool', { params: { account_no: accountNo }, silent });
+        return response.data.data;
+    } catch (error: unknown) {
+        if (silent) {
+            console.error('풀 설정 조회 실패:', error);
+            return undefined;
+        }
+        return handleApiError(error, '풀 설정 조회');
+    }
+};
+
+// 풀 설정 저장 — 보낸 항목만 반영
+export const updatePoolSetting = async (setting: PoolSettingUpdate): Promise<PoolSetting | undefined> => {
+    try {
+        const response = await api.put('/pool', setting);
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '풀 설정 저장');
+    }
+};
+
+// 파킹 ETF 보유 현황 — 풀이 꺼져 있거나 파킹 종목이 없으면 서버가 400 (silent: 화면 보조 정보라 알럿 없이 undefined)
+export const getParkingStatus = async (accountNo: string, market: PoolMarket): Promise<ParkingStatus | undefined> => {
+    try {
+        const response = await api.get('/pool/park', { params: { account_no: accountNo, market }, silent: true });
+        return response.data.data;
+    } catch (error: unknown) {
+        console.error('파킹 현황 조회 실패:', error);
+        return undefined;
+    }
+};
+
+// 유휴 현금을 파킹 ETF로 전환 (남길 현금 제외)
+export const parkIdleCash = async (accountNo: string, market: PoolMarket): Promise<ParkResult | undefined> => {
+    try {
+        const response = await api.post('/pool/park', { ACCOUNT_NO: accountNo, MARKET: market });
+        return response.data.data;
+    } catch (error: unknown) {
+        return handleApiError(error, '현금 파킹');
     }
 };
 

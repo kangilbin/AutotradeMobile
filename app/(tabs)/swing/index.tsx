@@ -54,9 +54,15 @@ export default function SwingScreen() {
     const ListHeaderComponent = useCallback(() => (
         <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>스윙</Text>
-            <Text style={styles.sectionSubtitle}>{swingList.length}건</Text>
+            <View style={styles.sectionRight}>
+                <Text style={styles.sectionSubtitle}>{swingList.length}건</Text>
+                <AppTouchable style={styles.poolButton} onPress={() => router.push('/swing/pool')}>
+                    <Ionicons name="options-outline" size={14} color={Colors.primary} />
+                    <Text style={styles.poolButtonText}>풀 설정</Text>
+                </AppTouchable>
+            </View>
         </View>
-    ), [swingList.length]);
+    ), [swingList.length, router]);
 
     const ListEmptyComponent = useCallback(() => (
         <View style={styles.emptyContainer}>
@@ -121,6 +127,26 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.xl,
         fontWeight: 'bold',
         color: Colors.textPrimary,
+    },
+    sectionRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    poolButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: Spacing.md,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.sm,
+        borderWidth: 1,
+        borderColor: Colors.primary,
+    },
+    poolButtonText: {
+        fontSize: FontSizes.sm,
+        fontWeight: '600',
+        color: Colors.primary,
+        marginLeft: 4,
     },
     sectionSubtitle: {
         fontSize: FontSizes.md,
