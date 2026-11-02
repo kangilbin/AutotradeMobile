@@ -110,7 +110,8 @@ export default function PoolSettingScreen() {
         }
     };
 
-    // 현금 → 파킹 ETF 변환 — 입력한 남길 비율을 먼저 저장해(바뀐 경우만) 서버가 그 값으로 계산하게 한다
+    // 현금 → 파킹 ETF 변환 — 입력한 남길 비율을 먼저 저장해(바뀐 경우만) 서버가 그 값으로 계산하게 한다.
+    // 풀이 아직 꺼져 있으면(처음 들어온 계좌) 같은 저장에서 켜 둔다 — 서버는 풀이 꺼진 계좌의 파킹을 거절한다
     const handlePark = () => {
         if (!account?.ACCOUNT_NO || !form) return;
         const reserve = fromPct(form.parkReservePct);
@@ -118,18 +119,25 @@ export default function PoolSettingScreen() {
             Alert.alert('입력 오류', '남길 현금 비율을 숫자로 입력해주세요.');
             return;
         }
+        const poolOff = saved?.USE_YN !== 'Y';
         Alert.alert(
             '현금 파킹',
             `${marketLabel} 계좌의 현재 현금에서 총자산의 ${form.parkReservePct}%를 남기고 나머지를 ${PARK_ETF_LABEL[market]}로 변환합니다.\n` +
             '이미 보유한 파킹 ETF는 그대로 두고, 남는 현금만큼 추가로 매수합니다.\n' +
-            '매수 신호가 나면 필요한 만큼 자동으로 매도해 현금을 만듭니다.',
+            '매수 신호가 나면 필요한 만큼 자동으로 매도해 현금을 만듭니다.' +
+            (poolOff ? '\n풀 설정이 아직 꺼져 있어 함께 저장(켜기)합니다.' : ''),
             [
                 { text: '취소', style: 'cancel' },
                 {
                     text: '변환',
                     onPress: async () => {
-                        if (!saved || Number(reserve.toFixed(6)) !== Number(Number(saved.PARK_RESERVE_PCT).toFixed(6))) {
-                            const result = await updatePoolSetting({ ACCOUNT_NO: account.ACCOUNT_NO, MARKET: market, PARK_RESERVE_PCT: reserve });
+                        if (!saved || poolOff || Number(reserve.toFixed(6)) !== Number(Number(saved.PARK_RESERVE_PCT).toFixed(6))) {
+                            const result = await updatePoolSetting({
+                                ACCOUNT_NO: account.ACCOUNT_NO,
+                                MARKET: market,
+                                PARK_RESERVE_PCT: reserve,
+                                ...(poolOff && { USE_YN: 'Y' as const }),
+                            });
                             if (!result) return;
                             setSaved(result);
                         }
@@ -169,7 +177,10 @@ export default function PoolSettingScreen() {
                     <AppButton style={styles.saveButton} textStyle={styles.saveText} title="다시 시도" onPress={load} />
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+                // iOS: 키보드 높이만큼 스크롤 인셋을 늘리고 포커스된 입력창이 보이게 스크롤한다 (탭바 높이도 알아서 반영).
+                // Android 는 기본 adjustResize 로 창이 줄어들어 따로 처리할 필요가 없다.
+                <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
+                            automaticallyAdjustKeyboardInsets>
                     <View style={styles.card}>
                         <Text style={styles.label}>매수 규칙</Text>
                         <View style={styles.field}>
@@ -245,24 +256,21 @@ export default function PoolSettingScreen() {
                                    onChange={(t) => update({ parkReservePct: t })} last />
                         </View>
                         <View style={styles.parkStatus}>
-                            {saved?.USE_YN === 'Y' ? (
-                                <>
-                                    <Text style={styles.hint}>
-                                        {parking && parking.QTY != null
-                                            ? `보유 ${parking.QTY}주 · 평가 ${formatAmountWithUnit(parking.VALUE ?? 0, market === 'KR' ? 'J' : 'NAS')}`
-                                            : '보유 현황을 읽지 못했습니다'}
-                                    </Text>
-                                    <AppButton
-                                        style={styles.parkButton}
-                                        textStyle={styles.saveText}
-                                        title="현금 → 파킹 ETF 변환"
-                                        loadingText="처리 중..."
-                                        onPress={handlePark}
-                                    />
-                                </>
-                            ) : (
-                                <Text style={styles.hint}>종목을 활성화하거나 설정을 저장하면 변환할 수 있습니다.</Text>
+                            {/* 보유 현황은 풀이 켜져 있을 때만 읽을 수 있다. 버튼은 항상 보여주고 꺼져 있으면 변환 때 켠다 */}
+                            {saved?.USE_YN === 'Y' && (
+                                <Text style={styles.hint}>
+                                    {parking && parking.QTY != null
+                                        ? `보유 ${parking.QTY}주 · 평가 ${formatAmountWithUnit(parking.VALUE ?? 0, market === 'KR' ? 'J' : 'NAS')}`
+                                        : '보유 현황을 읽지 못했습니다'}
+                                </Text>
                             )}
+                            <AppButton
+                                style={styles.parkButton}
+                                textStyle={styles.saveText}
+                                title="현금 → 파킹 ETF 변환"
+                                loadingText="처리 중..."
+                                onPress={handlePark}
+                            />
                         </View>
                     </View>
 
@@ -316,6 +324,9 @@ function Field({ label, hint, value, onChange, last }: FieldProps) {
                 value={value}
                 onChangeText={onChange}
                 keyboardType="decimal-pad"
+                // 누르면 기존 값이 전체 선택돼 바로 덮어쓸 수 있다 (작은 칸에서 커서를 옮겨 지우기 어려움)
+                selectTextOnFocus
+                clearButtonMode="while-editing"
                 placeholder="-"
                 placeholderTextColor={Colors.textMuted}
             />
