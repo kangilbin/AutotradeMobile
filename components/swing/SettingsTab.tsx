@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppTouchable from '../common/AppTouchable';
 import AppButton from '../common/AppButton';
-import { SwingItem, AvailableCapitalResponse, FullEntryYn, FULL_ENTRY_OPTIONS } from '../../types/swing';
-import { updateSwingSettings, getAvailableCapital } from '../../contexts/backEndApi';
+import { SwingItem } from '../../types/swing';
+import { updateSwingSettings } from '../../contexts/backEndApi';
 import { useAccountStore } from '../../stores/useAccountStore';
 import { MarketCode } from '../../types/market';
-import { formatAmountWithUnit } from '../../utils/format';
-import axios from 'axios';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
@@ -35,34 +33,26 @@ interface SettingsTabProps {
 interface FormState {
     ST_CODE: string;
     SWING_TYPE: SwingTypeValue;
-    FULL_ENTRY_YN: FullEntryYn;
-    INIT_AMOUNT: number;
     SHORT_MA: number;
     MID_MA: number;
     LONG_MA: number;
 }
 
 interface ValidationErrors {
-    swingAmount: boolean;
     movingAverage: boolean;
 }
 
 export default function SettingsTab({ swingData, onStatusChange, onSellAll }: SettingsTabProps) {
     const [isEditMode, setIsEditMode] = useState(false);
     const account = useAccountStore((state) => state.account);
-    const [capitalInfo, setCapitalInfo] = useState<AvailableCapitalResponse | null>(null);
-    const [capitalLoading, setCapitalLoading] = useState(false);
     const [form, setForm] = useState<FormState>({
         ST_CODE: '',
         SWING_TYPE: SWING_TYPES.SINGLE_MA,
-        FULL_ENTRY_YN: 'N',
-        INIT_AMOUNT: 0,
         SHORT_MA: 5,
         MID_MA: 20,
         LONG_MA: 60,
     });
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
-        swingAmount: false,
         movingAverage: false,
     });
 
@@ -72,8 +62,6 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             setForm({
                 ST_CODE: swingData.ST_CODE || '',
                 SWING_TYPE: (swingData.SWING_TYPE as SwingTypeValue) || SWING_TYPES.SINGLE_MA,
-                FULL_ENTRY_YN: swingData.FULL_ENTRY_YN || 'N',
-                INIT_AMOUNT: swingData.INIT_AMOUNT || 0,
                 SHORT_MA: (swingData as any).SHORT_MA || 5,
                 MID_MA: (swingData as any).MID_MA || 20,
                 LONG_MA: (swingData as any).LONG_MA || 60,
@@ -81,17 +69,10 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
         }
     }, [swingData]);
 
-    const effectiveAvailable = capitalInfo ? capitalInfo.available_capital : null;
-    const isOverCapital = effectiveAvailable != null && form.INIT_AMOUNT > effectiveAvailable;
     const mrktCode: MarketCode = swingData?.MRKT_CODE || 'J';
 
-    const handleEdit = async () => {
+    const handleEdit = () => {
         setIsEditMode(true);
-        if (!account?.ACCOUNT_NO || !swingData) return;
-        setCapitalLoading(true);
-        const result = await getAvailableCapital(account.ACCOUNT_NO, mrktCode);
-        if (result) setCapitalInfo(result);
-        setCapitalLoading(false);
     };
 
     const handleCancel = () => {
@@ -100,21 +81,18 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             setForm({
                 ST_CODE: swingData.ST_CODE || '',
                 SWING_TYPE: (swingData.SWING_TYPE as SwingTypeValue) || SWING_TYPES.SINGLE_MA,
-                FULL_ENTRY_YN: swingData.FULL_ENTRY_YN || 'N',
-                INIT_AMOUNT: swingData.INIT_AMOUNT || 0,
                 SHORT_MA: (swingData as any).SHORT_MA || 5,
                 MID_MA: (swingData as any).MID_MA || 20,
                 LONG_MA: (swingData as any).LONG_MA || 60,
             });
         }
-        setValidationErrors({ swingAmount: false, movingAverage: false });
+        setValidationErrors({ movingAverage: false });
     };
 
     const validateForm = (): boolean => {
         const isMultiMA = form.SWING_TYPE === SWING_TYPES.MULTI_MA;
 
         const errors: ValidationErrors = {
-            swingAmount: form.INIT_AMOUNT <= 0 || isOverCapital,
             movingAverage: isMultiMA && (
                 form.SHORT_MA >= form.MID_MA || form.MID_MA >= form.LONG_MA
             ),
@@ -136,10 +114,9 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
         }
 
         try {
+            // 금액(배정금)·매수 방식은 없다 — 수량은 풀 설정의 고정 규칙(총자산·리스크)으로 정해진다
             const updateData: any = {
                 SWING_TYPE: form.SWING_TYPE,
-                INIT_AMOUNT: form.INIT_AMOUNT,
-                FULL_ENTRY_YN: form.FULL_ENTRY_YN,
             };
 
             // 이동평균선 타입일 때만 MA 값 포함
@@ -154,18 +131,6 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             setIsEditMode(false);
             onStatusChange(updateData);
         } catch (error) {
-            if (axios.isAxiosError(error) && error.response?.status === 400) {
-                const detail = error.response.data?.detail;
-                if (detail?.available_capital != null) {
-                    const available = formatAmountWithUnit(detail.available_capital, mrktCode);
-                    const requested = formatAmountWithUnit(detail.requested_amount || form.INIT_AMOUNT, mrktCode);
-                    Alert.alert(
-                        '금액 초과',
-                        `가용 자본이 부족합니다\n(가용: ${available}, 필요: ${requested})`
-                    );
-                    return;
-                }
-            }
             Alert.alert('오류', '설정 저장에 실패했습니다.');
         }
     };
@@ -217,38 +182,10 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         <Text style={styles.value}>{swingData.ST_CODE}</Text>
                     </View>
 
-                    {/* 스윙 금액 */}
+                    {/* 매수 금액 — 종목별 금액을 정하지 않는다. 신호가 나면 풀 설정의 고정 규칙으로 자동 계산 */}
                     <View style={[styles.settingRow, styles.settingRowLast]}>
-                        <Text style={styles.label}>스윙 금액</Text>
-                        {isEditMode ? (
-                            <View style={styles.amountEditContainer}>
-                                <TextInput
-                                    style={[styles.input, (validationErrors.swingAmount || isOverCapital) && styles.inputError]}
-                                    value={form.INIT_AMOUNT.toString()}
-                                    onChangeText={(text) => updateForm('INIT_AMOUNT', parseInt(text) || 0)}
-                                    keyboardType="numeric"
-                                    placeholder="금액 입력"
-                                />
-                                {effectiveAvailable != null && !capitalLoading && (
-                                    <Text style={styles.availableCapitalHint}>
-                                        등록 가능: {formatAmountWithUnit(effectiveAvailable, mrktCode)}
-                                    </Text>
-                                )}
-                                {/* 모의투자: 한도 추적 불가 → 등록 가능 금액 대신 미지원 안내 */}
-                                {capitalInfo && effectiveAvailable == null && !capitalLoading && (
-                                    <Text style={styles.mockCapitalHint}>
-                                        모의투자 한도 미지원
-                                    </Text>
-                                )}
-                                {isOverCapital && effectiveAvailable != null && (
-                                    <Text style={styles.overCapitalText}>
-                                        보유 자본을 초과합니다
-                                    </Text>
-                                )}
-                            </View>
-                        ) : (
-                            <Text style={styles.value}>{formatAmountWithUnit(form.INIT_AMOUNT, mrktCode)}</Text>
-                        )}
+                        <Text style={styles.label}>매수 금액</Text>
+                        <Text style={styles.value}>총자산 대비 리스크로 자동 계산</Text>
                     </View>
 
                 </View>
@@ -257,7 +194,7 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>스윙 전략</Text>
 
-                    <View style={styles.settingRow}>
+                    <View style={[styles.settingRow, styles.settingRowLast]}>
                         <Text style={styles.label}>유형</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
@@ -288,39 +225,6 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         ) : (
                             <Text style={styles.value}>
                                 {SWING_TYPE_LABELS[form.SWING_TYPE] || form.SWING_TYPE}
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* 매수 방식 (FULL_ENTRY_YN)
-                        편집 모드는 옵션 두 개가 라벨 옆 한 줄에 들어가기엔 빠듯해서, 선택 시 굵어지는
-                        폭만큼 줄바꿈이 생겼다 켜졌다 한다 → 옵션을 라벨 아래 줄로 내려 레이아웃을 고정 */}
-                    <View style={[styles.settingRow, styles.settingRowLast, isEditMode && styles.settingRowStacked]}>
-                        <Text style={styles.label}>매수 방식</Text>
-                        {isEditMode ? (
-                            <View style={styles.radioGroup}>
-                                {FULL_ENTRY_OPTIONS.map((option) => {
-                                    const selected = form.FULL_ENTRY_YN === option.value;
-                                    return (
-                                        <AppTouchable
-                                            key={option.value}
-                                            style={[styles.radioOption, selected && styles.radioOptionSelected]}
-                                            onPress={() => updateForm('FULL_ENTRY_YN', option.value)}
-                                            cooldownMs={0}
-                                        >
-                                            <View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>
-                                                {selected && <View style={styles.radioInner} />}
-                                            </View>
-                                            <Text style={[styles.radioLabel, selected && styles.radioLabelSelected]}>
-                                                {option.label}
-                                            </Text>
-                                        </AppTouchable>
-                                    );
-                                })}
-                            </View>
-                        ) : (
-                            <Text style={styles.value}>
-                                {FULL_ENTRY_OPTIONS.find(o => o.value === form.FULL_ENTRY_YN)?.label}
                             </Text>
                         )}
                     </View>

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SwingSummary } from '../../types/swing';
 import { MarketCode } from '../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../constants/theme';
-import { formatAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../utils/format';
+import { formatAmountWithUnit, formatSignedAmountWithUnit, getProfitLossColor, formatProfitRate } from '../../utils/format';
 
 interface SwingSummaryCardProps {
     summary: SwingSummary | null;
@@ -61,6 +61,12 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
         outputRange: ['0deg', '180deg'],
     });
 
+    // 풀 모드는 배정금이 없다: 원금은 총평가 − 누적 손익(추정), 누적 평가금액은 곧 현재 총자산
+    const poolMode = summary?.POOL_MODE === true;
+    // 파킹 ETF 는 스윙이 아니라 목록에 없다 — 이자를 받는 현금성 자산으로 현금과 함께 보여준다
+    const parking = summary?.PARKING ?? null;
+    const hasCash = !!summary && summary.CASH_ASSET !== null;
+
     return (
         <View style={styles.container}>
             {/* 메인 투자 금액 */}
@@ -69,6 +75,12 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
                 <Text style={styles.mainValue}>
                     {summary ? formatAmountWithUnit(summary.TOTAL_INVESTMENT_AMOUNT, mrktCode) : PLACEHOLDER}
                 </Text>
+                {parking && hasCash && (
+                    <Text style={styles.cashLine}>
+                        현금 {formatAmountWithUnit(summary!.CASH_ASSET as number, mrktCode)}
+                        {' · '}파킹 {formatAmountWithUnit(parking.VALUE, mrktCode)}
+                    </Text>
+                )}
             </View>
 
             {expanded && (
@@ -88,20 +100,25 @@ function SwingSummaryCard({ summary, mrktCode = 'J' }: SwingSummaryCardProps) {
                             mrktCode={mrktCode}
                         />
                         <SummaryItem
-                            label="현금"
-                            value={formatCashAsset(summary, mrktCode)}
+                            label={parking && hasCash ? '현금성 자산' : '현금'}
+                            value={parking && hasCash
+                                ? formatAmountWithUnit((summary!.CASH_ASSET as number) + parking.VALUE, mrktCode)
+                                : formatCashAsset(summary, mrktCode)}
+                            sub={parking && hasCash
+                                ? `파킹 ${parking.QTY}주 ${formatSignedAmountWithUnit(parking.PROFIT, mrktCode)}`
+                                : undefined}
                         />
                     </View>
 
-                    {/* 누적 기준: 배정금(스윙 금액 합) → 누적 평가금액(잔여 현금+보유 평가) → 종합 수익(차이, ÷배정금) */}
+                    {/* 누적 기준: 원금 → 누적 평가금액 → 종합 수익(차이, ÷원금). 풀 모드는 원금 = 총평가 − 누적 손익(추정) */}
                     <Text style={[styles.rowCaption, styles.rowCaptionSpaced]}>누적</Text>
                     <View style={styles.subInfoContainer}>
                         <SummaryItem
-                            label="배정금"
+                            label={poolMode ? '원금(추정)' : '원금'}
                             value={summary ? formatAmountWithUnit(summary.TOTAL_PRINCIPAL, mrktCode) : PLACEHOLDER}
                         />
                         <SummaryItem
-                            label="누적 평가금액"
+                            label={poolMode ? '현재 총자산' : '누적 평가금액'}
                             value={summary ? formatAmountWithUnit(summary.TOTAL_VALUE, mrktCode) : PLACEHOLDER}
                         />
                         <ProfitItem
@@ -166,13 +183,15 @@ const ProfitItem = memo(function ProfitItem({ label, summary, amount, rate, mrkt
 interface SummaryItemProps {
     label: string;
     value: string;
+    sub?: string;   // 값 아래 작게 붙는 보조 문구 (예: 파킹 보유·평가손익)
 }
 
-const SummaryItem = memo(function SummaryItem({ label, value }: SummaryItemProps) {
+const SummaryItem = memo(function SummaryItem({ label, value, sub }: SummaryItemProps) {
     return (
         <View style={styles.subInfoItem}>
             <Text style={styles.subInfoLabel}>{label}</Text>
             <Text style={styles.subInfoValue}>{value}</Text>
+            {sub ? <Text style={styles.subInfoSub}>{sub}</Text> : null}
         </View>
     );
 });
@@ -201,6 +220,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.textPrimary,
         letterSpacing: -0.5,
+    },
+    cashLine: {
+        fontSize: FontSizes.sm,
+        color: Colors.textSecondary,
+        marginTop: Spacing.xs,
     },
     // 카드 padding을 음수 margin으로 상쇄 → 하단 띠 전체가 터치 영역
     toggleArea: {
@@ -257,6 +281,11 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.md,
         fontWeight: '600',
         color: Colors.textSecondary,
+    },
+    subInfoSub: {
+        fontSize: FontSizes.xs ?? FontSizes.sm,
+        color: Colors.textMuted,
+        marginTop: 2,
     },
     profitInfo: {
         alignItems: 'center',

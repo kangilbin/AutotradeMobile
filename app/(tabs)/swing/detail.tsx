@@ -13,13 +13,12 @@ import { SwingItem } from '../../../types/swing';
 import { Ionicons } from '@expo/vector-icons';
 import { updateSwingSettings, deleteSwing, sellAll } from '../../../contexts/backEndApi';
 import { AddStockAutoRequest } from '../../../types/stock';
-import axios from 'axios';
 import SettingsTab from '../../../components/swing/SettingsTab';
 import ChartTab from '../../../components/swing/ChartTab';
 import HistoryTab from '../../../components/swing/HistoryTab';
 import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
-import { MarketCode } from '../../../types/market';
+import { MarketCode, isOverseasMarket } from '../../../types/market';
 
 export default function SwingDetailScreen() {
     const params = useLocalSearchParams();
@@ -94,19 +93,6 @@ export default function SwingDetailScreen() {
                             setSwingData(prev => prev ? { ...prev, USE_YN: newActiveYn } : null);
                             Alert.alert('성공', `스윙이 ${action}되었습니다.`, [{ text: '확인' }]);
                         } catch (error) {
-                            if (axios.isAxiosError(error) && error.response?.status === 400) {
-                                const detail = error.response.data?.detail;
-                                if (detail?.available_capital != null) {
-                                    const available = detail.available_capital.toLocaleString();
-                                    const requested = (detail.requested_amount || swingData.INIT_AMOUNT).toLocaleString();
-                                    Alert.alert(
-                                        '활성화 불가',
-                                        `가용 자본이 부족합니다\n(가용: ${available}원, 필요: ${requested}원)`,
-                                        [{ text: '확인' }]
-                                    );
-                                    return;
-                                }
-                            }
                             Alert.alert('오류', '스윙 상태 변경 중 오류가 발생했습니다.', [{ text: '확인' }]);
                         }
                     },
@@ -210,11 +196,15 @@ export default function SwingDetailScreen() {
                     onPress: async () => {
                         try {
                             // 스윙 데이터를 백트레이딩 파라미터로 변환
+                            // 스윙에는 배정금이 없다(0) — 백테스트는 가상의 투자금이 필요하므로 시장별 기준 금액을 쓴다
+                            //   (수익률은 금액과 무관하고, 실전의 풀 사이징과는 별개의 단일 종목 시뮬레이션이다)
                             const backtestingParams: AddStockAutoRequest = {
                                 ST_CODE: swingData.ST_CODE,
                                 MRKT_CODE: swingData.MRKT_CODE || '',
                                 ACCOUNT_NO: account?.ACCOUNT_NO as string,
-                                INIT_AMOUNT: swingData.INIT_AMOUNT,
+                                INIT_AMOUNT: swingData.INIT_AMOUNT > 0
+                                    ? swingData.INIT_AMOUNT
+                                    : (isOverseasMarket(swingData.MRKT_CODE || mrktCode) ? 10_000 : 10_000_000),
                                 SWING_TYPE: swingData.SWING_TYPE,
                                 FULL_ENTRY_YN: swingData.FULL_ENTRY_YN || 'N',
                             };

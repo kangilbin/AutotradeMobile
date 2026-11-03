@@ -25,6 +25,13 @@ interface SwingCardProps {
 function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
     const profitColor = getProfitLossColor(item.EVLU_PFLS_AMT);
     const isProfit = item.EVLU_PFLS_AMT >= 0;
+    // 풀 모드 행(REALIZED_PFLS_AMT 존재): 보유 0주면 손익·수익률이 '확정 손익, 총자산 대비'(종목 수익률 아님),
+    // 보유 중이면 평가손익은 그대로이고 지난 사이클에서 확정한 금액을 따로 보여준다.
+    const isPoolRow = item.REALIZED_PFLS_AMT != null;
+    // 보유가 없는 행에는 HLDG_QTY 가 아예 내려오지 않으므로(undefined) '0과 같다'가 아니라 '양수가 아니다'로 판정한다.
+    // KIS 값이라 문자열("620")로 올 수도 있어 Number 로 바꿔 비교한다.
+    const isPoolFlat = isPoolRow && !(Number(item.HLDG_QTY) > 0);
+    const showPastRealized = isPoolRow && !isPoolFlat && item.REALIZED_PFLS_AMT !== 0;
     // 매수 전에는 현재가·매입가가 비어 있어 등락을 따질 수 없다.
     // 이때도 아이콘을 그리면 'remove'(가로 막대)가 formatPrice 의 '-' 옆에 붙어 '--' 로 보인다.
     const hasPriceComparison = item.PRPR != null && item.ENTRY_PRICE != null;
@@ -98,17 +105,25 @@ function SwingCard({ item, onPress, mrktCode = 'J' }: SwingCardProps) {
             {/* 손익 하이라이트 */}
             <View style={[styles.profitSection, { backgroundColor: isProfit ? '#FFF5F5' : '#F0F7FF' }]}>
                 <View style={styles.profitRow}>
-                    <Text style={styles.profitLabel}>평가손익</Text>
+                    <Text style={styles.profitLabel}>{isPoolFlat ? '확정손익' : '평가손익'}</Text>
                     <Text style={[styles.profitValue, { color: profitColor }]}>
                         {formatSignedAmountWithUnit(item.EVLU_PFLS_AMT, mrktCode)}
                     </Text>
                 </View>
                 <View style={styles.profitRow}>
-                    <Text style={styles.profitLabel}>수익률</Text>
+                    <Text style={styles.profitLabel}>{isPoolFlat ? '총자산 대비' : '수익률'}</Text>
                     <Text style={[styles.profitRate, { color: profitColor }]}>
                         {formatProfitRate(item.EVLU_PFLS_RT)}
                     </Text>
                 </View>
+                {showPastRealized && (
+                    <View style={styles.profitRow}>
+                        <Text style={styles.profitLabel}>지난 사이클 확정</Text>
+                        <Text style={[styles.profitValue, { color: getProfitLossColor(item.REALIZED_PFLS_AMT ?? 0) }]}>
+                            {formatSignedAmountWithUnit(item.REALIZED_PFLS_AMT ?? 0, mrktCode)}
+                        </Text>
+                    </View>
+                )}
             </View>
         </AppTouchable>
     );

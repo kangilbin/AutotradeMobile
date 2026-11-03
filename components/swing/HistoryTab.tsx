@@ -5,6 +5,9 @@ import { MarketCode } from '../../types/market';
 import { TradeHistory } from '../../types/tradeHistory';
 import { TradeItemData, fromTradeHistory } from '../../types/tradeItem';
 import TradeHistoryItem from './TradeHistoryItem';
+import CycleSummary from './CycleSummary';
+import { usePoolActive } from '../../hooks/usePoolActive';
+import { useAccountStore } from '../../stores/useAccountStore';
 import { getTradeHistoryList } from '../../contexts/backEndApi';
 import { Colors, FontSizes, Spacing } from '../../constants';
 
@@ -22,6 +25,9 @@ export default function HistoryTab({ swingData, mrktCode = 'J' }: HistoryTabProp
     const [page, setPage] = useState(1);
     const [hasNext, setHasNext] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
+    // 사이클 누적은 풀 모드에서만 보여준다 — 배정금 스윙은 목록의 손익에 이미 확정분이 들어 있어 이중으로 더해진다
+    const account = useAccountStore((state) => state.account);
+    const poolActive = usePoolActive(account?.ACCOUNT_NO, swingData?.MRKT_CODE || mrktCode);
 
     // 초기 로드
     useEffect(() => {
@@ -66,14 +72,17 @@ export default function HistoryTab({ swingData, mrktCode = 'J' }: HistoryTabProp
     const keyExtractor = useCallback((item: TradeItemData) => item.id, []);
 
     const ListHeader = useMemo(() => {
-        if (trades.length === 0) return null;
+        if (trades.length === 0 || !swingData) return null;
         return (
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>매매 내역</Text>
-                <Text style={styles.sectionCount}>{totalCount}건</Text>
+            <View>
+                {poolActive && <CycleSummary swingData={swingData} mrktCode={mrktCode} />}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>매매 내역</Text>
+                    <Text style={styles.sectionCount}>{totalCount}건</Text>
+                </View>
             </View>
         );
-    }, [trades.length, totalCount]);
+    }, [trades.length, totalCount, swingData, mrktCode, poolActive]);
 
     const ListEmpty = useMemo(() => {
         if (loading) return null;

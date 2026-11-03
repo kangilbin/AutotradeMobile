@@ -55,3 +55,25 @@ export type TradeHistoryWithChartResponse = {
     price_history: TradeHistoryPriceItem[];
     ema20_history: Ema20Item[];
 };
+
+
+// 사이클(매수 → 전량 매도) 하나. 백엔드 GET /trade-history/{id}/cycles
+export type TradeCycle = {
+    START_DT: string;
+    END_DT: string | null;     // 진행 중이면 null
+    CLOSED: boolean;
+    COST: number;              // 사이클 매수금액
+    REALIZED_PNL: number;      // 확정 손익 (진행 중이면 부분매도로 이미 확정된 분)
+    RATE: number | null;       // 수익률 % — 닫힌 사이클만. 계산 불가(편입·손익 누락)면 null
+    COST_KNOWN: boolean;       // false: 이력에 없는 매수분(편입)이 섞여 있음
+};
+
+// 사이클 목록 + 닫힌 사이클 누적
+// CLOSED_RATE 는 계산 가능한 사이클(RATED_COUNT)만 곱해서 이은 값 (거래 기준)
+export type TradeCyclesResponse = {
+    cycles: TradeCycle[];
+    CLOSED_COUNT: number;
+    RATED_COUNT: number;
+    CLOSED_PNL: number;
+    CLOSED_RATE: number | null;
+};

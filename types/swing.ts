@@ -17,6 +17,7 @@ export type SwingItem = {
     EVLU_AMT: number  // 평가금액
     EVLU_PFLS_AMT: number  // 평가손익금액
     EVLU_PFLS_RT: number  // 평가손익율
+    REALIZED_PFLS_AMT?: number  // 확정 손익 누적 — 풀 모드 행(INIT_AMOUNT=0)에만 내려온다
     HLDG_QTY: number  // 보유수량
     ENTRY_PRICE: number | null  // 매입평균가 (매수 전 null)
     PRPR: number | null  // 현재가 (매수 전 null)
@@ -24,15 +25,9 @@ export type SwingItem = {
     FULL_ENTRY_YN?: FullEntryYn  // 매수 방식 ('Y' 전량 / 'N' 신호 강도 비례)
 }
 
-// 매수 방식 (SWING_TRADE.FULL_ENTRY_YN)
-// 'Y': 매수 신호 시 배정금 전량 투입 (호가 차이 버퍼로 99%)
-// 'N': 신호 강도(conviction)에 비례해 배정금의 32~80% 투입 — 기본값
+// 매수 방식 (SWING_TRADE.FULL_ENTRY_YN) — 앱에서는 더 이상 고르지 않는다 (풀 모드의 매수 수량은 풀 설정의 고정 규칙으로 정해진다).
+// 서버가 내려주는 값이라 타입만 남긴다.
 export type FullEntryYn = 'Y' | 'N';
-
-export const FULL_ENTRY_OPTIONS: { value: FullEntryYn; label: string; description: string }[] = [
-    { value: 'N', label: '신호 강도 비례', description: '신호 강도에 따라 배정금의 32~80%를 매수합니다' },
-    { value: 'Y', label: '전량 매수', description: '매수 신호가 나면 배정금 전량을 매수합니다' },
-];
 
 // 가용 자본 조회 응답 타입
 // 모의투자는 현금/주문가능 소스가 없어 한도 추적이 불가능하다.
@@ -52,9 +47,20 @@ export type SwingSummary = {
     UNREALIZED_PROFIT: number  // 평가손익
     UNREALIZED_PROFIT_RATE: number  // 평가손익 ÷ 매입금액
     // 누적 기준 (목록 스윙 합계 — 매도 완료분 손익 포함)
-    TOTAL_PRINCIPAL: number  // 배정금 (스윙 금액 합계 — 실제 매수액이 아니라 가용자본에서 묶인 돈, 손절해도 줄지 않음)
-    TOTAL_VALUE: number  // 누적 평가금액 (배정금 + 종합 수익 = 스윙별 잔여 현금 + 보유 평가금액 합)
+    TOTAL_PRINCIPAL: number  // 원금 — 풀 모드(POOL_MODE): 총평가 − 누적 손익(추정, 입출금 미반영) / 그 외: 스윙 기준 합계
+    TOTAL_VALUE: number  // 누적 평가금액 — 풀 모드: 현재 총자산 / 그 외: 원금 + 종합 수익
     TOTAL_PROFIT: number  // 종합 수익 (목록 손익 합계, 손절 포함)
-    TOTAL_PROFIT_RATE: number  // 종합 수익 ÷ 배정금
+    TOTAL_PROFIT_RATE: number  // 종합 수익 ÷ 원금
     CASH_ASSET: number | null  // 현금 자산 — 예수금 산출 불가 시 null (미지원)
+    POOL_MODE?: boolean  // true: 풀 모드 요약 — TOTAL_PRINCIPAL 은 원금(추정, 총평가−누적 손익), 수익률은 그 원금 대비
+    PARKING?: SwingParking | null  // 파킹 ETF 보유 — 스윙이 아니라 목록에 없고 요약에만 나온다. 파킹을 안 쓰거나 보유가 없으면 null
+}
+
+// 요약의 파킹 ETF 보유 (이자를 받는 현금성 자산) — 평가금은 총 자본금에 이미 포함돼 있다
+export type SwingParking = {
+    PARK_CODE: string
+    PARK_NM: string
+    QTY: number
+    VALUE: number   // 평가금액
+    PROFIT: number  // 현재 보유분의 평가손익 (팔면서 확정된 분은 기록하지 않는다)
 }

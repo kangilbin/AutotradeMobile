@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {
     StyleSheet,
     Text,
@@ -10,7 +10,7 @@ import {
 import {useRouter, useLocalSearchParams, useFocusEffect} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import DismissKeyboardView from '../../../components/DismissKeyboardView';
-import {addStockAuto, getAvailableCapital} from "../../../contexts/backEndApi";
+import {addStockAuto} from "../../../contexts/backEndApi";
 import {AddStockAutoRequest} from "../../../types/stock";
 import AppTouchable from "../../../components/common/AppTouchable";
 import AppButton from "../../../components/common/AppButton";
@@ -18,7 +18,6 @@ import { useAccountStore } from '../../../stores/useAccountStore';
 import { useMarketStore } from '../../../utils/useMarketStore';
 import { MarketCode, isOverseasMarket } from '../../../types/market';
 import { Colors, Shadows, FontSizes, Spacing, BorderRadius } from '../../../constants/theme';
-import { AvailableCapitalResponse, FULL_ENTRY_OPTIONS } from '../../../types/swing';
 
 // 스윙 타입 상수
 const SWING_TYPES = {
@@ -35,19 +34,6 @@ const SWING_TYPE_OPTIONS: { value: SwingTypeValue; label: string; icon: string }
     // { value: SWING_TYPES.ICHIMOKU, label: '일목균형표', icon: 'grid-outline' },
 ];
 
-// 금액 프리셋 (마켓별)
-const AMOUNT_PRESETS_KR = [
-    { label: '100만', value: 1000000 },
-    { label: '500만', value: 5000000 },
-    { label: '1000만', value: 10000000 },
-];
-
-const AMOUNT_PRESETS_US = [
-    { label: '$1,000', value: 1000 },
-    { label: '$5,000', value: 5000 },
-    { label: '$10,000', value: 10000 },
-];
-
 interface FormState extends AddStockAutoRequest {
     SHORT_MA?: number;
     MID_MA?: number;
@@ -60,7 +46,6 @@ export default function AddStockScreen() {
     // AI 종목 분석에서 넘어온 추천 전략 — 이 화면의 선택지에 있는 값일 때만 미리 선택
     const initialSwingType: SwingTypeValue =
         SWING_TYPE_OPTIONS.find((o) => o.value === swingType)?.value ?? SWING_TYPES.SINGLE_MA;
-    const swingAmountRef = useRef<TextInput | null>(null);
     const shortMaRef = useRef<TextInput | null>(null);
     const midMaRef = useRef<TextInput | null>(null);
     const longMaRef = useRef<TextInput | null>(null);
@@ -69,7 +54,8 @@ export default function AddStockScreen() {
 
     const effectiveMrktCode: MarketCode = (mrktCode as MarketCode) || currentMrktCode;
     const isOverseas = isOverseasMarket(effectiveMrktCode);
-    const amountPresets = isOverseas ? AMOUNT_PRESETS_US : AMOUNT_PRESETS_KR;
+    // 종목별 금액(배정금)은 없다 — 수량은 고정 규칙(총자산·리스크)으로 정해지므로 항상 0 으로 등록한다.
+    // 서버가 스윙을 등록·활성화할 때 이 계좌·시장의 자동 매수(풀)를 켜 두므로 따로 켤 것이 없다.
 
     // 글로벌 마켓(국내/미국 그룹)이 진입 종목과 달라지면 검색 화면으로 이동.
     // 미국 내 거래소 차이(NAS↔NYS 등)로는 튕기지 않음.
@@ -85,26 +71,6 @@ export default function AddStockScreen() {
             router.replace('/stock');
         }, [marketMismatch])
     );
-
-    const [capitalInfo, setCapitalInfo] = useState<AvailableCapitalResponse | null>(null);
-    const [capitalLoading, setCapitalLoading] = useState(true);
-
-    // 가용 자본 조회
-    useEffect(() => {
-        // 시장이 어긋나 곧 검색 화면으로 되돌릴 화면이다. 버려질 화면에서 조회하지 않는다.
-        if (marketMismatch) return;
-
-        const fetchCapital = async () => {
-            if (!account?.ACCOUNT_NO) return;
-            setCapitalLoading(true);
-            const result = await getAvailableCapital(account.ACCOUNT_NO, effectiveMrktCode);
-            if (result) {
-                setCapitalInfo(result);
-            }
-            setCapitalLoading(false);
-        };
-        fetchCapital();
-    }, [account?.ACCOUNT_NO, effectiveMrktCode, marketMismatch]);
 
     const [form, setForm] = useState<FormState>({
         ST_CODE: stCode as string || '',
@@ -123,11 +89,6 @@ export default function AddStockScreen() {
 
     const isMultiMA = form.SWING_TYPE === SWING_TYPES.MULTI_MA;
 
-    // 모의투자(capital_tracking=false / available_capital=null)는 한도 추적이 불가능하다.
-    // 이때는 "등록 가능" 표시·초과 경고를 끄고, null 과의 숫자 비교(null→0 강제)로 오경고가 뜨지 않도록 가드한다.
-    const capitalTracked = capitalInfo?.capital_tracking === true && capitalInfo.available_capital != null;
-    const isOverCapital = capitalTracked && form.INIT_AMOUNT > (capitalInfo!.available_capital as number);
-
     const handleFocus = (fieldName: string) => {
         setFocusedField(fieldName);
     };
@@ -138,7 +99,6 @@ export default function AddStockScreen() {
 
     const getSectionByField = (field: string) => {
         if (["SHORT_MA", "MID_MA", "LONG_MA"].includes(field)) return 'movingAverage';
-        if (field === 'INIT_AMOUNT' || field === 'swingAmount') return 'swingAmount';
         return '';
     };
 
@@ -158,9 +118,6 @@ export default function AddStockScreen() {
         if (field === 'SWING_TYPE') {
             setValidationErrors(prev => ({ ...prev, swingType: false }));
         }
-        if (field === 'INIT_AMOUNT') {
-            setValidationErrors(prev => ({ ...prev, swingAmount: false }));
-        }
         if (field === 'SHORT_MA' || field === 'MID_MA' || field === 'LONG_MA') {
             setValidationErrors(prev => ({ ...prev, movingAverage: false }));
         }
@@ -168,10 +125,6 @@ export default function AddStockScreen() {
 
     const handleSave = async () => {
         const errors: {[key: string]: boolean} = {};
-
-        if (!form.INIT_AMOUNT) {
-            errors.swingAmount = true;
-        }
 
         // 이동평균선 타입일 때 MA 검증
         if (isMultiMA) {
@@ -185,9 +138,7 @@ export default function AddStockScreen() {
 
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors);
-            if (errors.swingAmount) {
-                swingAmountRef.current?.focus();
-            } else if (errors.movingAverage) {
+            if (errors.movingAverage) {
                 shortMaRef.current?.focus();
             }
             return;
@@ -198,7 +149,7 @@ export default function AddStockScreen() {
                 ST_CODE: form.ST_CODE,
                 MRKT_CODE: form.MRKT_CODE,
                 ACCOUNT_NO: form.ACCOUNT_NO,
-                INIT_AMOUNT: form.INIT_AMOUNT,
+                INIT_AMOUNT: 0,
                 SWING_TYPE: form.SWING_TYPE,
                 FULL_ENTRY_YN: form.FULL_ENTRY_YN,
             };
@@ -210,7 +161,9 @@ export default function AddStockScreen() {
                 (requestData as any).LONG_MA = form.LONG_MA;
             }
 
-            await addStockAuto(requestData);
+            // addStockAuto 는 실패하면 알럿을 띄우고 undefined 를 돌려준다 — 실패했는데 화면을 떠나지 않는다
+            const created = await addStockAuto(requestData);
+            if (!created) return;
             router.dismissAll();
             router.replace('/swing');
         } catch (error) {
@@ -219,7 +172,7 @@ export default function AddStockScreen() {
     };
 
     const isFormValid = () => {
-        const baseValid = form.INIT_AMOUNT > 0;
+        const baseValid = true;
 
         if (isMultiMA) {
             const short = form.SHORT_MA || 0;
@@ -229,11 +182,6 @@ export default function AddStockScreen() {
         }
 
         return baseValid;
-    };
-
-    const formatCapitalAmount = (amount: number) => {
-        if (isOverseas) return `$${amount.toLocaleString('en-US')}`;
-        return `${amount.toLocaleString()}원`;
     };
 
     return (
@@ -289,35 +237,6 @@ export default function AddStockScreen() {
                     </View>
                 </View>
 
-                {/* 매수 방식 — 매수 신호 시 배정금을 얼마나 투입할지 (FULL_ENTRY_YN) */}
-                <View style={styles.card}>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="cart-outline" size={18} color={Colors.primary} />
-                        <Text style={styles.sectionTitle}>매수 방식</Text>
-                    </View>
-                    <View style={styles.chipContainer}>
-                        {FULL_ENTRY_OPTIONS.map((option) => {
-                            const selected = form.FULL_ENTRY_YN === option.value;
-                            return (
-                                <AppTouchable
-                                    key={option.value}
-                                    style={[styles.chip, selected && styles.chipSelected]}
-                                    onPress={() => handleChange('FULL_ENTRY_YN', option.value)}
-                                    // 선택 컨트롤 — 빠른 정정까지 삼키면 안 되므로 쿨다운 없음
-                                    cooldownMs={0}
-                                >
-                                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                                        {option.label}
-                                    </Text>
-                                </AppTouchable>
-                            );
-                        })}
-                    </View>
-                    <Text style={styles.optionDescription}>
-                        {FULL_ENTRY_OPTIONS.find(o => o.value === form.FULL_ENTRY_YN)?.description}
-                    </Text>
-                </View>
-
                 {/* 이동평균선 설정 - 이동평균선(A) 타입일 때만 표시 */}
                 {isMultiMA && (
                     <View style={getSectionStyle('movingAverage')}>
@@ -362,92 +281,6 @@ export default function AddStockScreen() {
                         )}
                     </View>
                 )}
-
-                {/* 투자금액 설정 */}
-                <View style={getSectionStyle('swingAmount')}>
-                    <View style={styles.sectionHeader}>
-                        <Ionicons name="wallet-outline" size={18} color={Colors.primary} />
-                        <Text style={styles.sectionTitle}>스윙 금액</Text>
-                        {!capitalLoading && capitalTracked && (
-                            <Text style={styles.availableCapitalBadge}>
-                                등록 가능: {formatCapitalAmount(capitalInfo!.available_capital as number)}
-                            </Text>
-                        )}
-                        {!capitalLoading && capitalInfo && !capitalTracked && (
-                            <Text style={styles.mockCapitalBadge}>
-                                모의투자 한도 미지원
-                            </Text>
-                        )}
-                    </View>
-                    <View style={styles.amountDisplay}>
-                        {isOverseas && <Text style={styles.amountPrefix}>$</Text>}
-                        <TextInput
-                            ref={swingAmountRef}
-                            style={styles.amountInput}
-                            placeholder="0"
-                            placeholderTextColor={Colors.textMuted}
-                            // 달러도 원화처럼 정수 단위로만 입력받는다.
-                            // 소수 자리를 매 입력마다 포맷하면 "1." 같은 입력 중간 상태가 지워져 편집이 불가능하다.
-                            value={
-                                form.INIT_AMOUNT
-                                    ? form.INIT_AMOUNT.toLocaleString(isOverseas ? 'en-US' : undefined)
-                                    : ''
-                            }
-                            onChangeText={(text) => {
-                                const numericValue = text.replace(/[^0-9]/g, '');
-                                const number = parseInt(numericValue) || 0;
-                                handleChange('INIT_AMOUNT', number);
-                            }}
-                            keyboardType="number-pad"
-                            onFocus={() => handleFocus('swingAmount')}
-                            onBlur={handleBlur}
-                        />
-                        {!isOverseas && <Text style={styles.amountUnit}>원</Text>}
-                    </View>
-                    <View style={styles.presetContainer}>
-                        {amountPresets.map((preset) => (
-                            <AppTouchable
-                                key={preset.value}
-                                style={[
-                                    styles.presetButton,
-                                    form.INIT_AMOUNT === preset.value && styles.presetButtonActive,
-                                ]}
-                                onPress={() => handleChange('INIT_AMOUNT', preset.value)}
-                                // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
-                                cooldownMs={0}
-                            >
-                                <Text style={[
-                                    styles.presetText,
-                                    form.INIT_AMOUNT === preset.value && styles.presetTextActive,
-                                ]}>
-                                    {preset.label}
-                                </Text>
-                            </AppTouchable>
-                        ))}
-                        <AppTouchable
-                            style={[
-                                styles.presetButton,
-                                !amountPresets.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetButtonActive,
-                            ]}
-                            onPress={() => swingAmountRef.current?.focus()}
-                        >
-                            <Text style={[
-                                styles.presetText,
-                                !amountPresets.some(p => p.value === form.INIT_AMOUNT) && form.INIT_AMOUNT > 0 && styles.presetTextActive,
-                            ]}>
-                                직접입력
-                            </Text>
-                        </AppTouchable>
-                    </View>
-                    {!capitalLoading && isOverCapital && (
-                        <View style={styles.capitalWarning}>
-                            <Ionicons name="information-circle-outline" size={14} color={Colors.warning} />
-                            <Text style={[styles.capitalWarningText, { color: Colors.warning }]}>
-                                가용 자본을 초과하는 금액입니다 (가용: {formatCapitalAmount(capitalInfo!.available_capital as number)})
-                            </Text>
-                        </View>
-                    )}
-                </View>
 
                 {/* 등록 버튼 */}
                 {/* handleSave 가 async 라 등록 중에는 스피너가 돌고 재탭이 막힌다 */}
