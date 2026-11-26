@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import { getTradeHistoryWithChart } from '../contexts/backEndApi';
 import { TradeHistory, TradeHistoryPriceItem, Ema20Item } from '../types/tradeHistory';
-import { CandleData, ChartMarker, LineOverlay } from '../components/StockChart';
+import { IchimokuFutureItem, IchimokuHistoryItem } from '../types/ichimoku';
+import { CandleData, ChartMarker, CloudOverlay, LineOverlay } from '../components/StockChart';
+import { buildIchimoku } from '../utils/ichimoku';
 import { Colors } from '../constants';
 
 const toDateStr = (s: string): string => {
@@ -28,6 +30,7 @@ interface UseTradeHistoryReturn {
     priceCandles: CandleData[];
     tradeMarkers: ChartMarker[];
     lineOverlays: LineOverlay[];
+    cloud: CloudOverlay | null;   // 일목균형표 구름 (일목 스윙만, 단일 이평선은 null)
     filteredTrades: TradeHistory[];
     loadEarlierData: () => Promise<void>;
     setVisibleDateRange: (from: string, to: string) => void;
@@ -42,6 +45,9 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
     const [trades, setTrades] = useState<TradeHistory[]>([]);
     const [priceHistory, setPriceHistory] = useState<TradeHistoryPriceItem[]>([]);
     const [ema20History, setEma20History] = useState<Ema20Item[]>([]);
+    // 일목 스윙은 서버가 ema20_history 를 비우고 ichimoku_* 를 채운다 (swing_type 으로 갈린다)
+    const [ichimokuHistory, setIchimokuHistory] = useState<IchimokuHistoryItem[]>([]);
+    const [ichimokuFuture, setIchimokuFuture] = useState<IchimokuFutureItem[]>([]);
 
     const [visibleFrom, setVisibleFrom] = useState('');
     const [visibleTo, setVisibleTo] = useState('');
@@ -70,6 +76,8 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
                     setTrades(result.trades);
                     setPriceHistory(result.price_history);
                     setEma20History(result.ema20_history);
+                    setIchimokuHistory(result.ichimoku_history ?? []);
+                    setIchimokuFuture(result.ichimoku_future ?? []);   // 미래 구름은 최신 구간 조회에만 온다
                     loadedStartRef.current = startDate;
                     loadedEndRef.current = endDate;
                 }
@@ -122,6 +130,12 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
                     const uniqueNew = result.ema20_history.filter(e => !existingDates.has(e.STCK_BSOP_DATE));
                     return [...uniqueNew, ...prev];
                 });
+                // 일목: 이전 구간은 앞에 이어 붙인다 (미래 구름은 건드리지 않는다 — 과거 구간 조회에는 없다)
+                setIchimokuHistory(prev => {
+                    const existingDates = new Set(prev.map(e => e.STCK_BSOP_DATE));
+                    const uniqueNew = (result.ichimoku_history ?? []).filter(e => !existingDates.has(e.STCK_BSOP_DATE));
+                    return [...uniqueNew, ...prev];
+                });
 
                 loadedStartRef.current = startDate;
             }
@@ -168,8 +182,15 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
         });
     }, [trades]);
 
-    // EMA20 오버레이
+    // 일목균형표 선 5개 + 구름 (일목 스윙일 때만 값이 있다)
+    const ichimoku = useMemo(
+        () => buildIchimoku(ichimokuHistory, ichimokuFuture),
+        [ichimokuHistory, ichimokuFuture],
+    );
+
+    // 전략별 오버레이: 일목 스윙은 일목 선, 단일 이평선 스윙은 EMA20
     const lineOverlays: LineOverlay[] = useMemo(() => {
+        if (ichimoku.lineOverlays.length > 0) return ichimoku.lineOverlays;
         if (!ema20History.length) return [];
         return [{
             data: ema20History
@@ -182,7 +203,7 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
             lineWidth: 2,
             title: '20EMA',
         }];
-    }, [ema20History]);
+    }, [ema20History, ichimoku]);
 
     // 날짜 범위에 따른 필터링된 매매 내역
     const filteredTrades: TradeHistory[] = useMemo(() => {
@@ -207,6 +228,7 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
         priceCandles,
         tradeMarkers,
         lineOverlays,
+        cloud: ichimoku.cloud,
         filteredTrades,
         loadEarlierData,
         setVisibleDateRange,

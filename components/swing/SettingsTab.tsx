@@ -6,23 +6,11 @@ import AppButton from '../common/AppButton';
 import { SwingItem } from '../../types/swing';
 import { updateSwingSettings } from '../../contexts/backEndApi';
 import { useAccountStore } from '../../stores/useAccountStore';
+import { getSwingTypeText } from '../../utils/format';
 import { MarketCode } from '../../types/market';
-
-// 스윙 타입 상수
-const SWING_TYPES = {
-    SINGLE_MA: 'S',      // 단일 이동평균선
-    MULTI_MA: 'A',       // 이동평균선 (단기/중기/장기)
-    ICHIMOKU: 'B',       // 일목균형표
-} as const;
-
-type SwingTypeKey = keyof typeof SWING_TYPES;
-type SwingTypeValue = typeof SWING_TYPES[SwingTypeKey];
-
-const SWING_TYPE_LABELS: Record<SwingTypeValue, string> = {
-    [SWING_TYPES.SINGLE_MA]: '단일 이평선',
-    [SWING_TYPES.MULTI_MA]: '이동평균선',
-    [SWING_TYPES.ICHIMOKU]: '일목균형표',
-};
+import {
+    SELECTABLE_SWING_TYPES, SWING_TYPES, SWING_TYPE_HINTS, SWING_TYPE_LABELS, SwingTypeValue,
+} from '../../constants/swingTypes';
 
 interface SettingsTabProps {
     swingData: SwingItem | null;
@@ -113,6 +101,13 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             return;
         }
 
+        // 보유 중에는 전략 타입을 바꿀 수 없다 (전략마다 청산선·사이클 상태가 달라 진행 중인 포지션을 넘겨받지 못한다).
+        // 서버도 거부하지만 요청 전에 막아 바로 이유를 알려 준다.
+        if (form.SWING_TYPE !== swingData.SWING_TYPE && swingData.HLDG_QTY > 0) {
+            Alert.alert('전략 변경 불가', '보유 중에는 전략을 바꿀 수 없습니다. 청산이 끝난 뒤 바꿔주세요.');
+            return;
+        }
+
         try {
             // 금액(배정금)·매수 방식은 없다 — 수량은 풀 설정의 고정 규칙(총자산·리스크)으로 정해진다
             const updateData: any = {
@@ -131,7 +126,9 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
             setIsEditMode(false);
             onStatusChange(updateData);
         } catch (error) {
-            Alert.alert('오류', '설정 저장에 실패했습니다.');
+            // 서버가 사유를 주는 거부(예: 진행 중인 사이클이 있어 전략 변경 불가)는 그 메시지를 그대로 보여 준다
+            const serverMessage = (error as any)?.response?.data?.message;
+            Alert.alert('오류', serverMessage || '설정 저장에 실패했습니다.');
         }
     };
 
@@ -198,36 +195,39 @@ export default function SettingsTab({ swingData, onStatusChange, onSellAll }: Se
                         <Text style={styles.label}>유형</Text>
                         {isEditMode ? (
                             <View style={styles.radioGroup}>
-                                {/* TODO: 이동평균선(MULTI_MA), 일목균형표(ICHIMOKU) 개발 후 활성화 */}
-                                <AppTouchable
-                                    style={[
-                                        styles.radioOption,
-                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioOptionSelected
-                                    ]}
-                                    onPress={() => handleSwingTypeChange(SWING_TYPES.SINGLE_MA)}
-                                    // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
-                                    cooldownMs={0}
-                                >
-                                    <View style={[
-                                        styles.radioCircle,
-                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioCircleSelected
-                                    ]}>
-                                        {form.SWING_TYPE === SWING_TYPES.SINGLE_MA && <View style={styles.radioInner} />}
-                                    </View>
-                                    <Text style={[
-                                        styles.radioLabel,
-                                        form.SWING_TYPE === SWING_TYPES.SINGLE_MA && styles.radioLabelSelected
-                                    ]}>
-                                        {SWING_TYPE_LABELS[SWING_TYPES.SINGLE_MA]}
-                                    </Text>
-                                </AppTouchable>
+                                {/* 서버 실전 팩토리에 등록된 전략만 고른다 (SELECTABLE_SWING_TYPES) */}
+                                {SELECTABLE_SWING_TYPES.map((type) => {
+                                    const selected = form.SWING_TYPE === type;
+                                    return (
+                                        <AppTouchable
+                                            key={type}
+                                            style={[styles.radioOption, selected && styles.radioOptionSelected]}
+                                            onPress={() => handleSwingTypeChange(type)}
+                                            // 선택 컨트롤 — 빠른 정정(눌렀다 바로 다른 값 선택)까지 삼키면 안 되므로 쿨다운 없음
+                                            cooldownMs={0}
+                                        >
+                                            <View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>
+                                                {selected && <View style={styles.radioInner} />}
+                                            </View>
+                                            <Text style={[styles.radioLabel, selected && styles.radioLabelSelected]}>
+                                                {SWING_TYPE_LABELS[type]}
+                                            </Text>
+                                        </AppTouchable>
+                                    );
+                                })}
                             </View>
                         ) : (
                             <Text style={styles.value}>
-                                {SWING_TYPE_LABELS[form.SWING_TYPE] || form.SWING_TYPE}
+                                {SWING_TYPE_LABELS[form.SWING_TYPE] || getSwingTypeText(form.SWING_TYPE)}
                             </Text>
                         )}
                     </View>
+                    {!!SWING_TYPE_HINTS[form.SWING_TYPE] && (
+                        <Text style={styles.strategyHint}>{SWING_TYPE_HINTS[form.SWING_TYPE]}</Text>
+                    )}
+                    {isEditMode && swingData.HLDG_QTY > 0 && (
+                        <Text style={styles.strategyHint}>※ 보유 중에는 전략을 바꿀 수 없습니다. 청산이 끝난 뒤 바꿔주세요.</Text>
+                    )}
                 </View>
 
                 {/* 전량 매도 섹션 */}
@@ -379,6 +379,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#FEF2F2',
     },
     // 라디오 버튼
+    strategyHint: {
+        marginTop: 10,
+        fontSize: 12,
+        lineHeight: 18,
+        color: '#7F8C8D',
+    },
     radioGroup: {
         flexDirection: 'row',
         flexWrap: 'wrap',

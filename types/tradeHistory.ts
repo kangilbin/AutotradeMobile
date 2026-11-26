@@ -1,3 +1,5 @@
+import type { IchimokuFutureItem, IchimokuHistoryItem } from './ichimoku';
+
 // 백엔드 TradeHistoryResponse 매핑
 export type TradeHistory = {
     TRADE_ID: number;
@@ -49,11 +51,14 @@ export type TradeHistoryPageResponse = {
 export type TradeHistoryWithChartResponse = {
     swing_id: number;
     st_code: string;
+    swing_type?: string;           // 'S' 단일 이평선 → ema20_history, 'I' 일목균형표 → ichimoku_history (구버전 서버에는 없다)
     start_date: string;
     end_date: string;
     trades: TradeHistory[];
     price_history: TradeHistoryPriceItem[];
-    ema20_history: Ema20Item[];
+    ema20_history: Ema20Item[];                   // 일목 스윙은 빈 목록 (EMA20 을 겹쳐 그리지 않는다)
+    ichimoku_history?: IchimokuHistoryItem[];     // 일목 스윙만 값이 있다
+    ichimoku_future?: IchimokuFutureItem[];       // 최신 구간 조회에만 있다 (과거 구간 조회는 빈 목록)
 };
 
 

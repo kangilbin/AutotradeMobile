@@ -66,6 +66,7 @@ export const getSwingTypeText = (type: string): string => {
     switch (type) {
         case 'A': return '이평선';
         case 'S': return '단일이평선';
+        case 'I': return '일목균형표';
         case 'B': return '일목균형표';
         default: return type;
     }
