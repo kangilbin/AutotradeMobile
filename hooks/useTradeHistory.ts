@@ -182,7 +182,7 @@ export const useTradeHistory = (swingId: number): UseTradeHistoryReturn => {
         });
     }, [trades]);
 
-    // 일목균형표 선 5개 + 구름 (일목 스윙일 때만 값이 있다)
+    // 일목균형표 구름 + 경계선 2개 (일목 스윙일 때만 값이 있다)
     const ichimoku = useMemo(
         () => buildIchimoku(ichimokuHistory, ichimokuFuture),
         [ichimokuHistory, ichimokuFuture],
