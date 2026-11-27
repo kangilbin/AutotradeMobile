@@ -1,4 +1,5 @@
 import { FullEntryYn } from './swing';
+import type { IchimokuFutureItem, IchimokuHistoryItem } from './ichimoku';
 
 export type StockStatus = {
     MRKT_CODE: string
@@ -18,7 +19,7 @@ export type AddStockAutoRequest = {
     MRKT_CODE: string   // 시장 코드
     ACCOUNT_NO: string
     INIT_AMOUNT: number
-    SWING_TYPE: string  // 'S' 단일 이평선, 'B' 일목균형표
+    SWING_TYPE: string  // 'S' 단일 이평선, 'I' 일목균형표
     FULL_ENTRY_YN?: FullEntryYn  // 매수 방식 — 생략 시 백엔드 기본값 'N'
 }
 
@@ -187,7 +188,9 @@ export type BacktestingResponse = {
         SWING_TYPE: string;
     };
     price_history: PriceHistoryItem[];
-    ema20_history?: EmaHistoryItem[];
+    ema20_history?: EmaHistoryItem[];          // 단일 이평선(S) 백테스트
+    ichimoku_history?: IchimokuHistoryItem[];  // 일목균형표(I) 백테스트 — 선·구름 (날짜별, 그려지는 위치 기준)
+    ichimoku_future?: IchimokuFutureItem[];    // 일목균형표(I) — 마지막 봉 뒤 26봉 구름 (날짜는 영업일 추정)
     trades: BacktestingTrade[];
 }
 

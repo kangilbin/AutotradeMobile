@@ -7,6 +7,7 @@ import StockChart, { VisibleRange } from '../StockChart';
 import { useTradeHistory } from '../../hooks/useTradeHistory';
 import { getTradeStats } from '../../contexts/backEndApi';
 import { TradeStats } from '../../types/tradeHistory';
+import { getOverlayLegend } from '../../utils/ichimoku';
 import { Colors, FontSizes, Spacing } from '../../constants';
 
 interface ChartTabProps {
@@ -23,6 +24,7 @@ export default function ChartTab({ swingData, mrktCode = 'J' }: ChartTabProps) {
         priceCandles,
         tradeMarkers,
         lineOverlays,
+        cloud,
         loadEarlierData,
         setVisibleDateRange,
         hasEarlierData,
@@ -68,12 +70,13 @@ export default function ChartTab({ swingData, mrktCode = 'J' }: ChartTabProps) {
                     <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
                     <Text style={styles.legendText}>매도</Text>
                 </View>
-                {lineOverlays.length > 0 && (
-                    <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
-                        <Text style={styles.legendText}>20EMA</Text>
+                {/* 전략별 범례: 단일 이평선은 20EMA, 일목균형표는 전환선·기준선·선행A/B·후행·구름 */}
+                {getOverlayLegend(lineOverlays, cloud).map(item => (
+                    <View key={item.label} style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                        <Text style={styles.legendText}>{item.label}</Text>
                     </View>
-                )}
+                ))}
             </View>
 
             {/* 차트 영역 (flex: 1) */}
@@ -85,6 +88,7 @@ export default function ChartTab({ swingData, mrktCode = 'J' }: ChartTabProps) {
                             markers={tradeMarkers}
                             chartType="candlestick"
                             lineOverlays={lineOverlays}
+                            cloud={cloud}
                             onVisibleRangeChange={handleVisibleRangeChange}
                             webViewRef={webViewRef}
                             mrktCode={mrktCode}
@@ -133,8 +137,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: Spacing.lg,
-        height: 36,
+        flexWrap: 'wrap',          // 일목은 범례 항목이 많아 한 줄에 안 들어가면 줄바꿈한다
+        columnGap: Spacing.lg,
+        rowGap: 2,
+        minHeight: 36,
+        paddingVertical: 4,
         paddingHorizontal: Spacing.lg,
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,

@@ -34,6 +34,19 @@ export interface LineOverlay {
     title?: string;
 }
 
+// 일목균형표 구름 — 두 선(a, b) 사이를 칠한다. a >= b 면 양운(bullColor), a < b 면 음운(bearColor)
+export interface CloudPoint {
+    time: string; // 'YYYY-MM-DD'
+    a: number;    // 선행스팬 A
+    b: number;    // 선행스팬 B
+}
+
+export interface CloudOverlay {
+    points: CloudPoint[];
+    bullColor?: string;
+    bearColor?: string;
+}
+
 export interface VisibleRange {
     from: string;
     to: string;
@@ -45,15 +58,17 @@ export interface StockChartProps {
     markers?: ChartMarker[];
     chartType?: 'line' | 'candlestick';
     lineOverlays?: LineOverlay[];
+    cloud?: CloudOverlay | null;   // 일목균형표 구름 (lightweight-charts 4.1 에는 두 선 사이 채우기가 없어 캔버스로 칠한다)
     onVisibleRangeChange?: (range: VisibleRange) => void;
     webViewRef?: React.RefObject<WebView | null>;
     mrktCode?: MarketCode;   // 통화·소수점 표시 기준 (기본: 국내)
 }
 
-export default function StockChart({ data, markers, chartType = 'line', lineOverlays, onVisibleRangeChange, webViewRef, mrktCode = 'J' }: StockChartProps) {
+export default function StockChart({ data, markers, chartType = 'line', lineOverlays, cloud, onVisibleRangeChange, webViewRef, mrktCode = 'J' }: StockChartProps) {
     const internalWebViewRef = useRef<WebView | null>(null);
     const effectiveRef = webViewRef || internalWebViewRef;
     const prevDataLenRef = useRef<number>(0);
+    const prevCloudLenRef = useRef<number>(0);
     const isInitializedRef = useRef(false);
 
     // 초기 HTML은 한 번만 생성 (chartType 변경 시에만 재생성)
@@ -62,6 +77,7 @@ export default function StockChart({ data, markers, chartType = 'line', lineOver
         const dataJSON = JSON.stringify(data);
         const markersJSON = JSON.stringify(markers || []);
         const overlaysJSON = JSON.stringify(lineOverlays || []);
+        const cloudJSON = JSON.stringify(cloud || null);
 
         return `<!doctype html>
 <html>
@@ -82,6 +98,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 #ohlc .val{font-weight:600;margin-left:2px}
 #ohlc .up{color:#FF6B6B}
 #ohlc .down{color:#3498DB}
+#cloud{position:absolute;top:36px;left:0;right:0;bottom:0;pointer-events:none;z-index:5}
 #err{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:red;font-size:14px;text-align:center;display:none;z-index:1000}
 #tooltip{
   position:absolute;display:none;z-index:100;
@@ -108,6 +125,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
 <div id="err"></div>
 <div id="tooltip"></div>
 <div id="chart"></div>
+<canvas id="cloud"></canvas>
 <script>
 (function(){
   var errEl=document.getElementById('err');
@@ -119,6 +137,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
     var RAW_DATA=${dataJSON};
     var RAW_MARKERS=${markersJSON};
     var RAW_OVERLAYS=${overlaysJSON};
+    var RAW_CLOUD=${cloudJSON};
   }catch(e){showErr('DATA PARSE ERROR: '+e.message);return;}
 
   function toBD(s){
@@ -193,6 +212,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
       window._series=null;
       window._candleData=null;
       window._overlaySeries=[];
+      window._cloud=RAW_CLOUD;
 
       if(CHART_TYPE==='candlestick'){
         window._series=chart.addCandlestickSeries({
@@ -268,6 +288,66 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
           td.dot.style.left=x+'px';
           td.dot.style.top=y+'px';
         }
+        drawCloud(); // 도트와 같은 시점(드래그·줌·범위 변경·데이터 갱신)에 구름도 좌표를 다시 계산한다
+      }
+
+      // ── 일목 구름 (선행스팬 A/B 사이 채우기) ──
+      // 시간·가격을 화면 좌표로 바꿔 캔버스에 직접 칠한다. 양운↔음운이 바뀌는 지점은 두 선이 만나는 곳에서 끊어 색을 나눈다.
+      function drawCloud(){
+        var cv=document.getElementById('cloud');
+        if(!cv)return;
+        var w=el.clientWidth,h=el.clientHeight;
+        var dpr=window.devicePixelRatio||1;
+        if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+          cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+          cv.style.width=w+'px';cv.style.height=h+'px';
+        }
+        var ctx=cv.getContext('2d');
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.clearRect(0,0,w,h);
+        var cl=window._cloud;
+        if(!cl||!cl.points||cl.points.length<2)return;
+        var ts=chart.timeScale();
+        var plotW=ts.width();
+        var plotH=h-(ts.height?ts.height():0);
+        var pts=[];
+        for(var i=0;i<cl.points.length;i++){
+          var p=cl.points[i],bd=toBD(p.time);
+          if(!bd){pts.push(null);continue;}
+          var x=ts.timeToCoordinate(bd);
+          var ya=series.priceToCoordinate(p.a);
+          var yb=series.priceToCoordinate(p.b);
+          pts.push((x===null||ya===null||yb===null)?null:{x:x,ya:ya,yb:yb,a:p.a,b:p.b,bull:p.a>=p.b});
+        }
+        var runs=[],cur=null;
+        for(var k=0;k<pts.length;k++){
+          var q=pts[k];
+          if(!q){cur=null;continue;}
+          if(!cur){cur={bull:q.bull,top:[[q.x,q.ya]],bot:[[q.x,q.yb]]};runs.push(cur);continue;}
+          var prev=pts[k-1];
+          if(q.bull===cur.bull){
+            cur.top.push([q.x,q.ya]);cur.bot.push([q.x,q.yb]);
+          }else{
+            // 부호가 바뀐 구간 — 두 선이 만나는 점(a=b)을 보간해 앞 구름은 거기서 닫고 새 구름을 거기서 시작한다
+            var d0=prev.a-prev.b,d1=q.a-q.b,t=d0/(d0-d1);
+            var xc=prev.x+t*(q.x-prev.x),yc=prev.ya+t*(q.ya-prev.ya);
+            cur.top.push([xc,yc]);cur.bot.push([xc,yc]);
+            cur={bull:q.bull,top:[[xc,yc],[q.x,q.ya]],bot:[[xc,yc],[q.x,q.yb]]};runs.push(cur);
+          }
+        }
+        ctx.save();
+        ctx.beginPath();ctx.rect(0,0,plotW,plotH);ctx.clip(); // 가격축·시간축 위로 번지지 않게 플롯 영역만
+        for(var r=0;r<runs.length;r++){
+          var run=runs[r];
+          if(run.top.length<2)continue;
+          ctx.fillStyle=run.bull?(cl.bullColor||'rgba(255,107,107,0.16)'):(cl.bearColor||'rgba(52,152,219,0.16)');
+          ctx.beginPath();
+          ctx.moveTo(run.top[0][0],run.top[0][1]);
+          for(var t1=1;t1<run.top.length;t1++)ctx.lineTo(run.top[t1][0],run.top[t1][1]);
+          for(var t2=run.bot.length-1;t2>=0;t2--)ctx.lineTo(run.bot[t2][0],run.bot[t2][1]);
+          ctx.closePath();ctx.fill();
+        }
+        ctx.restore();
       }
       // rAF 기반 인터랙션 동기화 (가격축 드래그/핀치 줌 등 모든 인터랙션 대응)
       function rafLoop(){
@@ -382,11 +462,12 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
       };
 
       // ── 증분 데이터 업데이트 (WebView 재생성 없이) ──
-      window.updateChartData=function(newDataJSON,newMarkersJSON,newOverlaysJSON){
+      window.updateChartData=function(newDataJSON,newMarkersJSON,newOverlaysJSON,newCloudJSON){
         try{
           var newRaw=JSON.parse(newDataJSON);
           var newMarkers=JSON.parse(newMarkersJSON);
           var newOverlays=JSON.parse(newOverlaysJSON);
+          window._cloud=newCloudJSON?JSON.parse(newCloudJSON):null; // 구름은 setupDots/updateDots 단계에서 다시 그려진다
 
           // 현재 보이는 범위 저장: from 날짜 + 봉 수(배율) 보존
           var visRange=chart.timeScale().getVisibleLogicalRange();
@@ -460,7 +541,19 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
       // 초기 표시: 최근 50개 캔들
       var totalBars=RAW_DATA.length;
       var visibleCount=Math.min(50,totalBars);
-      chart.timeScale().setVisibleLogicalRange({from:totalBars-visibleCount,to:totalBars});
+      // 일목 구름은 마지막 캔들 뒤 26칸으로 뻗는다 — 그 칸 수만큼 오른쪽을 더 보여 준다
+      var futureBars=0;
+      if(RAW_CLOUD&&RAW_CLOUD.points&&totalBars>0){
+        var lastBd=toBD(RAW_DATA[totalBars-1].time);
+        if(lastBd){
+          var lastKey=lastBd.year*10000+lastBd.month*100+lastBd.day;
+          for(var fi=0;fi<RAW_CLOUD.points.length;fi++){
+            var fb=toBD(RAW_CLOUD.points[fi].time);
+            if(fb&&(fb.year*10000+fb.month*100+fb.day)>lastKey)futureBars++;
+          }
+        }
+      }
+      chart.timeScale().setVisibleLogicalRange({from:totalBars-visibleCount,to:totalBars+futureBars});
       // 차트 레이아웃 완료 후 도트 위치 계산 (double rAF로 렌더 사이클 보장)
       requestAnimationFrame(function(){ requestAnimationFrame(updateDots); });
 
@@ -492,13 +585,16 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
         if (!isInitializedRef.current) {
             // 첫 렌더 시에는 HTML에 이미 데이터가 포함되어 있으므로 스킵
             prevDataLenRef.current = data.length;
+            prevCloudLenRef.current = cloud?.points.length ?? 0;
             isInitializedRef.current = true;
             return;
         }
 
-        // 데이터가 실제로 변경되었을 때만 업데이트
-        if (data.length === prevDataLenRef.current) return;
+        // 데이터(또는 구름)가 실제로 변경되었을 때만 업데이트
+        const cloudLen = cloud?.points.length ?? 0;
+        if (data.length === prevDataLenRef.current && cloudLen === prevCloudLenRef.current) return;
         prevDataLenRef.current = data.length;
+        prevCloudLenRef.current = cloudLen;
 
         const ref = effectiveRef;
         if (!ref.current) return;
@@ -507,11 +603,12 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:-apple-syst
         const dataJSON = escape(JSON.stringify(data));
         const markersJSON = escape(JSON.stringify(markers || []));
         const overlaysJSON = escape(JSON.stringify(lineOverlays || []));
+        const cloudJSON = escape(JSON.stringify(cloud || null));
 
         ref.current.injectJavaScript(
-            `window.updateChartData && window.updateChartData('${dataJSON}','${markersJSON}','${overlaysJSON}'); true;`
+            `window.updateChartData && window.updateChartData('${dataJSON}','${markersJSON}','${overlaysJSON}','${cloudJSON}'); true;`
         );
-    }, [data, markers, lineOverlays, effectiveRef]);
+    }, [data, markers, lineOverlays, cloud, effectiveRef]);
 
     const handleMessage = useCallback((event: WebViewMessageEvent) => {
         try {

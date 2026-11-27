@@ -9,6 +9,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import StockChart, { CandleData, ChartMarker, LineOverlay } from '../../../components/StockChart';
+import { buildIchimoku, getOverlayLegend } from '../../../utils/ichimoku';
 import { AddStockAutoRequest, BacktestingResponse, BacktestingTrade } from '../../../types/stock';
 import { TradeItemData, fromBacktestingTrade } from '../../../types/tradeItem';
 import TradeHistoryItem from '../../../components/swing/TradeHistoryItem';
@@ -118,7 +119,14 @@ const useBacktesting = () => {
         return markers;
     }, [result]);
 
+    // 일목균형표(I) 백테스트는 선 5개 + 구름, 단일 이평선(S)은 20EMA — 응답에 있는 쪽을 그린다
+    const ichimoku = useMemo(
+        () => buildIchimoku(result?.ichimoku_history, result?.ichimoku_future),
+        [result],
+    );
+
     const lineOverlays: LineOverlay[] = useMemo(() => {
+        if (ichimoku.lineOverlays.length > 0) return ichimoku.lineOverlays;
         if (!result?.ema20_history?.length) return [];
         return [{
             data: result.ema20_history.map(item => ({
@@ -129,7 +137,7 @@ const useBacktesting = () => {
             lineWidth: 2,
             title: '20EMA',
         }];
-    }, [result]);
+    }, [result, ichimoku]);
 
     return {
         stockName: stockName as string,
@@ -142,6 +150,7 @@ const useBacktesting = () => {
         priceCandles,
         tradeMarkers,
         lineOverlays,
+        cloud: ichimoku.cloud,
     };
 };
 
@@ -152,7 +161,7 @@ export default function BacktestingResultScreen() {
     const {
         stockName, loading, error, result,
         profitLoss, totalReturnPct, stats,
-        priceCandles, tradeMarkers, lineOverlays,
+        priceCandles, tradeMarkers, lineOverlays, cloud,
     } = useBacktesting();
 
     const tradeItems: TradeItemData[] = useMemo(() =>
@@ -221,12 +230,13 @@ export default function BacktestingResultScreen() {
                                 <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
                                 <Text style={styles.legendText}>매도</Text>
                             </View>
-                            {lineOverlays.length > 0 && (
-                                <View style={styles.legendItem}>
-                                    <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
-                                    <Text style={styles.legendText}>20EMA</Text>
+                            {/* 전략별 범례: 단일 이평선은 20EMA, 일목균형표는 전환선·기준선·선행A/B·후행·구름 */}
+                            {getOverlayLegend(lineOverlays, cloud).map(item => (
+                                <View key={item.label} style={styles.legendItem}>
+                                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                                    <Text style={styles.legendText}>{item.label}</Text>
                                 </View>
-                            )}
+                            ))}
                         </View>
                         <View style={styles.chartArea}>
                             <StockChart
@@ -234,6 +244,7 @@ export default function BacktestingResultScreen() {
                                 markers={tradeMarkers}
                                 chartType="candlestick"
                                 lineOverlays={lineOverlays}
+                                cloud={cloud}
                                 mrktCode={mrktCode}
                             />
                         </View>
@@ -272,7 +283,7 @@ export default function BacktestingResultScreen() {
                 </View>
             </>
         );
-    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, lineOverlays, stats, mrktCode]);
+    }, [result, stockName, totalReturnPct, profitLoss, priceCandles, tradeMarkers, lineOverlays, cloud, stats, mrktCode]);
 
     return (
         <View style={styles.container}>
@@ -412,8 +423,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: Spacing.lg,
-        height: 36,
+        flexWrap: 'wrap',          // 일목은 범례 항목이 많아 한 줄에 안 들어가면 줄바꿈한다
+        columnGap: Spacing.lg,
+        rowGap: 2,
+        minHeight: 36,
+        paddingVertical: 4,
         paddingHorizontal: Spacing.lg,
         backgroundColor: Colors.cardBackground,
         borderBottomWidth: 1,
