@@ -119,7 +119,7 @@ const useBacktesting = () => {
         return markers;
     }, [result]);
 
-    // 일목균형표(I) 백테스트는 선 5개 + 구름, 단일 이평선(S)은 20EMA — 응답에 있는 쪽을 그린다
+    // 일목균형표(I) 백테스트는 구름 + 경계선 2개, 단일 이평선(S)은 20EMA — 응답에 있는 쪽을 그린다
     const ichimoku = useMemo(
         () => buildIchimoku(result?.ichimoku_history, result?.ichimoku_future),
         [result],
@@ -230,7 +230,7 @@ export default function BacktestingResultScreen() {
                                 <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
                                 <Text style={styles.legendText}>매도</Text>
                             </View>
-                            {/* 전략별 범례: 단일 이평선은 20EMA, 일목균형표는 전환선·기준선·선행A/B·후행·구름 */}
+                            {/* 전략별 범례: 단일 이평선은 20EMA, 일목균형표는 선행A·선행B·구름 */}
                             {getOverlayLegend(lineOverlays, cloud).map(item => (
                                 <View key={item.label} style={styles.legendItem}>
                                     <View style={[styles.legendDot, { backgroundColor: item.color }]} />

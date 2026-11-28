@@ -70,7 +70,7 @@ export default function ChartTab({ swingData, mrktCode = 'J' }: ChartTabProps) {
                     <View style={[styles.legendDot, { backgroundColor: Colors.loss }]} />
                     <Text style={styles.legendText}>매도</Text>
                 </View>
-                {/* 전략별 범례: 단일 이평선은 20EMA, 일목균형표는 전환선·기준선·선행A/B·후행·구름 */}
+                {/* 전략별 범례: 단일 이평선은 20EMA, 일목균형표는 선행A·선행B·구름 */}
                 {getOverlayLegend(lineOverlays, cloud).map(item => (
                     <View key={item.label} style={styles.legendItem}>
                         <View style={[styles.legendDot, { backgroundColor: item.color }]} />
